@@ -1,10 +1,66 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* -------------------------------------------------------------
- * TakeToday — global styles
- * Minimal, deliberate. Every rule here traces back to design-system.md.
+ * TakeToday — global styles (Tailwind v4, CSS-first)
+ * Design tokens live in the @theme block below. Every custom
+ * rule after it traces back to design-system.md.
+ * ------------------------------------------------------------- */
+
+@theme {
+  /* Typography — wired to next/font variables set in app/layout.tsx */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-instrument), ui-serif, Georgia, serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
+
+  /* Ink scale — near-black with deliberate warm greys */
+  --color-ink: #0a0a0a;
+  --color-ink-900: #111111;
+  --color-ink-700: #1f1f1f;
+  --color-ink-500: #6b6b6b;
+  --color-ink-400: #9a9a9a;
+  --color-ink-300: #c9c7c1;
+  --color-ink-200: #e5e3dd;
+  --color-ink-100: #efede6;
+
+  /* Paper + single accent */
+  --color-paper: #fafaf7;
+  --color-accent: #c8553d;
+
+  /* Display sizes */
+  --text-display-xl: 168px;
+  --text-display-xl--line-height: 0.88;
+  --text-display-xl--letter-spacing: -0.04em;
+
+  --text-display-lg: 96px;
+  --text-display-lg--line-height: 0.90;
+  --text-display-lg--letter-spacing: -0.03em;
+
+  --text-display-md: 72px;
+  --text-display-md--line-height: 1.02;
+  --text-display-md--letter-spacing: -0.03em;
+
+  /* Layout */
+  --container-prose: 68ch;
+  --container-site: 1400px;
+
+  /* Letter spacing */
+  --tracking-tightest: -0.04em;
+  --tracking-tighter-2: -0.03em;
+
+  /* Motion */
+  --ease-out-quint: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Animations — ticker strip in the Navbar */
+  --animate-ticker: ticker 20s linear infinite;
+}
+
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* -------------------------------------------------------------
+ * Base
  * ------------------------------------------------------------- */
 
 :root {
@@ -23,6 +79,10 @@ body {
   background: #0a0a0a;
   color: #fafaf7;
 }
+
+/* -------------------------------------------------------------
+ * Custom utilities
+ * ------------------------------------------------------------- */
 
 /* Subtle paper grain — the only texture on the site. */
 .grain::before {
@@ -51,33 +111,28 @@ body {
   background: currentColor;
   transform-origin: left;
   transform: scaleX(0);
-  transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: transform 0.45s var(--ease-out-quint);
 }
 .reveal:hover::after,
 .reveal:focus-visible::after {
   transform: scaleX(1);
 }
 
-/* Ticker */
-.ticker {
-  display: flex;
-  gap: 3rem;
-  animation: ticker 45s linear infinite;
-  white-space: nowrap;
+/* Line clamps */
+.clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.ticker:hover {
-  animation-play-state: paused;
-}
-@keyframes ticker {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
+.clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-/* Article prose rules. Everything clamped to max-w-prose at the layout level. */
+/* Article prose rules. Content width is clamped at the layout level. */
 .article p {
   font-size: 1.125rem;
   line-height: 1.75;
@@ -121,8 +176,5 @@ body {
   *::after {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
-  }
-  .ticker {
-    animation: none;
   }
 }
