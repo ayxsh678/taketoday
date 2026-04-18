@@ -1,63 +1,23 @@
 import Link from "next/link";
-import { NewsCard, type NewsCardProps } from "@/components/NewsCard";
+import { NewsCard } from "@/components/NewsCard";
+import type { Article } from "@/types/article";
 
 /**
  * TakeToday — The Lead
  * 7/5 grid at desktop: a single large "lead" story on the left, three
  * stacked inline stories on the right. Mobile stacks everything.
+ *
+ * Fully data-driven — takes articles as props. The parent route is
+ * responsible for picking the lead + side via `getFeaturedArticles`.
  */
 
-type Lead = Readonly<{
-  slug: string;
-  title: string;
-  summary: string;
-  category: NewsCardProps["category"];
-  readTime: string;
-  publishedAt: string;
+export type FeaturedSectionProps = Readonly<{
+  lead: Article;
+  side: readonly Article[];
 }>;
 
-const LEAD: Lead = {
-  slug: "openai-unveils-new-enterprise-tier",
-  title:
-    "OpenAI opens a quieter, more expensive door for the enterprises that matter most",
-  summary:
-    "The company is pitching a tier that swaps the flash for guarantees \u2014 audit trails, data residency, and a direct line to engineering. For finance and healthcare, it\u2019s the first offer that sounds less like a product and more like a contract.",
-  category: "AI",
-  readTime: "4 min read",
-  publishedAt: "2026-04-18T09:00:00Z",
-};
-
-const SIDE: readonly Lead[] = [
-  {
-    slug: "fed-holds-rates-q3-cut-signaled",
-    title: "Fed holds rates steady, but the dot-plot is finally moving",
-    summary:
-      "Powell stopped short of confirming a Q3 cut \u2014 the summary of projections did the talking for him.",
-    category: "Finance",
-    readTime: "3 min read",
-    publishedAt: "2026-04-18T08:00:00Z",
-  },
-  {
-    slug: "nvidia-40b-quarter",
-    title: "Nvidia posts a $40B quarter and the AI capex debate gets louder",
-    summary:
-      "Hyperscaler spending is no longer a line item \u2014 it\u2019s the story. Analysts are now openly asking when it bends.",
-    category: "Tech",
-    readTime: "3 min read",
-    publishedAt: "2026-04-18T07:30:00Z",
-  },
-  {
-    slug: "asia-startup-funding-rebound",
-    title: "Startup funding in Asia finds its floor \u2014 and then some",
-    summary:
-      "Q1 numbers broke an 18-month slide. India and Japan led; China sat it out.",
-    category: "Startups",
-    readTime: "2 min read",
-    publishedAt: "2026-04-18T06:00:00Z",
-  },
-];
-
-export function FeaturedSection() {
+export function FeaturedSection({ lead, side }: FeaturedSectionProps) {
+  const m = lead.metadata;
   return (
     <section
       aria-labelledby="lead-heading"
@@ -81,7 +41,7 @@ export function FeaturedSection() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
         {/* Lead */}
         <article className="lg:col-span-7 group">
-          <Link href={`/article/${LEAD.slug}`} className="block">
+          <Link href={`/article/${m.slug}`} className="block">
             <div className="aspect-[16/10] bg-ink-100 rounded-sm overflow-hidden mb-6">
               <div
                 className="w-full h-full"
@@ -93,23 +53,23 @@ export function FeaturedSection() {
               />
             </div>
             <div className="flex items-center gap-3 font-mono text-[10px] tracking-[0.18em] uppercase">
-              <span className="text-accent">{LEAD.category}</span>
+              <span className="text-accent">{m.category}</span>
               <span aria-hidden className="text-ink-300">
                 /
               </span>
-              <span className="text-ink-500">{LEAD.readTime}</span>
+              <span className="text-ink-500">{m.readTime}</span>
             </div>
             <h3 className="mt-4 font-serif text-[42px] lg:text-[52px] leading-[1.02] tracking-[-0.02em] text-ink group-hover:text-ink-700 transition-colors text-balance">
-              {LEAD.title}
+              {m.title}
             </h3>
             <p className="mt-4 max-w-xl text-[16px] leading-relaxed text-ink-500">
-              {LEAD.summary}
+              {lead.content.quickTake}
             </p>
             <time
-              dateTime={LEAD.publishedAt}
+              dateTime={m.publishedAt}
               className="mt-5 block font-mono text-[10px] tracking-[0.18em] uppercase text-ink-400"
             >
-              {new Date(LEAD.publishedAt).toLocaleDateString("en-US", {
+              {new Date(m.publishedAt).toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
                 year: "numeric",
@@ -120,8 +80,17 @@ export function FeaturedSection() {
 
         {/* Side stack */}
         <div className="lg:col-span-5">
-          {SIDE.map((s) => (
-            <NewsCard key={s.slug} {...s} variant="inline" />
+          {side.map((a) => (
+            <NewsCard
+              key={a.metadata.slug}
+              slug={a.metadata.slug}
+              title={a.metadata.title}
+              summary={a.content.quickTake}
+              category={a.metadata.category}
+              readTime={a.metadata.readTime}
+              publishedAt={a.metadata.publishedAt}
+              variant="inline"
+            />
           ))}
         </div>
       </div>
