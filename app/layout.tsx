@@ -1,27 +1,53 @@
 import type { Metadata } from "next";
+import { Inter, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+const instrument = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+  variable: "--font-instrument",
+  display: "swap",
+});
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "TakeToday",
+  title: "TakeToday — News. Simplified.",
   description:
-    "News that actually matters — clear, sharp, and meaningful breakdowns for people who hate fluff.",
+    "The day's most important stories, cut down to what actually matters — and why you should care. No noise. No clickbait.",
+  openGraph: {
+    title: "TakeToday — News. Simplified.",
+    description: "News without noise. Built for people who want the insight.",
+    siteName: "TakeToday",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
   children,
-  showTicker = true,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-  showTicker?: boolean;
-}>) {
+}) {
   return (
-    <html lang="en">
-      <body className="bg-paper text-ink">
-        <Navbar showTicker={showTicker} />
-        <main className="mx-auto w-full max-w-[1400px] px-4 pt-8 md:pt-12">
-          {children}
-        </main>
+    <html
+      lang="en"
+      className={`${inter.variable} ${instrument.variable} ${jetbrains.variable}`}
+    >
+      <body className="grain font-sans bg-paper text-ink min-h-screen">
+        <Navbar />
+        <main>{children}</main>
+        <Footer />
       </body>
     </html>
   );
