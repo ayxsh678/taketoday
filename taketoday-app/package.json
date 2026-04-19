@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "draft": "tsx scripts/draft.ts"
+    "draft": "tsx scripts/draft.ts",
+    "enrich": "tsx scripts/enrich-article.ts"
   },
   "dependencies": {
     "gray-matter": "^4.0.3",
