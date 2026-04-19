@@ -257,16 +257,42 @@ async function draftArticle(
 
 // ─── Main ────────────────────────────────────────────────────────────────────
 
+const ALLOWED_CATEGORIES = ["AI", "Finance", "Tech", "Startups", "Briefings"] as const;
+const ALLOWED_FORMATS = ["QuickNews", "SmartBreakdown", "DeepDive", "SocialPost"] as const;
+
+function normalizeEnum<T extends string>(
+  value: string | undefined,
+  allowed: readonly T[],
+  name: string,
+): T | undefined {
+  if (!value) return undefined;
+  const match = allowed.find((opt) => opt.toLowerCase() === value.toLowerCase());
+  if (!match) {
+    console.error(`Invalid --${name} "${value}". Expected one of: ${allowed.join(", ")}`);
+    process.exit(1);
+  }
+  return match;
+}
+
 async function main() {
   const { topic, url, category, format, dryRun } = parseArgs(process.argv);
 
   if (!topic && !url) {
     console.error("Usage: npm run draft -- --topic \"...\" | --url \"https://...\"");
+    console.error("Exactly one of --topic or --url must be provided.");
     console.error("Options: --category AI|Finance|Tech|Startups|Briefings");
     console.error("         --format QuickNews|SmartBreakdown|DeepDive|SocialPost");
     console.error("         --dry-run   (print MDX to stdout, don't write file)");
     process.exit(1);
   }
+
+  if (topic && url) {
+    console.error("--topic and --url are mutually exclusive. Provide exactly one.");
+    process.exit(1);
+  }
+
+  const normalizedCategory = normalizeEnum(category, ALLOWED_CATEGORIES, "category");
+  const normalizedFormat = normalizeEnum(format, ALLOWED_FORMATS, "format");
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -287,7 +313,10 @@ async function main() {
   }
 
   console.log("Drafting article…");
-  const draft = await draftArticle(client, inputText, { category, format });
+  const draft = await draftArticle(client, inputText, {
+    category: normalizedCategory,
+    format: normalizedFormat,
+  });
 
   const publishedAt = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
   const mdx = toMDX(draft, publishedAt);
