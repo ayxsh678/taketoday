@@ -10,12 +10,12 @@ export function getLangPreference(): SiteLang {
   const match = document.cookie.match(
     new RegExp(`(?:^|; )${COOKIE_KEY}=([^;]+)`),
   );
-  const val = match?.[1];
+  const val = match?.[1] ? decodeURIComponent(match[1]) : undefined;
   return val === "en" || val === "hi" ? val : DEFAULT_LANG;
 }
 
 /** Persists the user's language choice in a long-lived cookie. */
 export function setLangPreference(lang: SiteLang): void {
   if (typeof document === "undefined") return;
-  document.cookie = `${COOKIE_KEY}=${lang}; max-age=${MAX_AGE}; path=/; SameSite=Lax`;
+  document.cookie = `${COOKIE_KEY}=${encodeURIComponent(lang)}; max-age=${MAX_AGE}; path=/; SameSite=Lax; Secure`;
 }

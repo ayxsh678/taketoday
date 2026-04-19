@@ -48,6 +48,7 @@ export function NavbarControls() {
   function handleLang(next: SiteLang) {
     setLangPreference(next);
     setLang(next);
+    window.dispatchEvent(new CustomEvent("tt:lang-changed", { detail: next }));
   }
 
   function handleCountry(next: CountryOption) {
@@ -57,6 +58,7 @@ export function NavbarControls() {
       setCountryPreference(next);
     }
     setCountry(next);
+    window.dispatchEvent(new CustomEvent("tt:country-changed", { detail: next }));
   }
 
   // Suppress until hydrated to avoid flash of wrong state.

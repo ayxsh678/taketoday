@@ -72,9 +72,29 @@ export function usePersonalization(
   // Hydrate from localStorage + cookies + navigator after mount.
   useEffect(() => {
     setHistory(loadPersonalizationData().recentlyRead);
-    // Cookie preference overrides navigator detection.
     setUserCountry(getCountryPreference() ?? getUserCountry());
     setUserLang(getLangPreference());
+  }, []);
+
+  // React to in-session preference changes dispatched by NavbarControls.
+  useEffect(() => {
+    function onCountryChanged(e: Event) {
+      const next = (e as CustomEvent<string>).detail;
+      // "auto" means clear override — fall back to navigator detection.
+      setUserCountry(
+        next === "IN" || next === "US" ? next : getUserCountry(),
+      );
+    }
+    function onLangChanged(e: Event) {
+      const next = (e as CustomEvent<string>).detail;
+      if (next === "en" || next === "hi") setUserLang(next);
+    }
+    window.addEventListener("tt:country-changed", onCountryChanged);
+    window.addEventListener("tt:lang-changed", onLangChanged);
+    return () => {
+      window.removeEventListener("tt:country-changed", onCountryChanged);
+      window.removeEventListener("tt:lang-changed", onLangChanged);
+    };
   }, []);
 
   const trackRead = useCallback((slug: string, category: Category) => {

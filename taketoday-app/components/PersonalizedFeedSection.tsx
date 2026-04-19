@@ -28,11 +28,13 @@ const COUNTRY_LABELS: Record<string, string> = {
   US: "United States",
 };
 
+const VISIBLE_ARTICLE_LIMIT = 6;
+
 function ArticleGrid({ items }: { items: readonly Article[] }) {
   if (items.length === 0) return null;
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">
-      {items.slice(0, 6).map((a) => (
+      {items.slice(0, VISIBLE_ARTICLE_LIMIT).map((a) => (
         <NewsCard
           key={a.metadata.slug}
           slug={a.metadata.slug}
@@ -53,11 +55,13 @@ export function PersonalizedFeedSection({ articles }: Props) {
     usePersonalization(articles);
 
   const countryLabel = COUNTRY_LABELS[userCountry] ?? userCountry;
+  const visibleLocalCount = Math.min(localArticles.length, VISIBLE_ARTICLE_LIMIT);
+  const visibleGlobalCount = Math.min(globalArticles.length, VISIBLE_ARTICLE_LIMIT);
 
   // Articles shown in For You + International sections (avoid duplication in The Feed).
   const featuredSlugs = new Set([
-    ...localArticles.slice(0, 6).map((a) => a.metadata.slug),
-    ...globalArticles.slice(0, 6).map((a) => a.metadata.slug),
+    ...localArticles.slice(0, VISIBLE_ARTICLE_LIMIT).map((a) => a.metadata.slug),
+    ...globalArticles.slice(0, VISIBLE_ARTICLE_LIMIT).map((a) => a.metadata.slug),
   ]);
   const remainingArticles = recommendedArticles.filter(
     (a) => !featuredSlugs.has(a.metadata.slug),
@@ -76,8 +80,8 @@ export function PersonalizedFeedSection({ articles }: Props) {
               For You
             </h2>
             <p className="mt-1 font-mono text-[10px] tracking-[0.18em] uppercase text-ink-400">
-              {countryLabel} · {localArticles.length}{" "}
-              {localArticles.length === 1 ? "story" : "stories"}
+              {countryLabel} · {visibleLocalCount}{" "}
+              {visibleLocalCount === 1 ? "story" : "stories"}
             </p>
           </header>
           <ArticleGrid items={localArticles} />
@@ -95,8 +99,8 @@ export function PersonalizedFeedSection({ articles }: Props) {
               International
             </h2>
             <p className="mt-1 font-mono text-[10px] tracking-[0.18em] uppercase text-ink-400">
-              Global · {globalArticles.length}{" "}
-              {globalArticles.length === 1 ? "story" : "stories"}
+              Global · {visibleGlobalCount}{" "}
+              {visibleGlobalCount === 1 ? "story" : "stories"}
             </p>
           </header>
           <ArticleGrid items={globalArticles} />
