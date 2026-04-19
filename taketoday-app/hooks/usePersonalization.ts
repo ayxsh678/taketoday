@@ -27,6 +27,13 @@ import {
   getUserCountry,
   type UserCountry,
 } from "@/lib/personalization/getUserCountry";
+import {
+  getCountryPreference,
+} from "@/lib/personalization/countryPreference";
+import {
+  getLangPreference,
+  type SiteLang,
+} from "@/lib/personalization/langPreference";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -40,13 +47,15 @@ export interface UserPreferences {
 export interface PersonalizationResult {
   /** `allArticles` re-ranked by affinity + recency; read articles move down. */
   recommendedArticles: readonly Article[];
-  /** Articles whose region matches the user's detected country, ranked. */
+  /** Articles whose region matches the user's detected/chosen country, ranked. */
   localArticles: readonly Article[];
   /** Articles with region === "GLOBAL", ranked. */
   globalArticles: readonly Article[];
   userPreferences: UserPreferences;
-  /** Detected country code (falls back to "IN" when unavailable). */
+  /** Active country — cookie override if set, otherwise navigator-detected. */
   userCountry: UserCountry;
+  /** Active language preference (cookie-persisted). */
+  userLang: SiteLang;
   /** Call this when the user opens an article to update their profile. */
   trackRead: (slug: string, category: Category) => void;
 }
@@ -58,11 +67,14 @@ export function usePersonalization(
 ): PersonalizationResult {
   const [history, setHistory] = useState<ReadEntry[]>([]);
   const [userCountry, setUserCountry] = useState<UserCountry>("IN");
+  const [userLang, setUserLang] = useState<SiteLang>("en");
 
-  // Hydrate from localStorage + navigator after mount (avoids SSR mismatch).
+  // Hydrate from localStorage + cookies + navigator after mount.
   useEffect(() => {
     setHistory(loadPersonalizationData().recentlyRead);
-    setUserCountry(getUserCountry());
+    // Cookie preference overrides navigator detection.
+    setUserCountry(getCountryPreference() ?? getUserCountry());
+    setUserLang(getLangPreference());
   }, []);
 
   const trackRead = useCallback((slug: string, category: Category) => {
@@ -91,6 +103,7 @@ export function usePersonalization(
     localArticles,
     globalArticles,
     userCountry,
+    userLang,
     userPreferences: {
       preferredCategories: preferredCategories(history),
       recentlyRead: history.map((e) => e.slug),
