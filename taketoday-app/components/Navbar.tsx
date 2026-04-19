@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { SearchButton } from "@/components/SearchButton";
 
 /**
  * TakeToday — Global Navbar
@@ -63,17 +64,7 @@ export function Navbar({ showTicker = true }: { showTicker?: boolean }) {
 
         {/* Actions */}
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            aria-label="Search"
-            className="hidden sm:inline-flex items-center gap-2 rounded-full border border-ink-200 px-3.5 py-1.5 text-[12px] text-ink-500 hover:text-ink hover:border-ink-300 transition-colors"
-          >
-            <SearchIcon />
-            <span>Search</span>
-            <kbd className="font-mono text-[10px] text-ink-400 border border-ink-200 rounded px-1">
-              /
-            </kbd>
-          </button>
+          <SearchButton />
           <Link
             href="/subscribe"
             className="inline-flex items-center rounded-full bg-ink text-paper px-4 py-1.5 text-[12px] font-medium tracking-wide hover:bg-ink-700 transition-colors"
@@ -110,24 +101,5 @@ export function Navbar({ showTicker = true }: { showTicker?: boolean }) {
         </div>
       )}
     </header>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <circle cx="11" cy="11" r="7" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
   );
 }
