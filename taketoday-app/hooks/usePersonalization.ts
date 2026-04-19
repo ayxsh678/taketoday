@@ -11,7 +11,7 @@
  *     usePersonalization(allArticles);
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Article, Category } from "@/types/article";
 import {
   loadPersonalizationData,
@@ -23,6 +23,10 @@ import {
   rankArticles,
   preferredCategories,
 } from "@/lib/personalization/recommend";
+import {
+  getUserCountry,
+  type UserCountry,
+} from "@/lib/personalization/getUserCountry";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -36,7 +40,13 @@ export interface UserPreferences {
 export interface PersonalizationResult {
   /** `allArticles` re-ranked by affinity + recency; read articles move down. */
   recommendedArticles: readonly Article[];
+  /** Articles whose region matches the user's detected country, ranked. */
+  localArticles: readonly Article[];
+  /** Articles with region === "GLOBAL", ranked. */
+  globalArticles: readonly Article[];
   userPreferences: UserPreferences;
+  /** Detected country code (falls back to "IN" when unavailable). */
+  userCountry: UserCountry;
   /** Call this when the user opens an article to update their profile. */
   trackRead: (slug: string, category: Category) => void;
 }
@@ -47,17 +57,16 @@ export function usePersonalization(
   allArticles: readonly Article[],
 ): PersonalizationResult {
   const [history, setHistory] = useState<ReadEntry[]>([]);
+  const [userCountry, setUserCountry] = useState<UserCountry>("IN");
 
-  // Hydrate from localStorage after mount (avoids SSR mismatch).
+  // Hydrate from localStorage + navigator after mount (avoids SSR mismatch).
   useEffect(() => {
     setHistory(loadPersonalizationData().recentlyRead);
+    setUserCountry(getUserCountry());
   }, []);
 
   const trackRead = useCallback((slug: string, category: Category) => {
-    // Persist to localStorage.
     trackArticleRead(slug, category);
-    // Update React state directly from the previous value — no extra
-    // localStorage read needed.
     setHistory((prev) => {
       const filtered = prev.filter((e) => e.slug !== slug);
       return [{ slug, category, readAt: Date.now() }, ...filtered].slice(
@@ -67,8 +76,21 @@ export function usePersonalization(
     });
   }, []);
 
+  const localArticles = useMemo(
+    () => rankArticles(allArticles.filter((a) => a.metadata.region === userCountry), history),
+    [allArticles, userCountry, history],
+  );
+
+  const globalArticles = useMemo(
+    () => rankArticles(allArticles.filter((a) => a.metadata.region === "GLOBAL"), history),
+    [allArticles, history],
+  );
+
   return {
     recommendedArticles: rankArticles(allArticles, history),
+    localArticles,
+    globalArticles,
+    userCountry,
     userPreferences: {
       preferredCategories: preferredCategories(history),
       recentlyRead: history.map((e) => e.slug),

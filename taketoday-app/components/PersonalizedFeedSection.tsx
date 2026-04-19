@@ -4,11 +4,12 @@
  * TakeToday — PersonalizedFeedSection
  *
  * Client wrapper around FeedSection. Receives all articles from the server
- * as props (server-first), then re-ranks them client-side using
- * usePersonalization before passing them down to the presentational layer.
+ * as props (server-first), then filters and re-ranks them client-side:
+ *   1. Local articles (region matches user's country) — shown first, ranked by affinity
+ *   2. Global articles (region === "GLOBAL") — shown after, ranked by affinity
  *
- * Server renders the skeleton → client hydrates with personalized order.
- * No API calls, no loading states — purely localStorage-derived.
+ * Server renders the skeleton → client hydrates with geo-personalised order.
+ * No API calls, no loading states — purely localStorage + navigator derived.
  */
 
 import type { Article } from "@/types/article";
@@ -20,6 +21,8 @@ interface Props {
 }
 
 export function PersonalizedFeedSection({ articles }: Props) {
-  const { recommendedArticles } = usePersonalization(articles);
-  return <FeedSection items={recommendedArticles} />;
+  const { localArticles, globalArticles } = usePersonalization(articles);
+  // Local articles surface first; global fills the rest of the feed.
+  const feed = [...localArticles, ...globalArticles];
+  return <FeedSection items={feed} />;
 }

@@ -62,15 +62,16 @@ Bad quickTake examples:
 
 async function callClaude(
   client: Anthropic,
-  article: { title: string; deck: string; body: string },
+  article: { title: string; deck: string; body: string; region: string },
 ): Promise<EnrichmentOutput> {
   const userMessage = `Title: ${article.title}
 Deck: ${article.deck}
+Target audience country: ${article.region}
 
 Body:
 ${article.body.trim()}
 
-Generate the editorial metadata fields.`;
+Generate the editorial metadata fields. Ensure impact and framing reflect the target audience country.`;
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
@@ -187,8 +188,9 @@ export async function enrichArticle(
 
   const title = frontmatter.title ? String(frontmatter.title) : "(untitled)";
   const deck = frontmatter.deck ? String(frontmatter.deck) : "";
+  const region = frontmatter.region ? String(frontmatter.region) : "GLOBAL";
 
-  const aiOutput = await callClaude(client, { title, deck, body });
+  const aiOutput = await callClaude(client, { title, deck, body, region });
 
   // Merge: use AI output only for fields that needed generation.
   const result: EnrichmentOutput = {
