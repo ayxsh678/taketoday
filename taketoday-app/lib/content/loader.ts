@@ -1,102 +1,101 @@
 import "server-only";
-import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
-import matter from "gray-matter";
-import readingTime from "reading-time";
 import type { Article } from "@/types/article";
-import {
-  articleFrontmatterSchema,
-  articleSchema,
-} from "@/lib/content/schema";
+import { articleSchema } from "@/lib/content/schema";
 
 /**
- * TakeToday — MDX loader
- * Reads every .mdx file in `content/articles/`, parses the frontmatter,
- * validates it against the schema, computes readTime from the body, and
- * returns a fully typed Article.
+ * TakeToday — Contentlayer-backed MDX loader
  *
- * Runs at build time only — the `server-only` import ensures this module
- * cannot accidentally ship to the client.
+ * Contentlayer watches `content/articles/` and generates fully-typed
+ * document data in `.contentlayer/generated/` at build time / dev time.
+ * This loader adapts that generated data to our `Article` type, keeping the
+ * public query surface (`lib/content/queries.ts`) completely unchanged.
  *
- * The read happens once per build. Node's require cache keeps the result
- * alive across route calls, so no manual memoization is needed beyond the
- * module-level `cache` variable used here as an explicit guard.
+ * If the import below fails, run: npx contentlayer2 build
  */
 
-const CONTENT_DIR = join(process.cwd(), "content", "articles");
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore — path resolved via tsconfig "contentlayer/generated" alias
+import { allArticles as clArticles } from "contentlayer/generated";
 
 let cache: readonly Article[] | null = null;
 
-/** Lazy-load all articles. Throws if any file fails validation. */
+/** Lazy-load and validate all articles from Contentlayer's generated data. */
 export function loadAllArticles(): readonly Article[] {
   if (cache) return cache;
 
-  const files = safeReadDir(CONTENT_DIR).filter((f) => f.endsWith(".mdx"));
+  const articles: Article[] = (clArticles as CLArticle[]).map(adapt);
 
-  const articles: Article[] = files.map((filename) => {
-    const full = join(CONTENT_DIR, filename);
-    const raw = readFileSync(full, "utf8");
-    const { data: frontmatter, content: body } = matter(raw);
-
-    const parsed = articleFrontmatterSchema.safeParse(frontmatter);
-    if (!parsed.success) {
-      throw new Error(
-        `Invalid frontmatter in ${filename}: ${parsed.error.message}`
-      );
-    }
-    const fm = parsed.data;
-
-    const rt = readingTime(body);
-    const article: Article = {
-      metadata: {
-        slug: fm.slug,
-        title: fm.title,
-        deck: fm.deck,
-        category: fm.category,
-        format: fm.format,
-        readTime: formatReadTime(rt.minutes),
-        publishedAt: fm.publishedAt,
-        updatedAt: fm.updatedAt,
-        author: fm.author,
-      },
-      content: {
-        body,
-        quickTake: fm.quickTake,
-        whyItMatters: fm.whyItMatters,
-        takeaways: fm.takeaways,
-      },
-    };
-
-    const validated = articleSchema.safeParse(article);
-    if (!validated.success) {
-      throw new Error(
-        `Enriched article failed validation in ${filename}: ${validated.error.message}`
-      );
-    }
-    return validated.data as Article;
-  });
-
-  // Sort newest-first at load time so every downstream query can rely on it.
+  // Preserve newest-first ordering downstream callers rely on.
   articles.sort(
     (a, b) =>
       new Date(b.metadata.publishedAt).getTime() -
-      new Date(a.metadata.publishedAt).getTime()
+      new Date(a.metadata.publishedAt).getTime(),
   );
 
   cache = Object.freeze(articles);
   return cache;
 }
 
-function safeReadDir(dir: string): string[] {
-  try {
-    return readdirSync(dir);
-  } catch {
-    return [];
-  }
+// ─── Adapter ──────────────────────────────────────────────────────────────────
+
+/**
+ * Minimal shape of what Contentlayer emits for an Article document.
+ * We use a local interface rather than importing the generated type directly
+ * so the loader compiles even before the first `contentlayer2 build` run.
+ */
+interface CLArticle {
+  slug: string;
+  title: string;
+  deck: string;
+  category: string;
+  format: string;
+  publishedAt: string;
+  updatedAt?: string;
+  author: { name: string; type: string };
+  quickTake: string;
+  whyItMatters: string;
+  takeaways: string[];
+  readTime: string; // computed field
+  body: { raw: string };
 }
 
-/** `reading-time` returns fractional minutes; we round up and format. */
-function formatReadTime(minutes: number): string {
-  const m = Math.max(1, Math.ceil(minutes));
-  return `${m} min read`;
+function adapt(cl: CLArticle): Article {
+  // Runtime enforcement of the 3-item tuple Contentlayer can't express.
+  if (!Array.isArray(cl.takeaways) || cl.takeaways.length !== 3) {
+    throw new Error(
+      `Article "${cl.slug}" must have exactly 3 takeaways (got ${cl.takeaways?.length ?? 0}).`,
+    );
+  }
+
+  const article: Article = {
+    metadata: {
+      slug: cl.slug,
+      title: cl.title,
+      deck: cl.deck,
+      category: cl.category as Article["metadata"]["category"],
+      format: cl.format as Article["metadata"]["format"],
+      readTime: cl.readTime,
+      publishedAt: cl.publishedAt,
+      updatedAt: cl.updatedAt,
+      author: {
+        name: cl.author.name,
+        type: cl.author.type as "Organization" | "Person",
+      },
+    },
+    content: {
+      body: cl.body.raw,
+      quickTake: cl.quickTake,
+      whyItMatters: cl.whyItMatters,
+      takeaways: cl.takeaways as [string, string, string],
+    },
+  };
+
+  const validated = articleSchema.safeParse(article);
+  if (!validated.success) {
+    throw new Error(
+      `Contentlayer article "${cl.slug}" failed Zod validation: ${validated.error.message}`,
+    );
+  }
+
+  return validated.data as Article;
 }

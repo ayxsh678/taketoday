@@ -4,10 +4,8 @@ import {
   FeaturedSection,
   FeaturedSectionSkeleton,
 } from "@/components/FeaturedSection";
-import {
-  FeedSection,
-  FeedSectionSkeleton,
-} from "@/components/FeedSection";
+import { FeedSectionSkeleton } from "@/components/FeedSection";
+import { PersonalizedFeedSection } from "@/components/PersonalizedFeedSection";
 import { IntelligenceStrip } from "@/components/IntelligenceStrip";
 import { getAllArticles, getFeaturedArticles } from "@/lib/content/queries";
 
@@ -22,9 +20,10 @@ function FeaturedLoader() {
 }
 
 function FeedLoader({ featuredCount }: { featuredCount: number }) {
+  // Fetch all articles server-side; pass to client for personalized ranking.
   const all = getAllArticles();
   const feed = all.slice(featuredCount);
-  return <FeedSection items={feed} />;
+  return <PersonalizedFeedSection articles={feed} />;
 }
 
 export default function Home() {
