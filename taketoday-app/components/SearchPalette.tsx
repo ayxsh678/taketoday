@@ -25,8 +25,9 @@ export function SearchPalette({ open, onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  // Focus input when opened
+  // Focus input when opened; clear on close
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 10);
@@ -36,9 +37,19 @@ export function SearchPalette({ open, onClose }: Props) {
     }
   }, [open]);
 
-  // Debounced search
+  // Cancel in-flight request and pending timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      abortRef.current?.abort();
+    };
+  }, []);
+
+  // Debounced search with AbortController to discard stale responses
   const search = useCallback((q: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    abortRef.current?.abort();
+
     if (q.length < 2) {
       setResults([]);
       setLoading(false);
@@ -46,15 +57,19 @@ export function SearchPalette({ open, onClose }: Props) {
     }
     setLoading(true);
     debounceRef.current = setTimeout(async () => {
+      const controller = new AbortController();
+      abortRef.current = controller;
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, {
+          signal: controller.signal,
+        });
         const data: FeedItem[] = await res.json();
         setResults(data);
         setActive(0);
-      } catch {
-        setResults([]);
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") setResults([]);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }, 180);
   }, []);
@@ -119,18 +134,28 @@ export function SearchPalette({ open, onClose }: Props) {
             className="flex-1 py-4 px-3 bg-transparent text-[15px] text-ink placeholder:text-ink-400 focus:outline-none"
             autoComplete="off"
             spellCheck={false}
+            role="combobox"
+            aria-expanded={results.length > 0}
+            aria-controls="search-results-listbox"
+            aria-autocomplete="list"
+            aria-activedescendant={
+              results.length > 0
+                ? `search-option-${results[active].slug}`
+                : undefined
+            }
           />
           {loading && <SpinnerIcon />}
           <kbd className="hidden sm:inline font-mono text-[10px] text-ink-400 border border-ink-200 rounded px-1.5 py-0.5 ml-2">
-            esc
+            Esc
           </kbd>
         </div>
 
         {/* Results */}
         {results.length > 0 && (
-          <ul role="listbox" className="max-h-[360px] overflow-y-auto">
+          <ul id="search-results-listbox" role="listbox" className="max-h-[360px] overflow-y-auto">
             {results.map((item, i) => (
               <li
+                id={`search-option-${item.slug}`}
                 key={item.slug}
                 role="option"
                 aria-selected={i === active}

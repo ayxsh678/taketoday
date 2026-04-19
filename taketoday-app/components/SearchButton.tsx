@@ -8,9 +8,7 @@ export function SearchButton() {
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      const tag = (e.target as HTMLElement).tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-      if (e.key === "/" && !e.metaKey && !e.ctrlKey) {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setOpen(true);
       }
@@ -30,7 +28,7 @@ export function SearchButton() {
         <SearchIcon />
         <span>Search</span>
         <kbd className="font-mono text-[10px] text-ink-400 border border-ink-200 rounded px-1">
-          /
+          ⌘K
         </kbd>
       </button>
 
