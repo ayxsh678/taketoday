@@ -49,6 +49,7 @@ interface CLArticle {
   deck: string;
   category: string;
   format: string;
+  region: string;
   publishedAt: string;
   updatedAt?: string;
   author: { name: string; type: string };
@@ -74,6 +75,7 @@ function adapt(cl: CLArticle): Article {
       deck: cl.deck,
       category: cl.category as Article["metadata"]["category"],
       format: cl.format as Article["metadata"]["format"],
+      region: cl.region as Article["metadata"]["region"],
       readTime: cl.readTime,
       publishedAt: cl.publishedAt,
       updatedAt: cl.updatedAt,

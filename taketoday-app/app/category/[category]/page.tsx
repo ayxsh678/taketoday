@@ -40,6 +40,16 @@ const CATEGORY_COPY: Readonly<Record<Category, { desk: string; blurb: string }>>
     blurb:
       "Short, sharp reads on the stories moving markets, tech, and policy today.",
   },
+  India: {
+    desk: "The India Desk",
+    blurb:
+      "Policy, markets, and tech shifts from the world's largest democracy — what matters and why.",
+  },
+  International: {
+    desk: "The International Desk",
+    blurb:
+      "The global stories with cross-border consequences — trade, geopolitics, and the macro moves that ripple everywhere.",
+  },
 };
 
 /** Map URL slug (lowercase) → Category enum value. */

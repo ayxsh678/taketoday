@@ -39,6 +39,8 @@ export const CATEGORY_VALUES = [
   "Tech",
   "Startups",
   "Briefings",
+  "India",
+  "International",
 ] as const;
 
 export const FORMAT_VALUES = [
@@ -48,8 +50,11 @@ export const FORMAT_VALUES = [
   "SocialPost",
 ] as const;
 
+export const REGION_VALUES = ["IN", "US", "GLOBAL"] as const;
+
 const categorySchema = z.enum(CATEGORY_VALUES);
 const formatSchema = z.enum(FORMAT_VALUES);
+const regionSchema = z.enum(REGION_VALUES);
 
 // ─── Author ───────────────────────────────────────────────────────────────
 
@@ -75,6 +80,7 @@ export const articleFrontmatterSchema = z.object({
   deck: nonEmpty,
   category: categorySchema,
   format: formatSchema,
+  region: regionSchema,
   publishedAt: isoDateSchema,
   updatedAt: isoDateSchema.optional(),
   author: authorSchema,
@@ -93,6 +99,7 @@ const articleMetadataSchema: z.ZodType<ArticleMetadata> = z.object({
   deck: nonEmpty,
   category: categorySchema,
   format: formatSchema,
+  region: regionSchema,
   readTime: nonEmpty,
   publishedAt: isoDateSchema,
   updatedAt: isoDateSchema.optional(),

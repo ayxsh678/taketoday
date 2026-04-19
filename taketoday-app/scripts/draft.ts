@@ -24,6 +24,7 @@ function parseArgs(argv: string[]): {
   url?: string;
   category?: string;
   format?: string;
+  region?: string;
   dryRun: boolean;
 } {
   const args = argv.slice(2);
@@ -36,6 +37,7 @@ function parseArgs(argv: string[]): {
     url: get("--url"),
     category: get("--category"),
     format: get("--format"),
+    region: get("--region"),
     dryRun: args.includes("--dry-run"),
   };
 }
@@ -74,6 +76,7 @@ interface ArticleDraft {
   deck: string;
   category: string;
   format: string;
+  region: string;
   quickTake: string;
   whyItMatters: string;
   takeaways: [string, string, string];
@@ -88,6 +91,7 @@ function toMDX(draft: ArticleDraft, publishedAt: string): string {
     `deck: "${draft.deck.replace(/"/g, '\\"')}"`,
     `category: ${draft.category}`,
     `format: ${draft.format}`,
+    `region: ${draft.region}`,
     `publishedAt: "${publishedAt}"`,
     `author:`,
     `  name: TakeToday Newsroom`,
@@ -123,8 +127,9 @@ Your job is to draft a single article from a topic or source material.
 - slug: URL-safe kebab-case, ≤60 chars, derived from the headline
 - title: specific and slightly editorial (not a wire headline)
 - deck: one sentence, contextualises the headline — gives the "so what"
-- category: exactly one of: AI, Finance, Tech, Startups, Briefings
+- category: exactly one of: AI, Finance, Tech, Startups, Briefings, India, International
 - format: exactly one of: QuickNews (60–100w body), SmartBreakdown (150–300w body), DeepDive (400–700w body), SocialPost
+- region: exactly one of: IN (India-focused), US (US-focused), GLOBAL (cross-regional). Frame impact, examples, and implications for that audience.
 - quickTake: exactly one sentence. Declarative. Includes the key fact and its implication.
 - whyItMatters: 2–3 sentences. Business/industry impact. No "this is big" — be specific about who, what changes.
 - takeaways: exactly 3 bullets. Each is concrete and non-obvious. No padding.
@@ -143,12 +148,13 @@ Your job is to draft a single article from a topic or source material.
 async function draftArticle(
   client: Anthropic,
   input: string,
-  hints: { category?: string; format?: string },
+  hints: { category?: string; format?: string; region?: string },
 ): Promise<ArticleDraft> {
   const hintText =
     [
       hints.category && `Preferred category: ${hints.category}`,
       hints.format && `Preferred format: ${hints.format}`,
+      hints.region && `Target region: ${hints.region}`,
     ]
       .filter(Boolean)
       .join("\n") || "";
@@ -189,7 +195,7 @@ async function draftArticle(
             },
             category: {
               type: "string",
-              enum: ["AI", "Finance", "Tech", "Startups", "Briefings"],
+              enum: ["AI", "Finance", "Tech", "Startups", "Briefings", "India", "International"],
             },
             format: {
               type: "string",
@@ -199,6 +205,11 @@ async function draftArticle(
                 "DeepDive",
                 "SocialPost",
               ],
+            },
+            region: {
+              type: "string",
+              enum: ["IN", "US", "GLOBAL"],
+              description: "Geographic audience: IN (India), US (United States), GLOBAL (cross-regional)",
             },
             quickTake: {
               type: "string",
@@ -227,6 +238,7 @@ async function draftArticle(
             "deck",
             "category",
             "format",
+            "region",
             "quickTake",
             "whyItMatters",
             "takeaways",
@@ -257,8 +269,9 @@ async function draftArticle(
 
 // ─── Main ────────────────────────────────────────────────────────────────────
 
-const ALLOWED_CATEGORIES = ["AI", "Finance", "Tech", "Startups", "Briefings"] as const;
+const ALLOWED_CATEGORIES = ["AI", "Finance", "Tech", "Startups", "Briefings", "India", "International"] as const;
 const ALLOWED_FORMATS = ["QuickNews", "SmartBreakdown", "DeepDive", "SocialPost"] as const;
+const ALLOWED_REGIONS = ["IN", "US", "GLOBAL"] as const;
 
 function normalizeEnum<T extends string>(
   value: string | undefined,
@@ -275,13 +288,14 @@ function normalizeEnum<T extends string>(
 }
 
 async function main() {
-  const { topic, url, category, format, dryRun } = parseArgs(process.argv);
+  const { topic, url, category, format, region, dryRun } = parseArgs(process.argv);
 
   if (!topic && !url) {
     console.error("Usage: npm run draft -- --topic \"...\" | --url \"https://...\"");
     console.error("Exactly one of --topic or --url must be provided.");
-    console.error("Options: --category AI|Finance|Tech|Startups|Briefings");
+    console.error("Options: --category AI|Finance|Tech|Startups|Briefings|India|International");
     console.error("         --format QuickNews|SmartBreakdown|DeepDive|SocialPost");
+    console.error("         --region IN|US|GLOBAL  (default: GLOBAL)");
     console.error("         --dry-run   (print MDX to stdout, don't write file)");
     process.exit(1);
   }
@@ -293,6 +307,7 @@ async function main() {
 
   const normalizedCategory = normalizeEnum(category, ALLOWED_CATEGORIES, "category");
   const normalizedFormat = normalizeEnum(format, ALLOWED_FORMATS, "format");
+  const normalizedRegion = normalizeEnum(region, ALLOWED_REGIONS, "region") ?? "GLOBAL";
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -316,6 +331,7 @@ async function main() {
   const draft = await draftArticle(client, inputText, {
     category: normalizedCategory,
     format: normalizedFormat,
+    region: normalizedRegion,
   });
 
   const publishedAt = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
@@ -349,6 +365,7 @@ async function main() {
   console.log(`Title:   ${draft.title}`);
   console.log(`Slug:    ${draft.slug}`);
   console.log(`Cat:     ${draft.category} / ${draft.format}`);
+  console.log(`Region:  ${draft.region}`);
 }
 
 main().catch((err) => {

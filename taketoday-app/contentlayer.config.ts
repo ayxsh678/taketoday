@@ -29,7 +29,12 @@ export const Article = defineDocumentType(() => ({
     deck: { type: "string", required: true },
     category: {
       type: "enum",
-      options: ["AI", "Finance", "Tech", "Startups", "Briefings"],
+      options: ["AI", "Finance", "Tech", "Startups", "Briefings", "India", "International"],
+      required: true,
+    },
+    region: {
+      type: "enum",
+      options: ["IN", "US", "GLOBAL"],
       required: true,
     },
     format: {

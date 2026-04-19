@@ -32,7 +32,16 @@ export type ISODateString = string;
 export type MDXSource = string;
 
 /* ───────────────────────────────────────────────────────────────────────── */
-/* 1. Category                                                               */
+/* 1. Region                                                                 */
+/* ───────────────────────────────────────────────────────────────────────── */
+
+/** Geographic target of an article. "GLOBAL" surfaces to all users. */
+export type Region = "IN" | "US" | "GLOBAL";
+
+export const REGIONS: readonly Region[] = ["IN", "US", "GLOBAL"] as const;
+
+/* ───────────────────────────────────────────────────────────────────────── */
+/* 2. Category                                                               */
 /* ───────────────────────────────────────────────────────────────────────── */
 
 export type Category =
@@ -40,7 +49,9 @@ export type Category =
   | "Finance"
   | "Tech"
   | "Startups"
-  | "Briefings";
+  | "Briefings"
+  | "India"
+  | "International";
 
 export const CATEGORIES: readonly Category[] = [
   "AI",
@@ -48,10 +59,12 @@ export const CATEGORIES: readonly Category[] = [
   "Tech",
   "Startups",
   "Briefings",
+  "India",
+  "International",
 ] as const;
 
 /* ───────────────────────────────────────────────────────────────────────── */
-/* 2. ContentFormat                                                          */
+/* 3. ContentFormat                                                          */
 /* ───────────────────────────────────────────────────────────────────────── */
 
 export type ContentFormat =
@@ -71,7 +84,7 @@ export const FORMAT_WORD_LIMITS: Readonly<
 } as const;
 
 /* ───────────────────────────────────────────────────────────────────────── */
-/* 3. Author                                                                 */
+/* 4. Author                                                                 */
 /* ───────────────────────────────────────────────────────────────────────── */
 
 export type AuthorType = "Organization" | "Person";
@@ -82,7 +95,7 @@ export type Author = Readonly<{
 }>;
 
 /* ───────────────────────────────────────────────────────────────────────── */
-/* 4. ArticleMetadata                                                        */
+/* 5. ArticleMetadata                                                        */
 /* ───────────────────────────────────────────────────────────────────────── */
 
 export type ArticleMetadata = Readonly<{
@@ -92,6 +105,7 @@ export type ArticleMetadata = Readonly<{
   deck: string;
   category: Category;
   format: ContentFormat;
+  region: Region;
   /** Human-readable read time, e.g. `"3 min read"`. */
   readTime: string;
   publishedAt: ISODateString;
@@ -101,7 +115,7 @@ export type ArticleMetadata = Readonly<{
 }>;
 
 /* ───────────────────────────────────────────────────────────────────────── */
-/* 5. ArticleContent                                                         */
+/* 6. ArticleContent                                                         */
 /* ───────────────────────────────────────────────────────────────────────── */
 
 /** Exactly three takeaways — enforced at the type level. */
@@ -117,7 +131,7 @@ export type ArticleContent = Readonly<{
 }>;
 
 /* ───────────────────────────────────────────────────────────────────────── */
-/* 6. Article (Main)                                                         */
+/* 7. Article (Main)                                                         */
 /* ───────────────────────────────────────────────────────────────────────── */
 
 export type Article = Readonly<{
@@ -126,7 +140,7 @@ export type Article = Readonly<{
 }>;
 
 /* ───────────────────────────────────────────────────────────────────────── */
-/* 7. FeedItem — lightweight projection for homepage & lists                 */
+/* 8. FeedItem — lightweight projection for homepage & lists                 */
 /* ───────────────────────────────────────────────────────────────────────── */
 
 export type FeedItem = Readonly<{
@@ -139,7 +153,7 @@ export type FeedItem = Readonly<{
 }>;
 
 /* ───────────────────────────────────────────────────────────────────────── */
-/* 8. AI Output Types                                                        */
+/* 9. AI Output Types                                                        */
 /* ───────────────────────────────────────────────────────────────────────── */
 
 /** Single-sentence TL;DR produced by the AI pipeline. */
