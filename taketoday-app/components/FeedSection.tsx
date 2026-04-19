@@ -1,4 +1,5 @@
 import { NewsCard } from "@/components/NewsCard";
+import { SectionShell } from "@/components/SectionShell";
 import { CATEGORIES, type Article, type Category } from "@/types/article";
 
 export type FeedSectionProps = Readonly<{
@@ -9,10 +10,7 @@ const FILTERS: readonly (Category | "All")[] = ["All", ...CATEGORIES];
 
 export function FeedSection({ items }: FeedSectionProps) {
   return (
-    <section
-      aria-labelledby="feed-heading"
-      className="mx-auto max-w-[1400px] px-6 lg:px-10 py-20 lg:py-28 border-t border-ink-200/70"
-    >
+    <SectionShell labelledBy="feed-heading">
       <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-12 lg:mb-16">
         <h2
           id="feed-heading"
@@ -71,16 +69,13 @@ export function FeedSection({ items }: FeedSectionProps) {
           Load more
         </button>
       </div>
-    </section>
+    </SectionShell>
   );
 }
 
 export function FeedSectionSkeleton() {
   return (
-    <section
-      aria-hidden
-      className="mx-auto max-w-[1400px] px-6 lg:px-10 py-20 lg:py-28 border-t border-ink-200/70"
-    >
+    <SectionShell ariaHidden>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-12 lg:mb-16">
         <div className="h-9 w-24 rounded bg-ink-100 animate-pulse" />
@@ -113,6 +108,6 @@ export function FeedSectionSkeleton() {
           </div>
         ))}
       </div>
-    </section>
+    </SectionShell>
   );
 }

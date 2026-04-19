@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { NewsCard } from "@/components/NewsCard";
+import { SectionShell } from "@/components/SectionShell";
 import type { Article } from "@/types/article";
 
 export type FeaturedSectionProps = Readonly<{
@@ -10,10 +11,7 @@ export type FeaturedSectionProps = Readonly<{
 export function FeaturedSection({ lead, side }: FeaturedSectionProps) {
   const m = lead.metadata;
   return (
-    <section
-      aria-labelledby="lead-heading"
-      className="mx-auto max-w-[1400px] px-6 lg:px-10 py-20 lg:py-28 border-t border-ink-200/70"
-    >
+    <SectionShell labelledBy="lead-heading">
       <header className="flex items-end justify-between mb-12 lg:mb-16">
         <h2
           id="lead-heading"
@@ -85,16 +83,13 @@ export function FeaturedSection({ lead, side }: FeaturedSectionProps) {
           ))}
         </div>
       </div>
-    </section>
+    </SectionShell>
   );
 }
 
 export function FeaturedSectionSkeleton() {
   return (
-    <section
-      aria-hidden
-      className="mx-auto max-w-[1400px] px-6 lg:px-10 py-20 lg:py-28 border-t border-ink-200/70"
-    >
+    <SectionShell ariaHidden>
       {/* Header */}
       <div className="flex items-end justify-between mb-12 lg:mb-16">
         <div className="h-9 w-28 rounded bg-ink-100 animate-pulse" />
@@ -137,6 +132,6 @@ export function FeaturedSectionSkeleton() {
           ))}
         </div>
       </div>
-    </section>
+    </SectionShell>
   );
 }

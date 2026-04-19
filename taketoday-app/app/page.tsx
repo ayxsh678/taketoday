@@ -11,22 +11,19 @@ import {
 import { IntelligenceStrip } from "@/components/IntelligenceStrip";
 import { getAllArticles, getFeaturedArticles } from "@/lib/content/queries";
 
-/**
- * Async server components — own their data fetching so Suspense can stream
- * each section independently. FeaturedSection / FeedSection still take props.
- */
-async function FeaturedLoader() {
-  const featured = getFeaturedArticles(4);
+const FEATURED_ARTICLE_COUNT = 4;
+
+function FeaturedLoader() {
+  const featured = getFeaturedArticles(FEATURED_ARTICLE_COUNT);
   const lead = featured[0];
   const side = featured.slice(1);
   if (!lead) return null;
   return <FeaturedSection lead={lead} side={side} />;
 }
 
-async function FeedLoader() {
+function FeedLoader({ featuredCount }: { featuredCount: number }) {
   const all = getAllArticles();
-  const featured = getFeaturedArticles(4);
-  const feed = all.slice(featured.length);
+  const feed = all.slice(featuredCount);
   return <FeedSection items={feed} />;
 }
 
@@ -38,7 +35,7 @@ export default function Home() {
         <FeaturedLoader />
       </Suspense>
       <Suspense fallback={<FeedSectionSkeleton />}>
-        <FeedLoader />
+        <FeedLoader featuredCount={FEATURED_ARTICLE_COUNT} />
       </Suspense>
       <IntelligenceStrip />
     </>
