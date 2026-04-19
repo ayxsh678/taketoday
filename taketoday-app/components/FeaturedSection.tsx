@@ -1,15 +1,7 @@
 import Link from "next/link";
 import { NewsCard } from "@/components/NewsCard";
+import { SectionShell } from "@/components/SectionShell";
 import type { Article } from "@/types/article";
-
-/**
- * TakeToday — The Lead
- * 7/5 grid at desktop: a single large "lead" story on the left, three
- * stacked inline stories on the right. Mobile stacks everything.
- *
- * Fully data-driven — takes articles as props. The parent route is
- * responsible for picking the lead + side via `getFeaturedArticles`.
- */
 
 export type FeaturedSectionProps = Readonly<{
   lead: Article;
@@ -19,11 +11,8 @@ export type FeaturedSectionProps = Readonly<{
 export function FeaturedSection({ lead, side }: FeaturedSectionProps) {
   const m = lead.metadata;
   return (
-    <section
-      aria-labelledby="lead-heading"
-      className="mx-auto max-w-[1400px] px-6 lg:px-10 py-16 border-t border-ink-200/70"
-    >
-      <header className="flex items-end justify-between mb-10">
+    <SectionShell labelledBy="lead-heading">
+      <header className="flex items-end justify-between mb-12 lg:mb-16">
         <h2
           id="lead-heading"
           className="font-serif italic text-[32px] lg:text-[40px] tracking-tight text-ink"
@@ -38,7 +27,7 @@ export function FeaturedSection({ lead, side }: FeaturedSectionProps) {
         </Link>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
         {/* Lead */}
         <article className="lg:col-span-7 group">
           <Link href={`/article/${m.slug}`} className="block">
@@ -59,15 +48,15 @@ export function FeaturedSection({ lead, side }: FeaturedSectionProps) {
               </span>
               <span className="text-ink-500">{m.readTime}</span>
             </div>
-            <h3 className="mt-4 font-serif text-[42px] lg:text-[52px] leading-[1.02] tracking-[-0.02em] text-ink group-hover:text-ink-700 transition-colors text-balance">
+            <h3 className="mt-5 font-serif text-[44px] lg:text-[58px] leading-[1.02] tracking-[-0.02em] text-ink group-hover:text-ink-700 transition-colors text-balance">
               {m.title}
             </h3>
-            <p className="mt-4 max-w-xl text-[16px] leading-relaxed text-ink-500">
+            <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-ink-500">
               {lead.content.quickTake}
             </p>
             <time
               dateTime={m.publishedAt}
-              className="mt-5 block font-mono text-[10px] tracking-[0.18em] uppercase text-ink-400"
+              className="mt-6 block font-mono text-[10px] tracking-[0.18em] uppercase text-ink-400"
             >
               {new Date(m.publishedAt).toLocaleDateString("en-US", {
                 month: "short",
@@ -94,6 +83,55 @@ export function FeaturedSection({ lead, side }: FeaturedSectionProps) {
           ))}
         </div>
       </div>
-    </section>
+    </SectionShell>
+  );
+}
+
+export function FeaturedSectionSkeleton() {
+  return (
+    <SectionShell ariaHidden>
+      {/* Header */}
+      <div className="flex items-end justify-between mb-12 lg:mb-16">
+        <div className="h-9 w-28 rounded bg-ink-100 animate-pulse" />
+        <div className="h-3 w-24 rounded bg-ink-100 animate-pulse" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
+        {/* Lead skeleton */}
+        <div className="lg:col-span-7 space-y-5">
+          <div className="aspect-[16/10] rounded-sm bg-ink-100 animate-pulse" />
+          <div className="h-3 w-24 rounded bg-ink-100 animate-pulse" />
+          <div className="space-y-3">
+            <div className="h-12 rounded bg-ink-100 animate-pulse" />
+            <div className="h-12 w-5/6 rounded bg-ink-100 animate-pulse" />
+            <div className="h-12 w-2/3 rounded bg-ink-100 animate-pulse" />
+          </div>
+          <div className="space-y-2 pt-1">
+            <div className="h-4 rounded bg-ink-100 animate-pulse" />
+            <div className="h-4 rounded bg-ink-100 animate-pulse" />
+            <div className="h-4 w-3/4 rounded bg-ink-100 animate-pulse" />
+          </div>
+          <div className="h-3 w-20 rounded bg-ink-100 animate-pulse" />
+        </div>
+
+        {/* Side stack skeleton — 3 inline cards */}
+        <div className="lg:col-span-5 divide-y divide-ink-200/70">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="py-6 first:pt-0 space-y-3">
+              <div className="h-3 w-20 rounded bg-ink-100 animate-pulse" />
+              <div className="space-y-2">
+                <div className="h-5 rounded bg-ink-100 animate-pulse" />
+                <div className="h-5 w-4/5 rounded bg-ink-100 animate-pulse" />
+              </div>
+              <div className="space-y-1.5">
+                <div className="h-3 rounded bg-ink-100 animate-pulse" />
+                <div className="h-3 w-2/3 rounded bg-ink-100 animate-pulse" />
+              </div>
+              <div className="h-3 w-16 rounded bg-ink-100 animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </SectionShell>
   );
 }

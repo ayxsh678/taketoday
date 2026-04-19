@@ -1,12 +1,6 @@
 import { NewsCard } from "@/components/NewsCard";
+import { SectionShell } from "@/components/SectionShell";
 import { CATEGORIES, type Article, type Category } from "@/types/article";
-
-/**
- * TakeToday — Feed
- * Filter pills (UI only for now) → 1/2/3-col grid of NewsCards → Load more.
- * Server component; no state. Accepts articles as props so the homepage
- * route owns data access.
- */
 
 export type FeedSectionProps = Readonly<{
   items: readonly Article[];
@@ -16,11 +10,8 @@ const FILTERS: readonly (Category | "All")[] = ["All", ...CATEGORIES];
 
 export function FeedSection({ items }: FeedSectionProps) {
   return (
-    <section
-      aria-labelledby="feed-heading"
-      className="mx-auto max-w-[1400px] px-6 lg:px-10 py-16 border-t border-ink-200/70"
-    >
-      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-10">
+    <SectionShell labelledBy="feed-heading">
+      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-12 lg:mb-16">
         <h2
           id="feed-heading"
           className="font-serif italic text-[32px] lg:text-[40px] tracking-tight text-ink"
@@ -54,7 +45,7 @@ export function FeedSection({ items }: FeedSectionProps) {
       {items.length === 0 ? (
         <p className="text-[14px] text-ink-500">No stories yet. Check back soon.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">
           {items.map((a) => (
             <NewsCard
               key={a.metadata.slug}
@@ -70,7 +61,7 @@ export function FeedSection({ items }: FeedSectionProps) {
         </div>
       )}
 
-      <div className="mt-14 flex justify-center">
+      <div className="mt-16 lg:mt-20 flex justify-center">
         <button
           type="button"
           className="inline-flex items-center rounded-full border border-ink-300 text-ink px-5 py-2.5 text-[13px] font-medium tracking-wide hover:border-ink hover:bg-ink hover:text-paper transition-colors"
@@ -78,6 +69,45 @@ export function FeedSection({ items }: FeedSectionProps) {
           Load more
         </button>
       </div>
-    </section>
+    </SectionShell>
+  );
+}
+
+export function FeedSectionSkeleton() {
+  return (
+    <SectionShell ariaHidden>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-12 lg:mb-16">
+        <div className="h-9 w-24 rounded bg-ink-100 animate-pulse" />
+        <div className="flex flex-wrap gap-2">
+          {[80, 48, 56, 64, 72, 52].map((w, i) => (
+            <div
+              key={i}
+              className="h-7 rounded-full bg-ink-100 animate-pulse"
+              style={{ width: w }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Grid of 6 card skeletons */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="space-y-4">
+            <div className="h-3 w-20 rounded bg-ink-100 animate-pulse" />
+            <div className="space-y-2">
+              <div className="h-6 rounded bg-ink-100 animate-pulse" />
+              <div className="h-6 w-4/5 rounded bg-ink-100 animate-pulse" />
+            </div>
+            <div className="space-y-1.5">
+              <div className="h-3.5 rounded bg-ink-100 animate-pulse" />
+              <div className="h-3.5 rounded bg-ink-100 animate-pulse" />
+              <div className="h-3.5 w-2/3 rounded bg-ink-100 animate-pulse" />
+            </div>
+            <div className="h-3 w-16 rounded bg-ink-100 animate-pulse" />
+          </div>
+        ))}
+      </div>
+    </SectionShell>
   );
 }
