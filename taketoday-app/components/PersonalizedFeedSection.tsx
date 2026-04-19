@@ -3,26 +3,108 @@
 /**
  * TakeToday — PersonalizedFeedSection
  *
- * Client wrapper around FeedSection. Receives all articles from the server
- * as props (server-first), then filters and re-ranks them client-side:
- *   1. Local articles (region matches user's country) — shown first, ranked by affinity
- *   2. Global articles (region === "GLOBAL") — shown after, ranked by affinity
+ * Renders three distinct feed sections, hydrated from localStorage + cookies:
  *
- * Server renders the skeleton → client hydrates with geo-personalised order.
- * No API calls, no loading states — purely localStorage + navigator derived.
+ *   1. For You     — articles matching user's region (local), ranked by affinity
+ *   2. International — GLOBAL articles, ranked by affinity
+ *   3. The Feed    — all remaining articles with category filter tabs
+ *
+ * Server renders skeletons → client hydrates with geo + preference-aware order.
+ * No API calls, no loading states.
  */
 
 import type { Article } from "@/types/article";
+import { NewsCard } from "@/components/NewsCard";
 import { FeedSection } from "@/components/FeedSection";
+import { SectionShell } from "@/components/SectionShell";
 import { usePersonalization } from "@/hooks/usePersonalization";
 
 interface Props {
   articles: readonly Article[];
 }
 
+const COUNTRY_LABELS: Record<string, string> = {
+  IN: "India",
+  US: "United States",
+};
+
+function ArticleGrid({ items }: { items: readonly Article[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">
+      {items.slice(0, 6).map((a) => (
+        <NewsCard
+          key={a.metadata.slug}
+          slug={a.metadata.slug}
+          title={a.metadata.title}
+          summary={a.content.quickTake}
+          category={a.metadata.category}
+          readTime={a.metadata.readTime}
+          publishedAt={a.metadata.publishedAt}
+          variant="grid"
+        />
+      ))}
+    </div>
+  );
+}
+
 export function PersonalizedFeedSection({ articles }: Props) {
-  const { localArticles, globalArticles } = usePersonalization(articles);
-  // Local articles surface first; global fills the rest of the feed.
-  const feed = [...localArticles, ...globalArticles];
-  return <FeedSection items={feed} />;
+  const { localArticles, globalArticles, recommendedArticles, userCountry } =
+    usePersonalization(articles);
+
+  const countryLabel = COUNTRY_LABELS[userCountry] ?? userCountry;
+
+  // Articles shown in For You + International sections (avoid duplication in The Feed).
+  const featuredSlugs = new Set([
+    ...localArticles.slice(0, 6).map((a) => a.metadata.slug),
+    ...globalArticles.slice(0, 6).map((a) => a.metadata.slug),
+  ]);
+  const remainingArticles = recommendedArticles.filter(
+    (a) => !featuredSlugs.has(a.metadata.slug),
+  );
+
+  return (
+    <>
+      {/* For You — local articles */}
+      {localArticles.length > 0 && (
+        <SectionShell labelledBy="for-you-heading">
+          <header className="mb-12 lg:mb-16">
+            <h2
+              id="for-you-heading"
+              className="font-serif italic text-[32px] lg:text-[40px] tracking-tight text-ink"
+            >
+              For You
+            </h2>
+            <p className="mt-1 font-mono text-[10px] tracking-[0.18em] uppercase text-ink-400">
+              {countryLabel} · {localArticles.length}{" "}
+              {localArticles.length === 1 ? "story" : "stories"}
+            </p>
+          </header>
+          <ArticleGrid items={localArticles} />
+        </SectionShell>
+      )}
+
+      {/* International — GLOBAL articles */}
+      {globalArticles.length > 0 && (
+        <SectionShell labelledBy="international-heading">
+          <header className="mb-12 lg:mb-16">
+            <h2
+              id="international-heading"
+              className="font-serif italic text-[32px] lg:text-[40px] tracking-tight text-ink"
+            >
+              International
+            </h2>
+            <p className="mt-1 font-mono text-[10px] tracking-[0.18em] uppercase text-ink-400">
+              Global · {globalArticles.length}{" "}
+              {globalArticles.length === 1 ? "story" : "stories"}
+            </p>
+          </header>
+          <ArticleGrid items={globalArticles} />
+        </SectionShell>
+      )}
+
+      {/* The Feed — remaining articles with category filter tabs */}
+      <FeedSection items={remainingArticles.length > 0 ? remainingArticles : recommendedArticles} />
+    </>
+  );
 }

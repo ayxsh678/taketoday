@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { SearchButton } from "@/components/SearchButton";
+import { NavbarControls } from "@/components/NavbarControls";
 
 /**
  * TakeToday — Global Navbar
@@ -64,6 +65,7 @@ export function Navbar({ showTicker = true }: { showTicker?: boolean }) {
 
         {/* Actions */}
         <div className="flex items-center gap-3">
+          <NavbarControls />
           <SearchButton />
           <Link
             href="/subscribe"
