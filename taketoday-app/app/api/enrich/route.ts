@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "node:fs";
-import path from "node:path";
-import matter from "gray-matter";
 import { enrichArticle } from "@/lib/pipeline/enrichArticle";
+import { readRawArticle, writeEnrichedFields } from "@/lib/pipeline/articleFile";
 
 /**
  * POST /api/enrich
@@ -36,27 +34,25 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const articlePath = path.join(
-    process.cwd(),
-    "content",
-    "articles",
-    `${slug}.mdx`,
-  );
-
-  if (!fs.existsSync(articlePath)) {
+  // readRawArticle calls validateSlug internally — rejects path traversal,
+  // separators, dots, and anything outside [a-z0-9-] before touching the fs.
+  let raw;
+  try {
+    raw = await readRawArticle(slug);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const isNotFound = message.startsWith("Article not found");
+    const isInvalidSlug = message.startsWith("Invalid slug");
     return NextResponse.json(
-      { error: `Article not found: ${slug}` },
-      { status: 404 },
+      { error: message },
+      { status: isNotFound ? 404 : isInvalidSlug ? 400 : 500 },
     );
   }
-
-  const raw = fs.readFileSync(articlePath, "utf8");
-  const file = matter(raw);
 
   let result;
   try {
     result = await enrichArticle(
-      { frontmatter: file.data, body: file.content },
+      { frontmatter: raw.frontmatter, body: raw.body },
       { force: force === true },
     );
   } catch (err) {
@@ -65,14 +61,12 @@ export async function POST(req: NextRequest) {
   }
 
   if (result.generated.length > 0) {
-    const updatedData: Record<string, unknown> = {
-      ...file.data,
-      quickTake: result.quickTake,
-      whyItMatters: result.whyItMatters,
-      takeaways: Array.from(result.takeaways),
-    };
-    const updatedMdx = matter.stringify(file.content, updatedData);
-    fs.writeFileSync(articlePath, updatedMdx, "utf8");
+    try {
+      await writeEnrichedFields(raw.articlePath, raw.frontmatter, raw.body, result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return NextResponse.json({ error: `Failed to write file: ${message}` }, { status: 500 });
+    }
   }
 
   return NextResponse.json({
