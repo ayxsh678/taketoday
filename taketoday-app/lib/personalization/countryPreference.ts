@@ -12,18 +12,18 @@ export function getCountryPreference(): UserCountry | null {
   const match = document.cookie.match(
     new RegExp(`(?:^|; )${COOKIE_KEY}=([^;]+)`),
   );
-  const val = match?.[1];
+  const val = match?.[1] ? decodeURIComponent(match[1]) : undefined;
   return val === "IN" || val === "US" ? val : null;
 }
 
 /** Persists the user's country choice in a long-lived cookie. */
 export function setCountryPreference(country: UserCountry): void {
   if (typeof document === "undefined") return;
-  document.cookie = `${COOKIE_KEY}=${country}; max-age=${MAX_AGE}; path=/; SameSite=Lax`;
+  document.cookie = `${COOKIE_KEY}=${encodeURIComponent(country)}; max-age=${MAX_AGE}; path=/; SameSite=Lax; Secure`;
 }
 
 /** Clears the manual override — auto-detection resumes. */
 export function clearCountryPreference(): void {
   if (typeof document === "undefined") return;
-  document.cookie = `${COOKIE_KEY}=; max-age=0; path=/; SameSite=Lax`;
+  document.cookie = `${COOKIE_KEY}=; max-age=0; path=/; SameSite=Lax; Secure`;
 }
