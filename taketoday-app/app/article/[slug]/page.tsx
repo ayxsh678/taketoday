@@ -9,14 +9,13 @@ import {
   getAllArticles,
   getArticle,
 } from "@/lib/content/queries";
+import { SITE, abs } from "@/lib/site";
 
 /**
  * TakeToday — Dynamic Article Route
  * Statically generated at build time via `generateStaticParams`.
  * The MDX body is compiled on the server (RSC) so nothing ships to the client.
  */
-
-const SITE_URL = "https://taketoday.vercel.app";
 
 export function generateStaticParams(): { slug: string }[] {
   return getAllArticles().map((a) => ({ slug: a.metadata.slug }));
@@ -34,14 +33,14 @@ export async function generateMetadata({
   const { title, deck, publishedAt, updatedAt, author, category } = a.metadata;
 
   return {
-    metadataBase: new URL(SITE_URL),
-    title: `${title} — TakeToday`,
+    metadataBase: new URL(SITE.url),
+    title: `${title} — ${SITE.name}`,
     description: deck,
     openGraph: {
       title,
       description: deck,
       type: "article",
-      siteName: "TakeToday",
+      siteName: SITE.name,
       publishedTime: publishedAt,
       modifiedTime: updatedAt ?? publishedAt,
       authors: [author.name],
@@ -71,18 +70,18 @@ export default async function ArticlePage({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE.url },
       {
         "@type": "ListItem",
         position: 2,
         name: article.metadata.category,
-        item: `${SITE_URL}/category/${article.metadata.category.toLowerCase()}`,
+        item: abs(`/category/${article.metadata.category.toLowerCase()}`),
       },
       {
         "@type": "ListItem",
         position: 3,
         name: article.metadata.title,
-        item: `${SITE_URL}/article/${article.metadata.slug}`,
+        item: abs(`/article/${article.metadata.slug}`),
       },
     ],
   };
