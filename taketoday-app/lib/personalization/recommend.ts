@@ -77,7 +77,7 @@ export function rankArticles(
   articles: readonly Article[],
   history: ReadEntry[],
 ): readonly Article[] {
-  if (history.length === 0) return articles;
+  if (history.length === 0) return [...articles];
 
   const readSlugs = new Set(history.map((e) => e.slug));
   const weights = computeCategoryWeights(history);

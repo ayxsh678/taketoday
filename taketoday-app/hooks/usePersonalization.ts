@@ -17,6 +17,7 @@ import {
   loadPersonalizationData,
   trackArticleRead,
   type ReadEntry,
+  MAX_HISTORY,
 } from "@/lib/personalization/storage";
 import {
   rankArticles,
@@ -53,8 +54,17 @@ export function usePersonalization(
   }, []);
 
   const trackRead = useCallback((slug: string, category: Category) => {
+    // Persist to localStorage.
     trackArticleRead(slug, category);
-    setHistory(loadPersonalizationData().recentlyRead);
+    // Update React state directly from the previous value — no extra
+    // localStorage read needed.
+    setHistory((prev) => {
+      const filtered = prev.filter((e) => e.slug !== slug);
+      return [{ slug, category, readAt: Date.now() }, ...filtered].slice(
+        0,
+        MAX_HISTORY,
+      );
+    });
   }, []);
 
   return {

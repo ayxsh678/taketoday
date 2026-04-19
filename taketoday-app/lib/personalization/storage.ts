@@ -8,7 +8,7 @@
 import type { Category } from "@/types/article";
 
 const STORAGE_KEY = "tt_personalization_v1";
-const MAX_HISTORY = 50; // keep the 50 most-recent reads
+export const MAX_HISTORY = 50; // keep the 50 most-recent reads
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -37,7 +37,16 @@ export function loadPersonalizationData(): PersonalizationData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return EMPTY;
-    return JSON.parse(raw) as PersonalizationData;
+    const parsed = JSON.parse(raw) as unknown;
+    // Guard against malformed or partially-migrated stored values.
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      !Array.isArray((parsed as Record<string, unknown>).recentlyRead)
+    ) {
+      return EMPTY;
+    }
+    return parsed as PersonalizationData;
   } catch {
     return EMPTY;
   }
