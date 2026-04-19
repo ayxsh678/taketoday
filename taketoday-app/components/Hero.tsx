@@ -19,7 +19,7 @@ export function Hero() {
   return (
     <section
       aria-labelledby="hero-headline"
-      className="mx-auto max-w-[1400px] px-6 lg:px-10 pt-20 lg:pt-28 pb-16 lg:pb-24"
+      className="mx-auto max-w-[1400px] px-6 lg:px-10 pt-20 lg:pt-28 pb-20 lg:pb-28"
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
         {/* Headline */}
@@ -33,7 +33,7 @@ export function Hero() {
           </p>
           <h1
             id="hero-headline"
-            className="mt-6 text-[68px] sm:text-[96px] lg:text-[128px] leading-[0.88] tracking-[-0.04em] text-ink text-balance"
+            className="mt-8 text-[68px] sm:text-[96px] lg:text-[128px] leading-[0.88] tracking-[-0.04em] text-ink text-balance"
           >
             News.
             <br />

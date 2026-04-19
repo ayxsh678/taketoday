@@ -34,18 +34,18 @@ export function NewsCard({
 
   if (variant === "inline") {
     return (
-      <article className="group py-5 first:pt-0 border-b border-ink-200/70 last:border-0">
+      <article className="group py-6 first:pt-0 border-b border-ink-200/70 last:border-0">
         <Link href={href} className="block">
           <Meta category={category} readTime={readTime} />
-          <h3 className="mt-2 text-[18px] leading-snug tracking-tight text-ink group-hover:text-ink-700 transition-colors text-balance">
+          <h3 className="mt-3 text-[19px] leading-snug tracking-tight text-ink group-hover:text-ink-700 transition-colors text-balance">
             {title}
           </h3>
-          <p className="mt-2 text-[13px] leading-relaxed text-ink-500 clamp-2">
+          <p className="mt-2.5 text-[13px] leading-relaxed text-ink-500 clamp-2">
             {summary}
           </p>
           <time
             dateTime={publishedAt}
-            className="mt-3 block font-mono text-[10px] tracking-[0.18em] uppercase text-ink-400"
+            className="mt-3.5 block font-mono text-[10px] tracking-[0.18em] uppercase text-ink-400"
           >
             {formatDate(date)}
           </time>
@@ -58,15 +58,15 @@ export function NewsCard({
     <article className="group">
       <Link href={href} className="block">
         <Meta category={category} readTime={readTime} />
-        <h3 className="mt-3 text-[22px] leading-[1.15] tracking-tight text-ink group-hover:text-ink-700 transition-colors text-balance">
+        <h3 className="mt-4 text-[23px] leading-[1.15] tracking-tight text-ink group-hover:text-ink-700 transition-colors text-balance">
           {title}
         </h3>
-        <p className="mt-3 text-[14px] leading-relaxed text-ink-500 clamp-3">
+        <p className="mt-4 text-[14px] leading-relaxed text-ink-500 clamp-3">
           {summary}
         </p>
         <time
           dateTime={publishedAt}
-          className="mt-4 block font-mono text-[10px] tracking-[0.18em] uppercase text-ink-400"
+          className="mt-5 block font-mono text-[10px] tracking-[0.18em] uppercase text-ink-400"
         >
           {formatDate(date)}
         </time>

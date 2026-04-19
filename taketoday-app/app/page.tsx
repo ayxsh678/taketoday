@@ -1,35 +1,45 @@
+import { Suspense } from "react";
 import { Hero } from "@/components/Hero";
-import { FeaturedSection } from "@/components/FeaturedSection";
-import { FeedSection } from "@/components/FeedSection";
-import { IntelligenceStrip } from "@/components/IntelligenceStrip";
 import {
-  getAllArticles,
-  getFeaturedArticles,
-} from "@/lib/content/queries";
+  FeaturedSection,
+  FeaturedSectionSkeleton,
+} from "@/components/FeaturedSection";
+import {
+  FeedSection,
+  FeedSectionSkeleton,
+} from "@/components/FeedSection";
+import { IntelligenceStrip } from "@/components/IntelligenceStrip";
+import { getAllArticles, getFeaturedArticles } from "@/lib/content/queries";
 
 /**
- * TakeToday — Homepage
- * Hero → The Lead → The Feed → Intelligence Strip.
- * Content comes from MDX files in `content/articles/` via the query layer.
- * Rendering order:
- *   - Lead      = newest article
- *   - Side rail = next 3
- *   - Feed      = every remaining article
+ * Async server components — own their data fetching so Suspense can stream
+ * each section independently. FeaturedSection / FeedSection still take props.
  */
-export default function Home() {
+async function FeaturedLoader() {
   const featured = getFeaturedArticles(4);
-  const all = getAllArticles();
-
   const lead = featured[0];
   const side = featured.slice(1);
-  // Rest of the feed = everything not already surfaced in The Lead.
-  const feed = all.slice(featured.length);
+  if (!lead) return null;
+  return <FeaturedSection lead={lead} side={side} />;
+}
 
+async function FeedLoader() {
+  const all = getAllArticles();
+  const featured = getFeaturedArticles(4);
+  const feed = all.slice(featured.length);
+  return <FeedSection items={feed} />;
+}
+
+export default function Home() {
   return (
     <>
       <Hero />
-      {lead && <FeaturedSection lead={lead} side={side} />}
-      <FeedSection items={feed} />
+      <Suspense fallback={<FeaturedSectionSkeleton />}>
+        <FeaturedLoader />
+      </Suspense>
+      <Suspense fallback={<FeedSectionSkeleton />}>
+        <FeedLoader />
+      </Suspense>
       <IntelligenceStrip />
     </>
   );
