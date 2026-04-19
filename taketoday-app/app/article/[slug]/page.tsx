@@ -10,6 +10,7 @@ import {
   getArticle,
 } from "@/lib/content/queries";
 import { SITE, abs } from "@/lib/site";
+import { TrackPageView } from "@/components/TrackPageView";
 
 /**
  * TakeToday — Dynamic Article Route
@@ -91,6 +92,11 @@ export default async function ArticlePage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      {/* Records this read in localStorage for personalization. Zero UI. */}
+      <TrackPageView
+        slug={article.metadata.slug}
+        category={article.metadata.category}
       />
       <ArticleLayout {...layoutProps} />
     </>
