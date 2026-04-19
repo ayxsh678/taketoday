@@ -6,9 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "draft": "tsx scripts/draft.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.90.0",
     "gray-matter": "^4.0.3",
     "next": "^15.5.4",
     "next-mdx-remote": "^6.0.0",
@@ -16,6 +18,7 @@
     "react-dom": "^19.1.0",
     "reading-time": "^1.5.0",
     "server-only": "^0.0.1",
+    "tsx": "^4.21.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
