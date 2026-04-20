@@ -10,6 +10,7 @@ import {
   getArticle,
 } from "@/lib/content/queries";
 import { SITE, abs } from "@/lib/site";
+import { buildOgImageUrl } from "@/lib/og";
 import { TrackPageView } from "@/components/TrackPageView";
 
 /**
@@ -33,11 +34,7 @@ export async function generateMetadata({
 
   const { title, deck, publishedAt, updatedAt, author, category } = a.metadata;
 
-  const ogImage = `${SITE.url}/api/og?${new URLSearchParams({
-    title,
-    deck,
-    category,
-  }).toString()}`;
+  const ogImage = buildOgImageUrl({ title, deck, category });
 
   return {
     metadataBase: new URL(SITE.url),
@@ -75,11 +72,7 @@ export default async function ArticlePage({
   const { title, deck, publishedAt, updatedAt, author, category, slug: articleSlug } =
     article.metadata;
   const articleUrl = abs(`/article/${articleSlug}`);
-  const ogImage = `${SITE.url}/api/og?${new URLSearchParams({
-    title,
-    deck,
-    category,
-  }).toString()}`;
+  const ogImage = buildOgImageUrl({ title, deck, category });
 
   const newsArticleLd = {
     "@context": "https://schema.org",

@@ -20,15 +20,26 @@ const ACCENT = "#C8553D";
  *   title    — article or page title (required)
  *   deck     — subtitle / description (optional)
  *   category — category label shown as a pill (optional)
- *   type     — "article" | "page" (optional, affects layout)
  *
  * Returns a 1200×630 PNG suitable for og:image / twitter:image.
  */
+
+/** Truncate by grapheme count so surrogate pairs and emoji stay intact. */
+function truncate(str: string, maxGraphemes: number): string {
+  const seg = new Intl.Segmenter();
+  const graphemes = [...seg.segment(str)];
+  if (graphemes.length <= maxGraphemes) return str;
+  return graphemes
+    .slice(0, maxGraphemes)
+    .map((s) => s.segment)
+    .join("");
+}
+
 export function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
 
-  const title = searchParams.get("title")?.slice(0, 120) ?? "TakeToday";
-  const deck = searchParams.get("deck")?.slice(0, 180) ?? "";
+  const title = truncate(searchParams.get("title") ?? "TakeToday", 120);
+  const deck = truncate(searchParams.get("deck") ?? "", 180);
   const category = searchParams.get("category") ?? "";
 
   // Clamp title font size based on length

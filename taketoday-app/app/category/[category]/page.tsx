@@ -5,6 +5,7 @@ import { NewsCard } from "@/components/NewsCard";
 import { CATEGORIES, type Category } from "@/types/article";
 import { getArticlesByCategory } from "@/lib/content/queries";
 import { SITE, abs } from "@/lib/site";
+import { buildOgImageUrl } from "@/lib/og";
 
 /**
  * TakeToday — Category index
@@ -86,7 +87,7 @@ export async function generateMetadata({
       siteName: SITE.name,
       url: canonical,
       images: [{
-        url: `${SITE.url}/api/og?${new URLSearchParams({ title: copy.desk, deck: copy.blurb }).toString()}`,
+        url: buildOgImageUrl({ title: copy.desk, deck: copy.blurb }),
         width: 1200,
         height: 630,
         alt: copy.desk,
@@ -96,7 +97,7 @@ export async function generateMetadata({
       card: "summary_large_image",
       title: `${copy.desk} — ${SITE.name}`,
       description: copy.blurb,
-      images: [`${SITE.url}/api/og?${new URLSearchParams({ title: copy.desk, deck: copy.blurb }).toString()}`],
+      images: [buildOgImageUrl({ title: copy.desk, deck: copy.blurb })],
     },
   };
 }

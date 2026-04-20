@@ -10,13 +10,11 @@ import { PersonalizedFeedSection } from "@/components/PersonalizedFeedSection";
 import { IntelligenceStrip } from "@/components/IntelligenceStrip";
 import { getAllArticles, getFeaturedArticles } from "@/lib/content/queries";
 import { SITE } from "@/lib/site";
+import { buildOgImageUrl } from "@/lib/og";
 
 const FEATURED_ARTICLE_COUNT = 4;
 
-const ogImage = `${SITE.url}/api/og?${new URLSearchParams({
-  title: "TakeToday",
-  deck: SITE.description,
-}).toString()}`;
+const ogImage = buildOgImageUrl({ title: "TakeToday", deck: SITE.description });
 
 export const metadata: Metadata = {
   openGraph: {
