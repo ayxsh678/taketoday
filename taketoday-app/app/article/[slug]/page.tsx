@@ -33,6 +33,12 @@ export async function generateMetadata({
 
   const { title, deck, publishedAt, updatedAt, author, category } = a.metadata;
 
+  const ogImage = `${SITE.url}/api/og?${new URLSearchParams({
+    title,
+    deck,
+    category,
+  }).toString()}`;
+
   return {
     metadataBase: new URL(SITE.url),
     title: `${title} — ${SITE.name}`,
@@ -46,11 +52,13 @@ export async function generateMetadata({
       modifiedTime: updatedAt ?? publishedAt,
       authors: [author.name],
       section: category,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: title }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description: deck,
+      images: [ogImage],
     },
   };
 }
@@ -64,8 +72,39 @@ export default async function ArticlePage({
   const article = getArticle(slug);
   if (!article) notFound();
 
-  const body = <MDXRemote source={article.content.body} />;
-  const layoutProps = articleToLayoutProps(article, body);
+  const { title, deck, publishedAt, updatedAt, author, category, slug: articleSlug } =
+    article.metadata;
+  const articleUrl = abs(`/article/${articleSlug}`);
+  const ogImage = `${SITE.url}/api/og?${new URLSearchParams({
+    title,
+    deck,
+    category,
+  }).toString()}`;
+
+  const newsArticleLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: title,
+    description: deck,
+    datePublished: publishedAt,
+    dateModified: updatedAt ?? publishedAt,
+    url: articleUrl,
+    image: ogImage,
+    author: {
+      "@type": author.type === "Person" ? "Person" : "Organization",
+      name: author.name,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: SITE.name,
+      url: SITE.url,
+    },
+    articleSection: category,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": articleUrl,
+    },
+  };
 
   const breadcrumbLd = {
     "@context": "https://schema.org",
@@ -75,29 +114,33 @@ export default async function ArticlePage({
       {
         "@type": "ListItem",
         position: 2,
-        name: article.metadata.category,
-        item: abs(`/category/${article.metadata.category.toLowerCase()}`),
+        name: category,
+        item: abs(`/category/${category.toLowerCase()}`),
       },
       {
         "@type": "ListItem",
         position: 3,
-        name: article.metadata.title,
-        item: abs(`/article/${article.metadata.slug}`),
+        name: title,
+        item: articleUrl,
       },
     ],
   };
+
+  const body = <MDXRemote source={article.content.body} />;
+  const layoutProps = articleToLayoutProps(article, body);
 
   return (
     <>
       <script
         type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(newsArticleLd) }}
+      />
+      <script
+        type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
       {/* Records this read in localStorage for personalization. Zero UI. */}
-      <TrackPageView
-        slug={article.metadata.slug}
-        category={article.metadata.category}
-      />
+      <TrackPageView slug={articleSlug} category={category} />
       <ArticleLayout {...layoutProps} />
     </>
   );
