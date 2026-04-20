@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   }
 
   const payload: Record<string, unknown> = {
-    email: email.trim().toLowerCase(),
+    email_address: email.trim().toLowerCase(),
     tags: ["taketoday-web"],
   };
   if (name && typeof name === "string" && name.trim()) {

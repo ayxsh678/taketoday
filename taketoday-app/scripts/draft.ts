@@ -16,6 +16,9 @@ import Anthropic from "@anthropic-ai/sdk";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { loadEnv } from "./utils/loadEnv.js";
+
+loadEnv();
 
 // ─── CLI args ────────────────────────────────────────────────────────────────
 

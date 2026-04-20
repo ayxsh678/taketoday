@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "draft": "tsx scripts/draft.ts",
-    "enrich": "tsx scripts/enrich-article.ts"
+    "enrich": "tsx scripts/enrich-article.ts",
+    "newsletter": "tsx scripts/newsletter.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",

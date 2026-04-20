@@ -12,6 +12,10 @@
  *   npx tsx scripts/enrich-article.ts <slug> --force   (regenerate all fields)
  */
 
+import { loadEnv } from "./utils/loadEnv.js";
+
+loadEnv();
+
 import { enrichArticle } from "../lib/pipeline/enrichArticle";
 import { readRawArticle, writeEnrichedFields } from "../lib/pipeline/articleFile";
 import type { EnrichableField, EnrichmentResult } from "../lib/pipeline/enrichArticle";
