@@ -34,6 +34,10 @@ import {
   getLangPreference,
   type SiteLang,
 } from "@/lib/personalization/langPreference";
+import {
+  isUserCountry,
+  isSiteLang,
+} from "@/lib/personalization/preferenceUtils";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -81,13 +85,11 @@ export function usePersonalization(
     function onCountryChanged(e: Event) {
       const next = (e as CustomEvent<string>).detail;
       // "auto" means clear override — fall back to navigator detection.
-      setUserCountry(
-        next === "IN" || next === "US" ? next : getUserCountry(),
-      );
+      setUserCountry(isUserCountry(next) ? next : getUserCountry());
     }
     function onLangChanged(e: Event) {
       const next = (e as CustomEvent<string>).detail;
-      if (next === "en" || next === "hi") setUserLang(next);
+      if (isSiteLang(next)) setUserLang(next);
     }
     window.addEventListener("tt:country-changed", onCountryChanged);
     window.addEventListener("tt:lang-changed", onLangChanged);
