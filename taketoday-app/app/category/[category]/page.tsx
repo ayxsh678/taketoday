@@ -85,11 +85,18 @@ export async function generateMetadata({
       type: "website",
       siteName: SITE.name,
       url: canonical,
+      images: [{
+        url: `${SITE.url}/api/og?${new URLSearchParams({ title: copy.desk, deck: copy.blurb }).toString()}`,
+        width: 1200,
+        height: 630,
+        alt: copy.desk,
+      }],
     },
     twitter: {
       card: "summary_large_image",
       title: `${copy.desk} — ${SITE.name}`,
       description: copy.blurb,
+      images: [`${SITE.url}/api/og?${new URLSearchParams({ title: copy.desk, deck: copy.blurb }).toString()}`],
     },
   };
 }

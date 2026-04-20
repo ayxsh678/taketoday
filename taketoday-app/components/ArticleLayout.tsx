@@ -15,8 +15,8 @@ import type {
  *   4. Why it matters — impact paragraph, dark band
  *   5. Takeaways    — exactly three, numbered
  *
- * Accessibility: every section labelled, time elements machine-readable,
- * JSON-LD NewsArticle schema emitted once per page.
+ * Accessibility: every section labelled, time elements machine-readable.
+ * JSON-LD is emitted by the parent route (app/article/[slug]/page.tsx).
  */
 
 export type ArticleLayoutProps = Readonly<{
@@ -81,35 +81,8 @@ export function ArticleLayout(props: ArticleLayoutProps) {
   const published = new Date(publishedAt);
   const modified = updatedAt ? new Date(updatedAt) : undefined;
 
-  const ldJson = {
-    "@context": "https://schema.org",
-    "@type": "NewsArticle",
-    headline: title,
-    description: deck,
-    datePublished: publishedAt,
-    dateModified: updatedAt ?? publishedAt,
-    author: {
-      "@type": author.type,
-      name: author.name,
-    },
-    publisher: {
-      "@type": "Organization",
-      name: "TakeToday",
-    },
-    articleSection: category,
-    mainEntityOfPage: {
-      "@type": "WebPage",
-      "@id": `/article/${slug}`,
-    },
-    ...(image ? { image } : {}),
-  };
-
   return (
     <article className="relative">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(ldJson) }}
-      />
 
       {/* 1. Header */}
       <header
