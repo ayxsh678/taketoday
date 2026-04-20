@@ -19,28 +19,12 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import fs from "fs/promises";
-import fsSync from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import matter from "gray-matter";
+import { loadEnv } from "./utils/loadEnv.js";
 
-// ─── Load .env.local if present ───────────────────────────────────────────────
-// Lets the script run without manually exporting vars in the shell.
-{
-  const envFile = path.join(path.dirname(fileURLToPath(import.meta.url)), "../.env.local");
-  if (fsSync.existsSync(envFile)) {
-    const lines = fsSync.readFileSync(envFile, "utf-8").split("\n");
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) continue;
-      const eq = trimmed.indexOf("=");
-      if (eq === -1) continue;
-      const key = trimmed.slice(0, eq).trim();
-      const val = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
-      if (key && val && !(key in process.env)) process.env[key] = val;
-    }
-  }
-}
+loadEnv();
 
 // ─── CLI args ────────────────────────────────────────────────────────────────
 
@@ -54,8 +38,12 @@ function parseArgs(argv: string[]): {
     const i = args.indexOf(flag);
     return i !== -1 && i + 1 < args.length ? args[i + 1] : undefined;
   };
+  const rawDays = parseInt(get("--days") ?? "7", 10);
+  const days = isNaN(rawDays) || rawDays < 1
+    ? (console.warn("⚠️  Invalid --days value; defaulting to 7."), 7)
+    : rawDays;
   return {
-    days: parseInt(get("--days") ?? "7", 10),
+    days,
     dryRun: args.includes("--dry-run"),
     send: args.includes("--send"),
   };
@@ -194,7 +182,7 @@ STORY_INTROS:
 ...`;
 
   const msg = await client.messages.create({
-    model: "claude-opus-4-5",
+    model: "claude-opus-4-7",
     max_tokens: 1024,
     system: EDITORIAL_SYSTEM,
     messages: [{ role: "user", content: prompt }],
@@ -215,10 +203,19 @@ function parseEditorialResponse(text: string, count: number): EditorialCopy {
   const subject = subjectMatch?.[1]?.trim() ?? `TakeToday — ${briefDate()}`;
   const lede = ledeMatch?.[1]?.trim() ?? "";
 
+  // Extract the STORY_INTROS block first, then parse numbered lines within it.
+  // Accepting both "1." and "1)" styles, optional leading whitespace.
+  const introBlockMatch = text.match(/^STORY_INTROS:\s*\n([\s\S]+?)(?=\n[A-Z_]+:|$)/m);
+  const introBlock = introBlockMatch?.[1] ?? text;
+
   const storyIntros: string[] = [];
   for (let i = 1; i <= count; i++) {
-    const match = text.match(new RegExp(`^${i}\\. (.+)$`, "m"));
-    storyIntros.push(match?.[1]?.trim() ?? "");
+    const match = introBlock.match(new RegExp(`^\\s*${i}[.)]\\s+(.+)$`, "m"));
+    const intro = match?.[1]?.trim() ?? "";
+    if (!intro) {
+      console.warn(`⚠️  No intro found for story ${i}; email will omit it.`);
+    }
+    storyIntros.push(intro);
   }
 
   return { subject, lede, storyIntros };
