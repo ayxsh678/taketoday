@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SITE } from "@/lib/site";
+import { SubscribeForm } from "@/components/SubscribeForm";
 
 export const metadata: Metadata = {
   title: `Subscribe — ${SITE.name}`,
@@ -67,68 +68,7 @@ export default function SubscribePage() {
         </div>
 
         <div className="lg:col-span-5 lg:col-start-8">
-          <div className="border border-ink-200/70 p-8 lg:p-10">
-            <p className="font-mono text-[10px] tracking-[0.22em] uppercase text-ink-400 mb-6">
-              Get started — it&rsquo;s free
-            </p>
-
-            <form
-              action="#"
-              method="POST"
-              className="space-y-4"
-              aria-label="Subscribe form"
-            >
-              <div>
-                <label
-                  htmlFor="sub-name"
-                  className="block text-[13px] text-ink-600 mb-1.5"
-                >
-                  First name
-                </label>
-                <input
-                  id="sub-name"
-                  name="name"
-                  type="text"
-                  autoComplete="given-name"
-                  placeholder="Alex"
-                  className="w-full border border-ink-200 bg-transparent px-4 py-2.5 text-[14px] text-ink placeholder:text-ink-400 focus:outline-none focus:border-ink transition-colors"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="sub-email"
-                  className="block text-[13px] text-ink-600 mb-1.5"
-                >
-                  Email address
-                </label>
-                <input
-                  id="sub-email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  placeholder="you@example.com"
-                  className="w-full border border-ink-200 bg-transparent px-4 py-2.5 text-[14px] text-ink placeholder:text-ink-400 focus:outline-none focus:border-ink transition-colors"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-ink text-paper py-3 text-[13px] font-medium tracking-wide hover:bg-ink-700 transition-colors"
-              >
-                Subscribe — free
-              </button>
-            </form>
-
-            <p className="mt-5 text-[12px] text-ink-400 leading-relaxed">
-              By subscribing you agree to our{" "}
-              <Link href="/privacy" className="underline underline-offset-2 hover:text-ink transition-colors">
-                privacy policy
-              </Link>
-              . No spam, ever. One-click unsubscribe.
-            </p>
-          </div>
+          <SubscribeForm />
 
           <div className="mt-6 border border-ink-200/70 p-6">
             <p className="font-mono text-[10px] tracking-[0.22em] uppercase text-ink-400 mb-4">
