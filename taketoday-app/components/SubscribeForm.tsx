@@ -22,9 +22,15 @@ export function SubscribeForm() {
     setState("submitting");
     setErrorMsg("");
 
-    const form = e.currentTarget;
-    const email = (form.elements.namedItem("email") as HTMLInputElement).value;
-    const name = (form.elements.namedItem("name") as HTMLInputElement).value;
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email");
+    const name = formData.get("name");
+
+    if (typeof email !== "string" || typeof name !== "string") {
+      setState("idle");
+      setErrorMsg("Please fill out the form correctly.");
+      return;
+    }
 
     try {
       const res = await fetch("/api/subscribe", {

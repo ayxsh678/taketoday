@@ -25,7 +25,10 @@ export async function POST(req: NextRequest) {
 
   const { email, name } = body as { email?: unknown; name?: unknown };
 
-  if (!email || typeof email !== "string" || !email.includes("@")) {
+  // RFC-5321-ish: local@domain.tld — rejects obvious non-emails without
+  // becoming a full RFC 5322 parser.
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || typeof email !== "string" || !EMAIL_RE.test(email.trim())) {
     return NextResponse.json(
       { error: "A valid email address is required." },
       { status: 400 },
@@ -50,6 +53,9 @@ export async function POST(req: NextRequest) {
     payload.metadata = { name: name.trim() };
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10_000);
+
   let res: Response;
   try {
     res = await fetch(BUTTONDOWN_URL, {
@@ -59,10 +65,18 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
+      signal: controller.signal,
     });
-  } catch {
+    clearTimeout(timeoutId);
+  } catch (err) {
+    clearTimeout(timeoutId);
+    const isTimeout = err instanceof DOMException && err.name === "AbortError";
     return NextResponse.json(
-      { error: "Could not reach newsletter service. Try again shortly." },
+      {
+        error: isTimeout
+          ? "Newsletter service timed out. Try again shortly."
+          : "Could not reach newsletter service. Try again shortly.",
+      },
       { status: 502 },
     );
   }
