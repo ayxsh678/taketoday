@@ -1,9 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { bookmarks } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { db } from "@/lib/firebase/admin";
 import { getArticle } from "@/lib/content/queries";
 import { NewsCard } from "@/components/NewsCard";
 import type { Metadata } from "next";
@@ -16,13 +14,17 @@ export default async function SavedPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin?callbackUrl=/saved");
 
-  const rows = await db.query.bookmarks.findMany({
-    where: eq(bookmarks.userId, session.user.id),
-    orderBy: (b, { desc }) => [desc(b.savedAt)],
-  });
+  const snapshot = await db
+    .collection("bookmarks")
+    .doc(session.user.id)
+    .collection("articles")
+    .orderBy("savedAt", "desc")
+    .get();
 
-  const articles = rows
-    .map((r) => getArticle(r.slug))
+  const slugs = snapshot.docs.map((d) => d.id);
+
+  const articles = slugs
+    .map((slug) => getArticle(slug))
     .filter((a): a is NonNullable<typeof a> => a !== null && a !== undefined);
 
   return (
