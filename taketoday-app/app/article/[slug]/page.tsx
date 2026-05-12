@@ -11,6 +11,7 @@ import {
 } from "@/lib/content/queries";
 import { SITE, abs } from "@/lib/site";
 import { TrackPageView } from "@/components/TrackPageView";
+import { BookmarkButton } from "@/components/BookmarkButton";
 
 /**
  * TakeToday — Dynamic Article Route
@@ -127,7 +128,7 @@ export default async function ArticlePage({
   };
 
   const body = <MDXRemote source={article.content.body} />;
-  const layoutProps = articleToLayoutProps(article, body);
+  const layoutProps = articleToLayoutProps(article, body, undefined, <BookmarkButton slug={articleSlug} />);
 
   return (
     <>

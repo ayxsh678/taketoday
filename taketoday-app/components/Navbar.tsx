@@ -68,6 +68,15 @@ export function Navbar({ showTicker = true }: { showTicker?: boolean }) {
         <div className="flex items-center gap-3">
           <NavbarControls />
           <AuthButton />
+          <Link
+            href="/saved"
+            aria-label="Saved articles"
+            className="text-ink-500 hover:text-ink transition-colors"
+          >
+            <svg width="16" height="18" viewBox="0 0 14 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M1 1h12v14L7 11 1 15V1z" />
+            </svg>
+          </Link>
           <SearchButton />
           <Link
             href="/subscribe"
