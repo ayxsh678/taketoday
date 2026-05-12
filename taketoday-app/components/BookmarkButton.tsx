@@ -2,11 +2,13 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { BookmarkIcon } from "@/components/BookmarkIcon";
 
 export function BookmarkButton({ slug }: { slug: string }) {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
 
   const [bookmarked, setBookmarked] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,7 +23,8 @@ export function BookmarkButton({ slug }: { slug: string }) {
 
   async function handleToggle() {
     if (status === "unauthenticated") {
-      router.push(`/auth/signin?callbackUrl=/article/${slug}`);
+      const callbackUrl = encodeURIComponent(pathname);
+      router.push(`/auth/signin?callbackUrl=${callbackUrl}`);
       return;
     }
     if (loading || bookmarked === null) return;
@@ -36,6 +39,10 @@ export function BookmarkButton({ slug }: { slug: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug }),
       });
+      if (!res.ok) {
+        setBookmarked(!optimistic);
+        return;
+      }
       const data = await res.json();
       setBookmarked(data.bookmarked);
     } catch {
@@ -58,23 +65,5 @@ export function BookmarkButton({ slug }: { slug: string }) {
       <BookmarkIcon filled={filled} />
       {filled ? "Saved" : "Save"}
     </button>
-  );
-}
-
-function BookmarkIcon({ filled }: { filled: boolean }) {
-  return (
-    <svg
-      width="14"
-      height="16"
-      viewBox="0 0 14 16"
-      fill={filled ? "currentColor" : "none"}
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M1 1h12v14L7 11 1 15V1z" />
-    </svg>
   );
 }
