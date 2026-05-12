@@ -35,13 +35,16 @@ export type ArticleLayoutProps = Readonly<{
   body: React.ReactNode;
   /** Optional hero image URL; layout degrades gracefully without it. */
   image?: string;
+  /** Optional action buttons rendered alongside article metadata (e.g. BookmarkButton). */
+  actions?: React.ReactNode;
 }>;
 
 /** Flatten the nested `Article` shape into layout props. */
 export function articleToLayoutProps(
   article: Article,
   body: React.ReactNode,
-  image?: string
+  image?: string,
+  actions?: React.ReactNode,
 ): ArticleLayoutProps {
   const { metadata: m, content: c } = article;
   return {
@@ -58,6 +61,7 @@ export function articleToLayoutProps(
     takeaways: c.takeaways,
     body,
     image,
+    actions,
   };
 }
 
@@ -76,6 +80,7 @@ export function ArticleLayout(props: ArticleLayoutProps) {
     takeaways,
     body,
     image,
+    actions,
   } = props;
 
   const published = new Date(publishedAt);
@@ -118,37 +123,40 @@ export function ArticleLayout(props: ArticleLayoutProps) {
           {deck}
         </p>
 
-        <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[11px] tracking-[0.18em] uppercase text-ink-500">
-          <span className="text-ink-700">
-            By <span className="text-ink">{author.name}</span>
-          </span>
-          <span aria-hidden className="text-ink-300">
-            /
-          </span>
-          <time dateTime={publishedAt}>
-            {published.toLocaleDateString("en-US", {
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </time>
-          {modified && (
-            <>
-              <span aria-hidden className="text-ink-300">
-                /
-              </span>
-              <time dateTime={updatedAt} className="text-ink-400">
-                Updated {modified.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
-              </time>
-            </>
-          )}
-          <span aria-hidden className="text-ink-300">
-            /
-          </span>
-          <span>{readTime}</span>
+        <div className="mt-10 flex flex-wrap items-center justify-between gap-y-3">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[11px] tracking-[0.18em] uppercase text-ink-500">
+            <span className="text-ink-700">
+              By <span className="text-ink">{author.name}</span>
+            </span>
+            <span aria-hidden className="text-ink-300">
+              /
+            </span>
+            <time dateTime={publishedAt}>
+              {published.toLocaleDateString("en-US", {
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </time>
+            {modified && (
+              <>
+                <span aria-hidden className="text-ink-300">
+                  /
+                </span>
+                <time dateTime={updatedAt} className="text-ink-400">
+                  Updated {modified.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </time>
+              </>
+            )}
+            <span aria-hidden className="text-ink-300">
+              /
+            </span>
+            <span>{readTime}</span>
+          </div>
+          {actions && <div>{actions}</div>}
         </div>
       </header>
 
