@@ -9,12 +9,20 @@ const CATEGORIES = ["", "AI", "Finance", "Tech", "Startups", "Briefings", "India
 const FORMATS = ["", "QuickNews", "SmartBreakdown", "DeepDive", "SocialPost"];
 const REGIONS = ["", "IN", "US", "GLOBAL"];
 
+// ─── Slug parser (manual mode) ────────────────────────────────────────────────
+
+function parseSlugFromMdx(raw: string): string | null {
+  const match = raw.match(/^slug:\s*(\S+)/m);
+  return match ? match[1] : null;
+}
+
 // ─── Draft Tab ────────────────────────────────────────────────────────────────
 
 function DraftTab() {
-  const [inputMode, setInputMode] = useState<"topic" | "url">("topic");
+  const [inputMode, setInputMode] = useState<"topic" | "url" | "manual">("topic");
   const [topic, setTopic] = useState("");
   const [url, setUrl] = useState("");
+  const [manualMdx, setManualMdx] = useState("");
   const [category, setCategory] = useState("");
   const [format, setFormat] = useState("");
   const [region, setRegion] = useState("");
@@ -65,8 +73,11 @@ function DraftTab() {
     }
   }
 
-  async function handleSave() {
-    if (!draft || !mdx) return;
+  async function handleSave(overrideSlug?: string, overrideMdx?: string) {
+    const saveSlug = overrideSlug ?? draft?.slug;
+    const saveMdx = overrideMdx ?? mdx;
+    if (!saveSlug || !saveMdx) return;
+
     setSaving(true);
     setSaveResult(null);
 
@@ -74,7 +85,7 @@ function DraftTab() {
       const res = await fetch("/api/admin/save", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug: draft.slug, mdx }),
+        body: JSON.stringify({ slug: saveSlug, mdx: saveMdx }),
       });
 
       const data = await res.json();
@@ -90,29 +101,47 @@ function DraftTab() {
     }
   }
 
-  const canSubmit = inputMode === "topic" ? topic.trim() !== "" : url.trim() !== "";
+  const parsedManualSlug = inputMode === "manual" ? parseSlugFromMdx(manualMdx) : null;
+  const canSubmit =
+    inputMode === "topic"
+      ? topic.trim() !== ""
+      : inputMode === "url"
+        ? url.trim() !== ""
+        : manualMdx.trim() !== "" && parsedManualSlug !== null;
+
+  const MODE_LABELS: Record<"topic" | "url" | "manual", string> = {
+    topic: "Topic",
+    url: "URL",
+    manual: "Manual",
+  };
 
   return (
     <div className="space-y-6">
       {/* Input mode toggle */}
       <div className="flex gap-1 border border-ink-200 rounded p-1 w-fit">
-        {(["topic", "url"] as const).map((mode) => (
+        {(["topic", "url", "manual"] as const).map((mode) => (
           <button
             key={mode}
-            onClick={() => setInputMode(mode)}
+            onClick={() => {
+              setInputMode(mode);
+              setError(null);
+              setDraft(null);
+              setMdx(null);
+              setSaveResult(null);
+            }}
             className={`px-4 py-1.5 text-sm rounded transition-colors ${
               inputMode === mode
                 ? "bg-ink text-paper"
                 : "text-ink-500 hover:text-ink"
             }`}
           >
-            {mode === "topic" ? "Topic" : "URL"}
+            {MODE_LABELS[mode]}
           </button>
         ))}
       </div>
 
       {/* Main input */}
-      {inputMode === "topic" ? (
+      {inputMode === "topic" && (
         <textarea
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
@@ -120,7 +149,9 @@ function DraftTab() {
           rows={3}
           className="w-full border border-ink-200 rounded px-3 py-2 text-sm font-sans bg-paper text-ink placeholder-ink-400 focus:outline-none focus:border-ink resize-none"
         />
-      ) : (
+      )}
+
+      {inputMode === "url" && (
         <input
           type="url"
           value={url}
@@ -130,35 +161,73 @@ function DraftTab() {
         />
       )}
 
-      {/* Optional hints */}
-      <div className="flex flex-wrap gap-3">
-        <SelectField
-          label="Category"
-          value={category}
-          onChange={setCategory}
-          options={CATEGORIES}
-        />
-        <SelectField
-          label="Format"
-          value={format}
-          onChange={setFormat}
-          options={FORMATS}
-        />
-        <SelectField
-          label="Region"
-          value={region}
-          onChange={setRegion}
-          options={REGIONS}
-        />
-      </div>
+      {inputMode === "manual" && (
+        <div className="space-y-2">
+          <p className="text-xs text-ink-500">
+            Paste complete MDX with frontmatter. Slug is read from the{" "}
+            <code className="font-mono bg-ink-100 px-1 rounded">slug:</code> field.
+          </p>
+          <textarea
+            value={manualMdx}
+            onChange={(e) => {
+              setManualMdx(e.target.value);
+              setSaveResult(null);
+            }}
+            placeholder={"---\nslug: my-article-slug\ntitle: \"Article Title\"\n...\n---\n\nBody here."}
+            rows={18}
+            className="w-full border border-ink-200 rounded px-3 py-2 text-xs font-mono bg-paper text-ink placeholder-ink-400 focus:outline-none focus:border-ink resize-y"
+          />
+          {manualMdx.trim() && (
+            <p className="text-xs text-ink-500">
+              Slug:{" "}
+              {parsedManualSlug ? (
+                <code className="font-mono bg-ink-100 px-1 rounded text-ink">{parsedManualSlug}</code>
+              ) : (
+                <span className="text-accent">not found — add <code className="font-mono">slug: your-slug</code> to frontmatter</span>
+              )}
+            </p>
+          )}
+        </div>
+      )}
 
-      <button
-        onClick={handleDraft}
-        disabled={loading || !canSubmit}
-        className="px-5 py-2 bg-ink text-paper text-sm rounded hover:bg-ink-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-      >
-        {loading ? "Drafting…" : "Draft Article"}
-      </button>
+      {/* Optional hints — AI modes only */}
+      {inputMode !== "manual" && (
+        <div className="flex flex-wrap gap-3">
+          <SelectField label="Category" value={category} onChange={setCategory} options={CATEGORIES} />
+          <SelectField label="Format" value={format} onChange={setFormat} options={FORMATS} />
+          <SelectField label="Region" value={region} onChange={setRegion} options={REGIONS} />
+        </div>
+      )}
+
+      {/* Action button */}
+      {inputMode === "manual" ? (
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => handleSave(parsedManualSlug ?? undefined, manualMdx)}
+            disabled={saving || !canSubmit || (saveResult !== null && "path" in saveResult)}
+            className="px-5 py-2 bg-ink text-paper text-sm rounded hover:bg-ink-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {saving ? "Saving…" : "Save to Disk"}
+          </button>
+          {saveResult && "path" in saveResult && (
+            <p className="text-sm text-ink-700">
+              Saved →{" "}
+              <code className="font-mono text-xs bg-ink-100 px-1.5 py-0.5 rounded">{saveResult.path}</code>
+            </p>
+          )}
+          {saveResult && "error" in saveResult && (
+            <p className="text-accent text-sm">{saveResult.error}</p>
+          )}
+        </div>
+      ) : (
+        <button
+          onClick={handleDraft}
+          disabled={loading || !canSubmit}
+          className="px-5 py-2 bg-ink text-paper text-sm rounded hover:bg-ink-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          {loading ? "Drafting…" : "Draft Article"}
+        </button>
+      )}
 
       {error && (
         <p className="text-accent text-sm border border-accent/30 bg-accent/5 rounded px-3 py-2">
@@ -166,7 +235,7 @@ function DraftTab() {
         </p>
       )}
 
-      {/* Output */}
+      {/* AI draft output */}
       {draft && mdx && (
         <div className="space-y-5 pt-2 border-t border-ink-200">
           <div className="space-y-1">
@@ -208,10 +277,9 @@ function DraftTab() {
             </pre>
           </div>
 
-          {/* Save */}
           <div className="flex items-center gap-4">
             <button
-              onClick={handleSave}
+              onClick={() => handleSave()}
               disabled={saving || (saveResult !== null && "path" in saveResult)}
               className="px-5 py-2 bg-ink text-paper text-sm rounded hover:bg-ink-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
@@ -219,7 +287,8 @@ function DraftTab() {
             </button>
             {saveResult && "path" in saveResult && (
               <p className="text-sm text-ink-700">
-                Saved → <code className="font-mono text-xs bg-ink-100 px-1.5 py-0.5 rounded">{saveResult.path}</code>
+                Saved →{" "}
+                <code className="font-mono text-xs bg-ink-100 px-1.5 py-0.5 rounded">{saveResult.path}</code>
               </p>
             )}
             {saveResult && "error" in saveResult && (
