@@ -4,6 +4,8 @@ import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Analytics } from "@vercel/analytics/react";
+import { SessionProvider } from "next-auth/react";
+import { auth } from "@/auth";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -35,21 +37,25 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await auth();
+
   return (
     <html
       lang="en"
       className={`${inter.variable} ${instrument.variable} ${jetbrains.variable}`}
     >
       <body className="grain font-sans bg-paper text-ink min-h-screen">
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
-        <Analytics />
+        <SessionProvider session={session}>
+          <Navbar />
+          <main>{children}</main>
+          <Footer />
+          <Analytics />
+        </SessionProvider>
       </body>
     </html>
   );
