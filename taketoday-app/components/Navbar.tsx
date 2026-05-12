@@ -3,6 +3,7 @@ import { Logo } from "@/components/Logo";
 import { SearchButton } from "@/components/SearchButton";
 import { NavbarControls } from "@/components/NavbarControls";
 import { AuthButton } from "@/components/AuthButton";
+import { BookmarkIcon } from "@/components/BookmarkIcon";
 
 /**
  * TakeToday — Global Navbar
@@ -73,9 +74,7 @@ export function Navbar({ showTicker = true }: { showTicker?: boolean }) {
             aria-label="Saved articles"
             className="text-ink-500 hover:text-ink transition-colors"
           >
-            <svg width="16" height="18" viewBox="0 0 14 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M1 1h12v14L7 11 1 15V1z" />
-            </svg>
+            <BookmarkIcon filled={false} size={16} />
           </Link>
           <SearchButton />
           <Link
