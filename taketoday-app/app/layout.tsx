@@ -1,3 +1,7 @@
+// auth() calls firebase-admin which requires runtime env vars — opt out of
+// static generation so firebase is never initialized during the build phase.
+export const dynamic = "force-dynamic";
+
 import type { Metadata } from "next";
 import { Inter, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
