@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { signIn } from "@/auth";
 import { Logo } from "@/components/Logo";
 
