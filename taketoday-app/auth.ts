@@ -1,10 +1,10 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { FirestoreAdapter } from "@auth/firebase-adapter";
-import { adminApp } from "@/lib/firebase/admin";
+import { db } from "@/lib/firebase/admin";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: FirestoreAdapter(adminApp),
+  adapter: FirestoreAdapter(db),
   providers: [Google],
   session: { strategy: "database" },
   callbacks: {

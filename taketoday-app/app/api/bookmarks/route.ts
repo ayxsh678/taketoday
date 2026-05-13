@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { db } from "@/lib/firebase/admin";
-
-// Firestore path: bookmarks/{userId}/articles/{slug}
-
-function userBookmarksRef(userId: string) {
-  return db.collection("bookmarks").doc(userId).collection("articles");
-}
+import { userBookmarksRef, bookmarkDocRef, getUserBookmarkSlugs } from "@/lib/firebase/bookmarks";
 
 /**
  * GET /api/bookmarks?slug=xxx  → { bookmarked: boolean }
@@ -19,15 +13,13 @@ export async function GET(req: NextRequest) {
   }
 
   const slug = req.nextUrl.searchParams.get("slug");
-  const ref = userBookmarksRef(session.user.id);
 
   if (slug) {
-    const doc = await ref.doc(slug).get();
+    const doc = await bookmarkDocRef(session.user.id, slug).get();
     return NextResponse.json({ bookmarked: doc.exists });
   }
 
-  const snapshot = await ref.orderBy("savedAt", "desc").get();
-  const slugs = snapshot.docs.map((d) => d.id);
+  const slugs = await getUserBookmarkSlugs(session.user.id);
   return NextResponse.json({ slugs });
 }
 
@@ -54,7 +46,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "slug is required" }, { status: 400 });
   }
 
-  const docRef = userBookmarksRef(session.user.id).doc(slug);
+  const docRef = bookmarkDocRef(session.user.id, slug);
   const existing = await docRef.get();
 
   if (existing.exists) {

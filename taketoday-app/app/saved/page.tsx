@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/auth";
-import { db } from "@/lib/firebase/admin";
+import { getUserBookmarkSlugs } from "@/lib/firebase/bookmarks";
 import { getArticle } from "@/lib/content/queries";
 import { NewsCard } from "@/components/NewsCard";
 import type { Metadata } from "next";
@@ -14,14 +14,7 @@ export default async function SavedPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/auth/signin?callbackUrl=/saved");
 
-  const snapshot = await db
-    .collection("bookmarks")
-    .doc(session.user.id)
-    .collection("articles")
-    .orderBy("savedAt", "desc")
-    .get();
-
-  const slugs = snapshot.docs.map((d) => d.id);
+  const slugs = await getUserBookmarkSlugs(session.user.id);
 
   const articles = slugs
     .map((slug) => getArticle(slug))
