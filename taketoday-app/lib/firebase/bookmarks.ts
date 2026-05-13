@@ -1,8 +1,8 @@
-import { db } from "./admin";
+import { getDb } from "./admin";
 
 /** Reference to a user's bookmarks subcollection. */
 export function userBookmarksRef(userId: string) {
-  return db.collection("bookmarks").doc(userId).collection("articles");
+  return getDb().collection("bookmarks").doc(userId).collection("articles");
 }
 
 /** Reference to a single bookmark document. */
