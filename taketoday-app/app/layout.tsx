@@ -1,7 +1,3 @@
-// auth() calls firebase-admin which requires runtime env vars — opt out of
-// static generation so firebase is never initialized during the build phase.
-export const dynamic = "force-dynamic";
-
 import type { Metadata } from "next";
 import { Inter, Instrument_Serif, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
@@ -9,7 +5,6 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Analytics } from "@vercel/analytics/react";
 import { SessionProvider } from "next-auth/react";
-import { auth } from "@/auth";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -41,20 +36,22 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
-
   return (
     <html
       lang="en"
       className={`${inter.variable} ${instrument.variable} ${jetbrains.variable}`}
     >
       <body className="grain font-sans bg-paper text-ink min-h-screen">
-        <SessionProvider session={session}>
+        {/* SessionProvider without a pre-fetched session — AuthButton uses
+            useSession() client-side and handles the loading state itself,
+            so we avoid importing firebase-admin in the root layout (which
+            would cause build-time init failures). */}
+        <SessionProvider>
           <Navbar />
           <main>{children}</main>
           <Footer />
