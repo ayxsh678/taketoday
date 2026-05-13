@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { bookmarks } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import { userBookmarksRef, bookmarkDocRef, getUserBookmarkSlugs } from "@/lib/firebase/bookmarks";
 
 /**
  * GET /api/bookmarks?slug=xxx  → { bookmarked: boolean }
@@ -17,20 +15,12 @@ export async function GET(req: NextRequest) {
   const slug = req.nextUrl.searchParams.get("slug");
 
   if (slug) {
-    const row = await db.query.bookmarks.findFirst({
-      where: and(
-        eq(bookmarks.userId, session.user.id),
-        eq(bookmarks.slug, slug),
-      ),
-    });
-    return NextResponse.json({ bookmarked: !!row });
+    const doc = await bookmarkDocRef(session.user.id, slug).get();
+    return NextResponse.json({ bookmarked: doc.exists });
   }
 
-  const rows = await db.query.bookmarks.findMany({
-    where: eq(bookmarks.userId, session.user.id),
-    orderBy: (b, { desc }) => [desc(b.savedAt)],
-  });
-  return NextResponse.json({ slugs: rows.map((r) => r.slug) });
+  const slugs = await getUserBookmarkSlugs(session.user.id);
+  return NextResponse.json({ slugs });
 }
 
 /**
@@ -56,19 +46,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "slug is required" }, { status: 400 });
   }
 
-  const userId = session.user.id;
+  const docRef = bookmarkDocRef(session.user.id, slug);
+  const existing = await docRef.get();
 
-  const existing = await db.query.bookmarks.findFirst({
-    where: and(eq(bookmarks.userId, userId), eq(bookmarks.slug, slug)),
-  });
-
-  if (existing) {
-    await db
-      .delete(bookmarks)
-      .where(and(eq(bookmarks.userId, userId), eq(bookmarks.slug, slug)));
+  if (existing.exists) {
+    await docRef.delete();
     return NextResponse.json({ bookmarked: false });
   }
 
-  await db.insert(bookmarks).values({ userId, slug });
+  await docRef.set({ savedAt: new Date().toISOString() });
   return NextResponse.json({ bookmarked: true });
 }
