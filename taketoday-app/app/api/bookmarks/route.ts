@@ -1,3 +1,7 @@
+// force-dynamic prevents build-time execution which would trigger
+// firebase-admin initialization before env vars are available.
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { userBookmarksRef, bookmarkDocRef, getUserBookmarkSlugs } from "@/lib/firebase/bookmarks";
