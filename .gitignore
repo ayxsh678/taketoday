@@ -1,18 +1,3 @@
-# macOS
-.DS_Store
-
-# Editor
-.vscode/
-.idea/
-
-# Logs
-*.log
-
-# Editor swap files
-*.swp
-*.swo
-
-# Env
-.env
+node_modules
+.next
 .env.local
-.env.*.local
