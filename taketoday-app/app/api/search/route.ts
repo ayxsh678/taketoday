@@ -6,8 +6,7 @@ export const dynamic = "force-dynamic";
 
 function score(article: ReturnType<typeof getAllArticles>[number], q: string): number {
   const lq = q.toLowerCase();
-  const { title, deck, category } = article.metadata;
-  const { quickTake, whyItMatters } = article.content;
+  const { title, deck, category, quickTake, whyItMatters } = article;
 
   let s = 0;
   if (title.toLowerCase().includes(lq)) s += 10;
@@ -32,12 +31,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     .sort((a, b) => b.s - a.s)
     .slice(0, 8)
     .map(({ article: a }) => ({
-      slug: a.metadata.slug,
-      title: a.metadata.title,
-      summary: a.content.quickTake,
-      category: a.metadata.category,
-      readTime: a.metadata.readTime,
-      publishedAt: a.metadata.publishedAt,
+      slug: a.slug,
+      title: a.title,
+      summary: a.quickTake,
+      category: a.category,
+      readTime: a.readTime,
+      publishedAt: a.publishedAt,
     }));
 
   return NextResponse.json(results);

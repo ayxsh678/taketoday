@@ -175,13 +175,13 @@ export default async function CategoryPage({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-14">
             {articles.map((a) => (
               <NewsCard
-                key={a.metadata.slug}
-                slug={a.metadata.slug}
-                title={a.metadata.title}
-                summary={a.content.quickTake}
-                category={a.metadata.category}
-                readTime={a.metadata.readTime}
-                publishedAt={a.metadata.publishedAt}
+                key={a.slug}
+                slug={a.slug}
+                title={a.title}
+                summary={a.quickTake}
+                category={a.category}
+                readTime={a.readTime}
+                publishedAt={a.publishedAt}
                 variant="grid"
               />
             ))}

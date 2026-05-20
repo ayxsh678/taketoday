@@ -18,7 +18,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const articles = getAllArticles();
 
   // Newest article date — used as a proxy "last touched" for aggregate pages.
-  const newest = articles[0]?.metadata.publishedAt ?? new Date().toISOString();
+  const newest = articles[0]?.publishedAt ?? new Date().toISOString();
 
   const home: MetadataRoute.Sitemap[number] = {
     url: SITE.url,
@@ -29,7 +29,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const categoryEntries: MetadataRoute.Sitemap = CATEGORIES.map((c) => {
     const lastInCat =
-      articles.find((a) => a.metadata.category === c)?.metadata.publishedAt ??
+      articles.find((a) => a.category === c)?.publishedAt ??
       newest;
     return {
       url: abs(`/category/${c.toLowerCase()}`),
@@ -40,8 +40,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   });
 
   const articleEntries: MetadataRoute.Sitemap = articles.map((a) => ({
-    url: abs(`/article/${a.metadata.slug}`),
-    lastModified: new Date(a.metadata.updatedAt ?? a.metadata.publishedAt),
+    url: abs(`/article/${a.slug}`),
+    lastModified: new Date(a.updatedAt ?? a.publishedAt),
     changeFrequency: "weekly",
     priority: 0.7,
   }));
