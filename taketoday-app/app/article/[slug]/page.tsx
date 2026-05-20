@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { ArticleLayout, articleToLayoutProps } from "@/components/ArticleLayout";
-import { getAllArticles, getArticleBySlug as getArticle } from "@/lib/content/queries";
+import { getAllArticles, getArticleBySlug } from "@/lib/content/queries";
 import { SITE, abs } from "@/lib/site";
 import { TrackPageView } from "@/components/TrackPageView";
 
@@ -12,7 +12,7 @@ export function generateStaticParams(): { slug: string }[] {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const a = getArticle(slug);
+  const a = getArticleBySlug(slug);
   if (!a) return { title: "Not found — TakeToday" };
   const { title, deck, publishedAt, updatedAt, author, category } = a;
   const ogImage = `${SITE.url}/api/og?${new URLSearchParams({ title, deck, category }).toString()}`;
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const article = getArticle(slug);
+  const article = getArticleBySlug(slug);
   if (!article) notFound();
   const { title, deck, publishedAt, updatedAt, author, category, slug: articleSlug } = article;
   const articleUrl = abs(`/article/${articleSlug}`);
