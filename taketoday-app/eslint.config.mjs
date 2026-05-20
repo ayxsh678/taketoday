@@ -14,6 +14,7 @@ const compat = new FlatCompat({ baseDirectory: __dirname });
 const eslintConfig = defineConfig([
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   globalIgnores([
+    ".contentlayer/**",
     ".next/**",
     "out/**",
     "build/**",

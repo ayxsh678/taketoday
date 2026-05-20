@@ -13,7 +13,7 @@
  * No API calls, no loading states.
  */
 
-import type { Article } from "@/types/article";
+import type { Article } from "contentlayer/generated";
 import { NewsCard } from "@/components/NewsCard";
 import { FeedSection } from "@/components/FeedSection";
 import { SectionShell } from "@/components/SectionShell";
@@ -36,13 +36,13 @@ function ArticleGrid({ items }: { items: readonly Article[] }) {
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">
       {items.slice(0, VISIBLE_ARTICLE_LIMIT).map((a) => (
         <NewsCard
-          key={a.metadata.slug}
-          slug={a.metadata.slug}
-          title={a.metadata.title}
-          summary={a.content.quickTake}
-          category={a.metadata.category}
-          readTime={a.metadata.readTime}
-          publishedAt={a.metadata.publishedAt}
+          key={a.slug}
+          slug={a.slug}
+          title={a.title}
+          summary={a.quickTake}
+          category={a.category}
+          readTime={a.readTime}
+          publishedAt={a.publishedAt}
           variant="grid"
         />
       ))}
@@ -60,11 +60,11 @@ export function PersonalizedFeedSection({ articles }: Props) {
 
   // Articles shown in For You + International sections (avoid duplication in The Feed).
   const featuredSlugs = new Set([
-    ...localArticles.slice(0, VISIBLE_ARTICLE_LIMIT).map((a) => a.metadata.slug),
-    ...globalArticles.slice(0, VISIBLE_ARTICLE_LIMIT).map((a) => a.metadata.slug),
+    ...localArticles.slice(0, VISIBLE_ARTICLE_LIMIT).map((a) => a.slug),
+    ...globalArticles.slice(0, VISIBLE_ARTICLE_LIMIT).map((a) => a.slug),
   ]);
   const remainingArticles = recommendedArticles.filter(
-    (a) => !featuredSlugs.has(a.metadata.slug),
+    (a) => !featuredSlugs.has(a.slug),
   );
 
   return (

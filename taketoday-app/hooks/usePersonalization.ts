@@ -12,7 +12,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Article, Category } from "@/types/article";
+import type { Article } from "contentlayer/generated";
+import type { Category } from "@/types/article";
 import {
   loadPersonalizationData,
   trackArticleRead,
@@ -111,12 +112,12 @@ export function usePersonalization(
   }, []);
 
   const localArticles = useMemo(
-    () => rankArticles(allArticles.filter((a) => a.metadata.region === userCountry), history),
+    () => rankArticles(allArticles.filter((a) => a.region === userCountry), history),
     [allArticles, userCountry, history],
   );
 
   const globalArticles = useMemo(
-    () => rankArticles(allArticles.filter((a) => a.metadata.region === "GLOBAL"), history),
+    () => rankArticles(allArticles.filter((a) => a.region === "GLOBAL"), history),
     [allArticles, history],
   );
 

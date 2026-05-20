@@ -1,6 +1,7 @@
 import { NewsCard } from "@/components/NewsCard";
 import { SectionShell } from "@/components/SectionShell";
-import { CATEGORIES, type Article, type Category } from "@/types/article";
+import type { Article } from "contentlayer/generated";
+import { CATEGORIES, type Category } from "@/types/article";
 
 export type FeedSectionProps = Readonly<{
   items: readonly Article[];
@@ -48,13 +49,13 @@ export function FeedSection({ items }: FeedSectionProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">
           {items.map((a) => (
             <NewsCard
-              key={a.metadata.slug}
-              slug={a.metadata.slug}
-              title={a.metadata.title}
-              summary={a.content.quickTake}
-              category={a.metadata.category}
-              readTime={a.metadata.readTime}
-              publishedAt={a.metadata.publishedAt}
+              key={a.slug}
+              slug={a.slug}
+              title={a.title}
+              summary={a.quickTake}
+              category={a.category}
+              readTime={a.readTime}
+              publishedAt={a.publishedAt}
               variant="grid"
             />
           ))}

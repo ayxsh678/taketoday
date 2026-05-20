@@ -110,18 +110,6 @@ async function loadRecentArticles(withinDays: number): Promise<LoadedArticle[]> 
     .slice(0, 6);
 }
 
-// ─── Date formatting ──────────────────────────────────────────────────────────
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    timeZone: "UTC",
-  });
-}
-
 function briefDate(): string {
   return new Date().toLocaleDateString("en-US", {
     month: "long",

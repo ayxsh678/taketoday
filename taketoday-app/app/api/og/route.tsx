@@ -1,12 +1,10 @@
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
 
-export const runtime = "edge";
-
 const W = 1200;
 const H = 630;
 
-// Design tokens (must be inline — no Tailwind in edge ImageResponse)
+// Design tokens (must be inline because ImageResponse cannot use Tailwind).
 const PAPER = "#FAFAF7";
 const INK = "#0A0A0A";
 const INK_500 = "#6B6B6B";

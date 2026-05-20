@@ -19,20 +19,19 @@ export const revalidate = 3600; // 1h
 export function GET() {
   const articles = getAllArticles();
   const newest =
-    articles[0]?.metadata.publishedAt ?? new Date().toISOString();
+    articles[0]?.publishedAt ?? new Date().toISOString();
 
   const items = articles
     .map((a) => {
-      const { metadata: m, content: c } = a;
-      const link = abs(`/article/${m.slug}`);
+      const link = abs(`/article/${a.slug}`);
       return `    <item>
-      <title>${cdata(m.title)}</title>
+      <title>${cdata(a.title)}</title>
       <link>${link}</link>
       <guid isPermaLink="true">${link}</guid>
-      <pubDate>${toRfc822(m.publishedAt)}</pubDate>
-      <category>${cdata(m.category)}</category>
-      <author>${cdata(m.author.name)}</author>
-      <description>${cdata(c.quickTake)}</description>
+      <pubDate>${toRfc822(a.publishedAt)}</pubDate>
+      <category>${cdata(a.category)}</category>
+      <author>${cdata(a.author.name)}</author>
+      <description>${cdata(a.quickTake)}</description>
     </item>`;
     })
     .join("\n");

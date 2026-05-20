@@ -12,7 +12,8 @@
  * When the user has no history the original article order is preserved.
  */
 
-import type { Article, Category } from "@/types/article";
+import type { Article } from "contentlayer/generated";
+import type { Category } from "@/types/article";
 import type { ReadEntry } from "./storage";
 
 // ─── Category weights ─────────────────────────────────────────────────────────
@@ -54,13 +55,13 @@ function scoreArticle(
   categoryWeights: Map<Category, number>,
 ): number {
   // Already read → push to the back.
-  if (readSlugs.has(article.metadata.slug)) return -1000;
+  if (readSlugs.has(article.slug)) return -1000;
 
   // Category affinity: 0–100 pts.
-  const affinity = (categoryWeights.get(article.metadata.category) ?? 0) * 100;
+  const affinity = (categoryWeights.get(article.category) ?? 0) * 100;
 
   // Recency bonus: 30 pts for today, decays 3 pts/day, floor at 0.
-  const ageMs = Date.now() - new Date(article.metadata.publishedAt).getTime();
+  const ageMs = Date.now() - new Date(article.publishedAt).getTime();
   const ageDays = ageMs / 86_400_000;
   const recency = Math.max(0, 30 - ageDays * 3);
 

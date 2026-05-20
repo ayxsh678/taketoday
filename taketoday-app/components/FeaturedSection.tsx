@@ -1,7 +1,7 @@
 import Link from "next/link";
+import type { Article } from "contentlayer/generated";
 import { NewsCard } from "@/components/NewsCard";
 import { SectionShell } from "@/components/SectionShell";
-import type { Article } from "@/types/article";
 
 export type FeaturedSectionProps = Readonly<{
   lead: Article;
@@ -9,7 +9,6 @@ export type FeaturedSectionProps = Readonly<{
 }>;
 
 export function FeaturedSection({ lead, side }: FeaturedSectionProps) {
-  const m = lead.metadata;
   return (
     <SectionShell labelledBy="lead-heading">
       <header className="flex items-end justify-between mb-12 lg:mb-16">
@@ -30,7 +29,7 @@ export function FeaturedSection({ lead, side }: FeaturedSectionProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
         {/* Lead */}
         <article className="lg:col-span-7 group">
-          <Link href={`/article/${m.slug}`} className="block">
+          <Link href={`/article/${lead.slug}`} className="block">
             <div className="aspect-[16/10] bg-ink-100 rounded-sm overflow-hidden mb-6">
               <div
                 className="w-full h-full"
@@ -42,23 +41,23 @@ export function FeaturedSection({ lead, side }: FeaturedSectionProps) {
               />
             </div>
             <div className="flex items-center gap-3 font-mono text-[10px] tracking-[0.18em] uppercase">
-              <span className="text-accent">{m.category}</span>
+              <span className="text-accent">{lead.category}</span>
               <span aria-hidden className="text-ink-300">
                 /
               </span>
-              <span className="text-ink-500">{m.readTime}</span>
+              <span className="text-ink-500">{lead.readTime}</span>
             </div>
             <h3 className="mt-5 font-serif text-[44px] lg:text-[58px] leading-[1.02] tracking-[-0.02em] text-ink group-hover:text-ink-700 transition-colors text-balance">
-              {m.title}
+              {lead.title}
             </h3>
             <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-ink-500">
-              {lead.content.quickTake}
+              {lead.quickTake}
             </p>
             <time
-              dateTime={m.publishedAt}
+              dateTime={lead.publishedAt}
               className="mt-6 block font-mono text-[10px] tracking-[0.18em] uppercase text-ink-400"
             >
-              {new Date(m.publishedAt).toLocaleDateString("en-US", {
+              {new Date(lead.publishedAt).toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
                 year: "numeric",
@@ -71,13 +70,13 @@ export function FeaturedSection({ lead, side }: FeaturedSectionProps) {
         <div className="lg:col-span-5">
           {side.map((a) => (
             <NewsCard
-              key={a.metadata.slug}
-              slug={a.metadata.slug}
-              title={a.metadata.title}
-              summary={a.content.quickTake}
-              category={a.metadata.category}
-              readTime={a.metadata.readTime}
-              publishedAt={a.metadata.publishedAt}
+              key={a.slug}
+              slug={a.slug}
+              title={a.title}
+              summary={a.quickTake}
+              category={a.category}
+              readTime={a.readTime}
+              publishedAt={a.publishedAt}
               variant="inline"
             />
           ))}

@@ -7,7 +7,7 @@
  * personalization read event when the component mounts.
  *
  * Usage:
- *   <TrackPageView slug={article.metadata.slug} category={article.metadata.category} />
+ *   <TrackPageView slug={article.slug} category={article.category} />
  */
 
 import { useEffect } from "react";
