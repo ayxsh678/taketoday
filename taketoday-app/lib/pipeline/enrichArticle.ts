@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 
 // ─── Validation schemas ───────────────────────────────────────────────────────
@@ -40,7 +39,7 @@ function isMissingTakeaways(v: unknown): boolean {
   return v.some((t) => !t || typeof t !== "string" || t.trim() === "");
 }
 
-// ─── Claude call ──────────────────────────────────────────────────────────────
+// ─── Gemini call ──────────────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `You are an editor for TakeToday, an independent news publication.
 Given article content, generate structured editorial metadata.
@@ -57,13 +56,25 @@ Good quickTake examples:
 "The Fed held rates but revised its 2026 dot-plot upward — a hawkish signal markets read through the surface-level pause."
 
 Bad quickTake examples:
-"This is a major development." ❌
-"The company has announced something new." ❌`.trim();
+"This is a major development."
+"The company has announced something new."
 
-async function callClaude(
-  client: Anthropic,
-  article: { title: string; deck: string; body: string; region: string },
-): Promise<EnrichmentOutput> {
+You must respond with ONLY a valid JSON object, no markdown, no explanation. Schema:
+{
+  "quickTake": "string",
+  "whyItMatters": "string",
+  "takeaways": ["string", "string", "string"]
+}`.trim();
+
+async function callGemini(article: {
+  title: string;
+  deck: string;
+  body: string;
+  region: string;
+}): Promise<EnrichmentOutput> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
+
   const userMessage = `Title: ${article.title}
 Deck: ${article.deck}
 Target audience country: ${article.region}
@@ -73,67 +84,58 @@ ${article.body.trim()}
 
 Generate the editorial metadata fields. Ensure impact and framing reflect the target audience country.`;
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1024,
-    system: [
-      {
-        type: "text",
-        text: SYSTEM_PROMPT,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    tools: [
-      {
-        name: "write_metadata",
-        description: "Write editorial metadata for the article.",
-        input_schema: {
-          type: "object" as const,
-          properties: {
-            quickTake: {
-              type: "string",
-              description: "One declarative sentence: key fact + implication",
-            },
-            whyItMatters: {
-              type: "string",
-              description: "2–3 sentences on business/industry impact (specific)",
-            },
-            takeaways: {
-              type: "array",
-              items: { type: "string" },
-              minItems: 3,
-              maxItems: 3,
-              description: "Exactly 3 concrete, non-obvious bullets",
-            },
-          },
-          required: ["quickTake", "whyItMatters", "takeaways"],
-          additionalProperties: false,
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        system_instruction: {
+          parts: [{ text: SYSTEM_PROMPT }],
         },
-      },
-    ],
-    tool_choice: { type: "tool", name: "write_metadata" },
-    messages: [{ role: "user", content: userMessage }],
-  });
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: userMessage }],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.4,
+          maxOutputTokens: 1024,
+          responseMimeType: "application/json",
+        },
+      }),
+    }
+  );
 
-  const toolBlock = response.content.find((b) => b.type === "tool_use");
-  if (!toolBlock || toolBlock.type !== "tool_use") {
-    throw new Error("Claude did not return a tool_use block");
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Gemini API error ${response.status}: ${err}`);
   }
 
-  const parsed = toolBlock.input as Record<string, unknown>;
+  const data = await response.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("Gemini returned no content");
 
-  // Normalise: ensure takeaways is exactly a 3-tuple
-  if (!Array.isArray(parsed.takeaways) || parsed.takeaways.length !== 3) {
-    throw new Error(
-      `Expected 3 takeaways, got: ${JSON.stringify(parsed.takeaways)}`,
-    );
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+  } catch {
+    throw new Error(`Failed to parse Gemini JSON response: ${text}`);
+  }
+
+  if (
+    !parsed ||
+    typeof parsed !== "object" ||
+    !Array.isArray((parsed as Record<string, unknown>).takeaways) ||
+    (parsed as Record<string, unknown[]>).takeaways.length !== 3
+  ) {
+    throw new Error(`Expected 3 takeaways, got: ${JSON.stringify(parsed)}`);
   }
 
   const validated = enrichmentOutputSchema.safeParse(parsed);
   if (!validated.success) {
-    throw new Error(
-      `AI output failed Zod validation:\n${validated.error.message}`,
-    );
+    throw new Error(`AI output failed Zod validation:\n${validated.error.message}`);
   }
 
   return validated.data;
@@ -147,11 +149,11 @@ Generate the editorial metadata fields. Ensure impact and framing reflect the ta
  * - By default, skips fields that are already populated.
  * - Pass `{ force: true }` to regenerate everything regardless.
  * - All AI output is validated against Zod before returning.
- * - Requires ANTHROPIC_API_KEY in the environment.
+ * - Requires GEMINI_API_KEY in the environment.
  */
 export async function enrichArticle(
   raw: RawArticle,
-  options: { force?: boolean } = {},
+  options: { force?: boolean } = {}
 ): Promise<EnrichmentResult> {
   const { frontmatter, body } = raw;
   const force = options.force ?? false;
@@ -174,43 +176,28 @@ export async function enrichArticle(
     };
     const validated = enrichmentOutputSchema.safeParse(existing);
     if (!validated.success) {
-      throw new Error(
-        `Existing fields failed validation:\n${validated.error.message}`,
-      );
+      throw new Error(`Existing fields failed validation:\n${validated.error.message}`);
     }
     return { ...validated.data, generated: [] };
   }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
-
-  const client = new Anthropic({ apiKey });
 
   const title = frontmatter.title ? String(frontmatter.title) : "(untitled)";
   const deck = frontmatter.deck ? String(frontmatter.deck) : "";
   const region = frontmatter.region ? String(frontmatter.region) : "GLOBAL";
 
-  const aiOutput = await callClaude(client, { title, deck, body, region });
+  const aiOutput = await callGemini({ title, deck, body, region });
 
-  // Merge: use AI output only for fields that needed generation.
   const result: EnrichmentOutput = {
-    quickTake: needsQuickTake
-      ? aiOutput.quickTake
-      : (frontmatter.quickTake as string),
-    whyItMatters: needsWhyItMatters
-      ? aiOutput.whyItMatters
-      : (frontmatter.whyItMatters as string),
+    quickTake: needsQuickTake ? aiOutput.quickTake : (frontmatter.quickTake as string),
+    whyItMatters: needsWhyItMatters ? aiOutput.whyItMatters : (frontmatter.whyItMatters as string),
     takeaways: needsTakeaways
       ? aiOutput.takeaways
       : (frontmatter.takeaways as [string, string, string]),
   };
 
-  // Final validation pass on the merged result.
   const finalValidated = enrichmentOutputSchema.safeParse(result);
   if (!finalValidated.success) {
-    throw new Error(
-      `Final enrichment failed validation:\n${finalValidated.error.message}`,
-    );
+    throw new Error(`Final enrichment failed validation:\n${finalValidated.error.message}`);
   }
 
   return { ...finalValidated.data, generated };
