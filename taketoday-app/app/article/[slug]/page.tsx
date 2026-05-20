@@ -7,7 +7,7 @@ import {
 } from "@/components/ArticleLayout";
 import {
   getAllArticles,
-  getArticle,
+  getArticleBySlug as getArticle,
 } from "@/lib/content/queries";
 import { SITE, abs } from "@/lib/site";
 import { TrackPageView } from "@/components/TrackPageView";
