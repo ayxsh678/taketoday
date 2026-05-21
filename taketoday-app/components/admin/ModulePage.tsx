@@ -11,58 +11,78 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
   const blueprint = moduleBlueprints[moduleKey];
 
   return (
-    <div className="space-y-6">
-      <section className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
-        <div>
+    <div className="space-y-8">
+      <section className="flex flex-col items-start justify-between gap-6 xl:flex-row xl:items-center">
+        <div className="flex-1">
           <Badge tone="blue">{blueprint.eyebrow}</Badge>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">{blueprint.title}</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">{blueprint.description}</p>
+          <h1 className="mt-4 text-4xl font-bold tracking-tight text-white">{blueprint.title}</h1>
+          <p className="mt-3 max-w-2xl text-base leading-7 text-zinc-300">{blueprint.description}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3">
           {blueprint.actions.slice(0, 3).map((action, index) => (
-            <Button key={action} variant={index === 0 ? "primary" : "secondary"}>
+            <Button 
+              key={action} 
+              variant={index === 0 ? "primary" : "secondary"} 
+              className="px-6 py-3"
+            >
               {action}
             </Button>
           ))}
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Operational Workspace</CardTitle>
-            <CardDescription>Fast controls for the module’s most common workflow.</CardDescription>
+      <div className="grid gap-8 xl:grid-cols-[1.3fr_0.9fr]">
+        <Card className="border border-white/5">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold">Operational Workspace</CardTitle>
+            <CardDescription className="mt-1 text-sm text-zinc-400">
+              Fast controls for the module’s most common workflow.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-2">
-              <Input placeholder="Search records, people, sources..." />
-              <Input placeholder="Filter by status, role, platform..." />
+          <CardContent className="pt-4 space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Input 
+                placeholder="Search records, people, sources..." 
+                className="h-12"
+              />
+              <Input 
+                placeholder="Filter by status, role, platform..." 
+                className="h-12"
+              />
             </div>
-            <div className="grid gap-3 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-3">
               {blueprint.actions.map((action) => (
                 <button
                   key={action}
                   type="button"
-                  className="flex items-center justify-between rounded-md border border-white/10 bg-white/[0.04] p-4 text-left text-sm text-zinc-300 transition hover:border-white/20 hover:bg-white/[0.07] hover:text-white"
+                  className="flex w-full items-center justify-between rounded-lg border border-white/10 bg-white/[0.03] px-6 py-4 text-left text-sm font-medium text-zinc-200 transition-all hover:border-white/20 hover:bg-white/[0.05] hover:text-white focus:outline-none focus:ring-2 focus:ring-white/[0.1]"
                 >
                   {action}
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
                 </button>
               ))}
             </div>
-            <Textarea placeholder="Draft instructions, review notes, source URLs, or API payload notes..." />
+            <Textarea 
+              placeholder="Draft instructions, review notes, source URLs, or API payload notes..." 
+              className="h-32"
+            />
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Controls and Security</CardTitle>
-            <CardDescription>Production controls wired for RBAC, auditability, and safe automation.</CardDescription>
+        <Card className="border border-white/5">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold">Controls and Security</CardTitle>
+            <CardDescription className="mt-1 text-sm text-zinc-400">
+              Production controls wired for RBAC, auditability, and safe automation.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="pt-4 space-y-4">
             {["RBAC enforced", "Audit logs captured", "Rate-limit ready", "Validation via Zod", "2FA-ready sessions"].map((item) => (
-              <div key={item} className="flex items-center gap-3 rounded-md bg-white/[0.04] px-3 py-2 text-sm text-zinc-300">
-                <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+              <div 
+                key={item} 
+                className="flex items-center gap-4 rounded-lg border border-white/10 bg-white/[0.02] px-5 py-3 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/[0.03]"
+              >
+                <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />
                 {item}
               </div>
             ))}
@@ -70,27 +90,37 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Performance Signal</CardTitle>
-            <CardDescription>Interactive chart surface for module-level outcomes.</CardDescription>
+      <div className="grid gap-8 lg:grid-cols-3">
+        <Card className="lg:col-span-2 border border-white/5">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold">Performance Signal</CardTitle>
+            <CardDescription className="mt-1 text-sm text-zinc-400">
+              Interactive chart surface for module-level outcomes.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <MiniChart data={engagementSeries} />
+          <CardContent className="pt-6">
+            <MiniChart data={engagementSeries} className="h-48 w-full" />
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>AI Actions</CardTitle>
-            <CardDescription>Assistant patterns ready for OpenAI or Claude providers.</CardDescription>
+        <Card className="border border-white/5">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold">AI Actions</CardTitle>
+            <CardDescription className="mt-1 text-sm text-zinc-400">
+              Assistant patterns ready for OpenAI or Claude providers.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="pt-4 space-y-3">
             {["Summarize", "Rewrite", "Generate hashtags", "Bullish perspective", "Bearish perspective"].map((item) => (
-              <Button key={item} variant="secondary" className="w-full justify-start">
-                <Sparkles className="h-4 w-4" />
-                {item}
+              <Button 
+                key={item} 
+                variant="secondary" 
+                className="w-full flex items-center justify-between px-5 py-3 text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <Sparkles className="h-4 w-4" />
+                  {item}
+                </div>
               </Button>
             ))}
           </CardContent>
@@ -98,19 +128,26 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
       </div>
 
       {moduleKey === "users" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Permission Matrix</CardTitle>
-            <CardDescription>Role boundaries for the current admin architecture.</CardDescription>
+        <Card className="border border-white/5">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold">Permission Matrix</CardTitle>
+            <CardDescription className="mt-1 text-sm text-zinc-400">
+              Role boundaries for the current admin architecture.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-2">
+          <CardContent className="pt-4 grid gap-4 md:grid-cols-2">
             {roleMatrix.map((role) => (
-              <div key={role.role} className="rounded-md border border-white/10 p-4">
-                <Badge tone="violet">
-                  <Lock className="mr-1 h-3 w-3" />
-                  {role.role}
-                </Badge>
-                <p className="mt-3 text-sm text-zinc-400">{role.access}</p>
+              <div 
+                key={role.role} 
+                className="flex flex-col items-start gap-3 rounded-lg border border-white/10 bg-white/[0.02] px-5 py-4 transition-colors hover:bg-white/[0.03]"
+              >
+                <div className="flex items-center gap-3">
+                  <Badge tone="violet" className="flex items-center gap-2">
+                    <Lock className="h-4 w-4" />
+                    <span className="font-medium">{role.role}</span>
+                  </Badge>
+                </div>
+                <p className="text-sm text-zinc-300 leading-6">{role.access}</p>
               </div>
             ))}
           </CardContent>
@@ -118,37 +155,49 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
       )}
 
       {moduleKey === "social" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Platform Preview</CardTitle>
-            <CardDescription>One composer, platform-specific rendering and retry logs.</CardDescription>
+        <Card className="border border-white/5">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold">Platform Preview</CardTitle>
+            <CardDescription className="mt-1 text-sm text-zinc-400">
+              One composer, platform-specific rendering and retry logs.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-3">
+          <CardContent className="pt-4 grid gap-4 md:grid-cols-3">
             {socialPlatforms.map((platform) => (
-              <div key={platform} className="rounded-md border border-white/10 bg-zinc-950/40 p-4">
-                <div className="flex items-center gap-2 text-sm font-medium text-white">
+              <div 
+                key={platform} 
+                className="flex flex-col items-start gap-3 rounded-lg border border-white/10 bg-zinc-950/20 px-5 py-4 transition-colors hover:bg-zinc-950/30"
+              >
+                <div className="flex items-center gap-3">
                   <Search className="h-4 w-4" />
-                  {platform}
+                  <span className="font-medium text-white">{platform}</span>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-zinc-400">Preview, schedule, publish, and inspect retries for {platform}.</p>
+                <p className="mt-2 text-sm text-zinc-300 leading-6">
+                  Preview, schedule, publish, and inspect retries for {platform}.
+                </p>
               </div>
             ))}
           </CardContent>
         </Card>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Audit Trail</CardTitle>
-          <CardDescription>Every sensitive action should write here before shipping to production.</CardDescription>
+      <Card className="border border-white/5">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold">Audit Trail</CardTitle>
+          <CardDescription className="mt-1 text-sm text-zinc-400">
+            Every sensitive action should write here before shipping to production.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="pt-4 space-y-3">
           {auditEvents.map((event) => (
-            <div key={`${event.actor}-${event.at}`} className="flex items-center justify-between rounded-md bg-white/[0.04] px-3 py-2 text-sm">
-              <span className="text-zinc-300">
-                <span className="font-medium text-white">{event.actor}</span> {event.event}
+            <div 
+              key={`${event.actor}-${event.at}`} 
+              className="flex items-center justify-between rounded-lg border border-white/10 bg-white/[0.02] px-5 py-3 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/[0.03]"
+            >
+              <span className="flex items-center gap-3">
+                <span className="text-white">{event.actor}</span> {event.event}
               </span>
-              <span className="text-zinc-500">{event.at}</span>
+              <span className="text-zinc-400">{event.at}</span>
             </div>
           ))}
         </CardContent>
