@@ -7,16 +7,10 @@ import {
 } from "@/components/ArticleLayout";
 import {
   getAllArticles,
-  getArticle,
+  getArticleBySlug,
 } from "@/lib/content/queries";
 import { SITE, abs } from "@/lib/site";
 import { TrackPageView } from "@/components/TrackPageView";
-
-/**
- * TakeToday — Dynamic Article Route
- * Statically generated at build time via `generateStaticParams`.
- * The MDX body is compiled on the server (RSC) so nothing ships to the client.
- */
 
 export function generateStaticParams(): { slug: string }[] {
   return getAllArticles().map((a) => ({ slug: a.slug }));
@@ -28,7 +22,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const a = getArticle(slug);
+  const a = getArticleBySlug(slug);
   if (!a) return { title: "Not found — TakeToday" };
 
   const { title, deck, publishedAt, updatedAt, author, category } = a;
@@ -69,7 +63,7 @@ export default async function ArticlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const article = getArticle(slug);
+  const article = getArticleBySlug(slug);
   if (!article) notFound();
 
   const { title, deck, publishedAt, updatedAt, author, category, slug: articleSlug } = article;
@@ -138,7 +132,6 @@ export default async function ArticlePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
-      {/* Records this read in localStorage for personalization. Zero UI. */}
       <TrackPageView slug={articleSlug} category={category} />
       <ArticleLayout {...layoutProps} />
     </>
