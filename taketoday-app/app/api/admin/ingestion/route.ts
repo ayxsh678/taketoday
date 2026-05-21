@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { jsonError, jsonOk } from "@/lib/admin/api";
+import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 
 const ingestionSchema = z.object({
@@ -9,6 +9,11 @@ const ingestionSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  // Check rate limit
+  if (rateLimit(req)) {
+    return jsonError("Rate limit exceeded. Please try again later.", 429);
+  }
+
   const access = await requireAdmin("ingestion:write");
   if (!access.ok) return access.response;
 

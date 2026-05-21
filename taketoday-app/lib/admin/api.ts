@@ -1,6 +1,34 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { z } from "zod";
 import { adminArticles, adminUsers, notifications, trafficSeries } from "@/lib/admin/data";
+
+// Rate limiting
+const requestCounts = new Map<string, number[]>();
+const WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_REQUESTS = 60;
+
+export function rateLimit(request: NextRequest, userId?: string) {
+  // Use userId if available, otherwise use IP
+  const key = userId ?? request.ip ?? 'anonymous';
+  const now = Date.now();
+
+  if (!requestCounts.has(key)) {
+    requestCounts.set(key, []);
+  }
+
+  const timestamps = requestCounts.get(key)!;
+  // Remove timestamps outside the window
+  const validTimestamps = timestamps.filter((t) => now - t < WINDOW_MS);
+  requestCounts.set(key, validTimestamps);
+
+  if (validTimestamps.length >= MAX_REQUESTS) {
+    return true; // Rate limit exceeded
+  }
+
+  validTimestamps.push(now);
+  requestCounts.set(key, validTimestamps);
+  return false;
+}
 
 export function jsonOk<T>(data: T, init?: ResponseInit) {
   return NextResponse.json({ ok: true, data }, init);

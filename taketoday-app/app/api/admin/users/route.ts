@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { adminUsers } from "@/lib/admin/data";
 import { ADMIN_ROLES } from "@/lib/admin/types";
-import { jsonError, jsonOk } from "@/lib/admin/api";
+import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 
 const inviteSchema = z.object({
@@ -10,7 +10,12 @@ const inviteSchema = z.object({
   role: z.enum(ADMIN_ROLES),
 });
 
-export async function GET() {
+export async function GET(request: Request) {
+  // Check rate limit
+  if (rateLimit(request)) {
+    return jsonError("Rate limit exceeded. Please try again later.", 429);
+  }
+
   const access = await requireAdmin("users:manage");
   if (!access.ok) return access.response;
 
@@ -18,6 +23,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  // Check rate limit
+  if (rateLimit(req)) {
+    return jsonError("Rate limit exceeded. Please try again later.", 429);
+  }
+
   const access = await requireAdmin("users:manage");
   if (!access.ok) return access.response;
 

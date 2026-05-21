@@ -1,8 +1,14 @@
 import { NextRequest } from "next/server";
-import { articleMutationSchema, getAdminSnapshot, jsonError, jsonOk } from "@/lib/admin/api";
+import { articleMutationSchema, getAdminSnapshot, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
+import { logAuditAction } from "@/lib/admin/audit";
 
 export async function GET(req: NextRequest) {
+  // Check rate limit
+  if (rateLimit(req)) {
+    return jsonError("Rate limit exceeded. Please try again later.", 429);
+  }
+
   const access = await requireAdmin("content:read");
   if (!access.ok) return access.response;
 
@@ -21,6 +27,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // Check rate limit
+  if (rateLimit(req)) {
+    return jsonError("Rate limit exceeded. Please try again later.", 429);
+  }
+
   const access = await requireAdmin("content:write");
   if (!access.ok) return access.response;
 
@@ -28,11 +39,21 @@ export async function POST(req: NextRequest) {
   const parsed = articleMutationSchema.safeParse(body);
   if (!parsed.success) return jsonError(parsed.error.message, 422);
 
+  const articleData = parsed.data;
+  
+  // Log the audit action
+  await logAuditAction({
+    action: "create_article",
+    entity: "article",
+    entityId: `art_${Date.now()}`, // Temporary ID
+    after: articleData,
+  });
+
   return jsonOk(
     {
       article: {
         id: `art_${Date.now()}`,
-        ...parsed.data,
+        ...articleData,
       },
     },
     { status: 201 },

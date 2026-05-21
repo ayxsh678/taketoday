@@ -6,16 +6,144 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { MiniChart } from "@/components/admin/MiniChart";
+import { useAdminStore } from "@/components/admin/admin-store";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
   const blueprint = moduleBlueprints[moduleKey];
+  const { role, setSelectedCategory } = useAdminStore();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterValue, setFilterValue] = useState("");
+  const [draftInstructions, setDraftInstructions] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const filterDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced search handler
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+    setIsSearching(true);
+    
+    // Clear previous timeout
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    
+    // Set new timeout
+    searchDebounceRef.current = setTimeout(() => {
+      // Perform search based on module
+      performSearch(value);
+      setIsSearching(false);
+    }, 300); // 300ms debounce
+  }, []);
+
+  // Debounced filter handler
+  const handleFilterChange = useCallback((value: string) => {
+    setFilterValue(value);
+    
+    // Clear previous timeout
+    if (filterDebounceRef.current) {
+      clearTimeout(filterDebounceRef.current);
+    }
+    
+    // Set new timeout
+    filterDebounceRef.current = setTimeout(() => {
+      // Apply filter based on module
+      applyFilter(value);
+    }, 300); // 300ms debounce
+  }, []);
+
+  // Perform search based on module
+  const performSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      let results = [];
+      // In a real implementation, we would call the appropriate API endpoint
+      // For now, we'll simulate with mock data based on module
+      switch (moduleKey) {
+        case "content":
+          // Search articles - using mock data for now
+          const mockArticles = [
+            { id: "1", headline: "OpenAI launches enterprise workspace controls", author: "TakeToday Desk", tags: ["OpenAI", "Enterprise AI", "Governance"] },
+            { id: "2", headline: "India's UPI merchant caps create a new fintech battleground", author: "Meera Iyer", tags: ["UPI", "Fintech", "India"] },
+            { id: "3", headline: "Nvidia's datacenter run rate keeps pressure on cloud buyers", author: "Aarav Shah", tags: ["Nvidia", "Cloud", "Chips"] },
+            { id: "4", headline: "Creator economy teams move from tools to AI production stacks", author: "TakeToday Desk", tags: ["Creator Economy", "AI Tools", "Startups"] },
+          ];
+          results = mockArticles.filter(article => 
+            article.headline.toLowerCase().includes(query.toLowerCase()) ||
+            article.author.toLowerCase().includes(query.toLowerCase()) ||
+            article.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
+          );
+          break;
+        case "ai":
+          // Search AI jobs - using mock data for now
+          const mockAiJobs = [
+            { id: "1", title: "Rewrite article", type: "rewrite" },
+            { id: "2", title: "Generate hashtags", type: "hashtags" },
+            { id: "3", title: "Run fact-check", type: "fact-check" },
+            { id: "4", title: "Create debate", type: "debate" },
+          ];
+          results = mockAiJobs.filter(job => 
+            job.title.toLowerCase().includes(query.toLowerCase()) ||
+            job.type.toLowerCase().includes(query.toLowerCase())
+          );
+          break;
+        // Add more cases for other modules as needed
+        default:
+          results = [];
+      }
+      
+      setSearchResults(results);
+    } catch (error) {
+      console.error("Search error:", error);
+      setSearchResults([]);
+    }
+  }, [moduleKey]);
+
+  // Apply filter based on module
+  const applyFilter = useCallback(async (filter: string) => {
+    if (!filter.trim()) {
+      // Reset to default view
+      return;
+    }
+
+    try {
+      // In a real implementation, we would filter the data based on the selected filter
+      // For now, we'll just log the filter
+      console.log(`Applying filter: ${filter} for module: ${moduleKey}`);
+    } catch (error) {
+      console.error("Filter error:", error);
+    }
+  }, [moduleKey]);
+
+  // Clean up timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+      if (filterDebounceRef.current) {
+        clearTimeout(filterDebounceRef.current);
+      }
+    };
+  }, []);
+
+  // Handle draft instructions change
+  const handleDraftInstructionsChange = useCallback((value: string) => {
+    setDraftInstructions(value);
+  }, []);
 
   return (
     <div className="space-y-8">
       <section className="flex flex-col items-start justify-between gap-6 xl:flex-row xl:items-center">
         <div className="flex-1">
           <Badge tone="blue">{blueprint.eyebrow}</Badge>
-          <h1 className="mt-4 text-4xl font-bold tracking-tight text-white">{blueprint.title}</h1>
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-white lg:text-4xl">{blueprint.title}</h1>
           <p className="mt-3 max-w-2xl text-base leading-7 text-zinc-300">{blueprint.description}</p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -31,7 +159,7 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
         </div>
       </section>
 
-      <div className="grid gap-8 xl:grid-cols-[1.3fr_0.9fr]">
+      <div className="grid gap-8 sm:grid-cols-[1.3fr_0.9fr]">
         <Card className="border border-white/5">
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-semibold">Operational Workspace</CardTitle>
@@ -40,17 +168,22 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4 space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Input 
                 placeholder="Search records, people, sources..." 
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="h-12"
+                isLoading={isSearching}
               />
               <Input 
                 placeholder="Filter by status, role, platform..." 
+                value={filterValue}
+                onChange={(e) => handleFilterChange(e.target.value)}
                 className="h-12"
               />
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {blueprint.actions.map((action) => (
                 <button
                   key={action}
@@ -64,30 +197,69 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
             </div>
             <Textarea 
               placeholder="Draft instructions, review notes, source URLs, or API payload notes..." 
+              value={draftInstructions}
+              onChange={(e) => handleDraftInstructionsChange(e.target.value)}
               className="h-32"
             />
           </CardContent>
         </Card>
 
-        <Card className="border border-white/5">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-semibold">Controls and Security</CardTitle>
-            <CardDescription className="mt-1 text-sm text-zinc-400">
-              Production controls wired for RBAC, auditability, and safe automation.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4 space-y-4">
-            {["RBAC enforced", "Audit logs captured", "Rate-limit ready", "Validation via Zod", "2FA-ready sessions"].map((item) => (
-              <div 
-                key={item} 
-                className="flex items-center gap-4 rounded-lg border border-white/10 bg-white/[0.02] px-5 py-3 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/[0.03]"
-              >
-                <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />
-                {item}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+         <Card className="border border-white/5">
+           <CardHeader className="pb-4">
+             <CardTitle className="text-lg font-semibold">Controls and Security</CardTitle>
+             <CardDescription className="mt-1 text-sm text-zinc-400">
+               Production controls wired for RBAC, auditability, and safe automation.
+             </CardDescription>
+           </CardHeader>
+           <CardContent className="pt-4 space-y-4">
+             <div className="space-y-3">
+               {/* RBAC Enforced - Dynamic based on user role */}
+               <div 
+                 className="flex items-center gap-4 rounded-lg border border-white/10 bg-white/[0.02] px-5 py-3 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/[0.03]"
+               >
+                 <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                 <div>
+                   <p className="font-medium">RBAC enforced</p>
+                   <p className="text-xs text-zinc-400">
+                     Role-based access control active for {role || 'unknown'} role
+                   </p>
+                 </div>
+               </div>
+               
+               {/* Audit logs captured */}
+               <div 
+                 className="flex items-center gap-4 rounded-lg border border-white/10 bg-white/[0.02] px-5 py-3 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/[0.03]"
+               >
+                 <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                 Audit logs captured
+               </div>
+               
+               {/* Rate-limit ready */}
+               <div 
+                 className="flex items-center gap-4 rounded-lg border border-white/10 bg-white/[0.02] px-5 py-3 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/[0.03]"
+               >
+                 <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                 Rate-limit ready
+               </div>
+               
+               {/* Validation via Zod */}
+               <div 
+                 className="flex items-center gap-4 rounded-lg border border-white/10 bg-white/[0.02] px-5 py-3 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/[0.03]"
+               >
+                 <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                 Validation via Zod
+               </div>
+               
+               {/* 2FA-ready sessions */}
+               <div 
+                 className="flex items-center gap-4 rounded-lg border border-white/10 bg-white/[0.02] px-5 py-3 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/[0.03]"
+               >
+                 <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                 2FA-ready sessions
+               </div>
+             </div>
+           </CardContent>
+         </Card>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
