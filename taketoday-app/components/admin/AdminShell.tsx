@@ -145,11 +145,7 @@ export function AdminShell({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [commandOpen, filteredCommands, router]);
-
-  const handleSidebarToggle = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
+    }, [commandOpen, filteredCommands, router]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">

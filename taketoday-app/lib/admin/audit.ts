@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/auth";
+import { auth } from "@/auth";
 
 /**
  * Log an audit entry for admin actions
@@ -14,11 +14,11 @@ export async function logAuditAction({
   action: string;
   entity: string;
   entityId?: string;
-  before?: Record<string, any> | null;
-  after?: Record<string, any> | null;
+  before?: Record<string, unknown> | null;
+  after?: Record<string, unknown> | null;
 }) {
   try {
-    const session = await getSession();
+    const session = await auth();
     
     await prisma.auditLog.create({
       data: {

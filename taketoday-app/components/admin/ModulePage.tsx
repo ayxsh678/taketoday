@@ -1,3 +1,4 @@
+"use client";
 import { ArrowRight, CheckCircle2, Lock, Search, Sparkles } from "lucide-react";
 import { auditEvents, moduleBlueprints, type ModuleKey } from "@/lib/admin/modules";
 import { engagementSeries, roleMatrix, socialPlatforms } from "@/lib/admin/data";
@@ -16,7 +17,7 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
   const [filterValue, setFilterValue] = useState("");
   const [draftInstructions, setDraftInstructions] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+   const [searchResults, setSearchResults] = useState<unknown[]>([]);
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const filterDebounceRef = useRef<NodeJS.Timeout | null>(null);
 

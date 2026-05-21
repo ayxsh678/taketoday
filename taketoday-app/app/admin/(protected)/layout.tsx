@@ -22,7 +22,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <AdminProviders>
-      <AdminShell role={session.user.role} name={session.user.name ?? "Admin}">
+      <AdminShell role={session.user.role} name={session.user.name ?? "Admin"}>
         {children}
       </AdminShell>
     </AdminProviders>
