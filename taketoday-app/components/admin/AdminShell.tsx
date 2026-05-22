@@ -3,37 +3,39 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Bell, Command, Search, ShieldCheck, Menu } from "lucide-react";
-import { adminNav, quickActions, type ModuleKey } from "@/lib/admin/modules";
+import { adminNav, quickActions } from "@/lib/admin/modules";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAdminStore } from "@/components/admin/admin-store";
 import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import type { AdminRole } from "@/lib/admin/types";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, type ComponentType, type ReactNode } from "react";
+
+type AdminCommand = Readonly<{
+  type: "nav" | "action";
+  href?: string;
+  label: string;
+  description: string;
+  icon: ComponentType<{ className?: string }>;
+  action?: () => void;
+}>;
 
 export function AdminShell({
   children,
   role,
   name,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   role: AdminRole;
   name: string;
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { commandOpen, setCommandOpen, setSelectedWorkspace } = useAdminStore();
-  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const { commandOpen, setCommandOpen } = useAdminStore();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredCommands, setFilteredCommands] = useState<Array<{
-    type: "nav" | "action";
-    href?: string;
-    label: string;
-    description: string;
-    icon: React.ComponentType<{ className?: string }>;
-    action?: () => void;
-  }>> = [];
+  const [filteredCommands, setFilteredCommands] = useState<AdminCommand[]>([]);
   const selectedIndexRef = useRef(-1);
 
   const handleSidebarToggle = () => {
@@ -41,44 +43,38 @@ export function AdminShell({
   };
 
   // Prepare all available commands (nav + actions)
-  const allCommands = React.useMemo(() => {
-    const navCommands = adminNav.map((item) => ({
-      type: "nav" as const,
+  const allCommands = useMemo<AdminCommand[]>(() => {
+    const navCommands = adminNav.map<AdminCommand>((item) => ({
+      type: "nav",
       href: item.href,
       label: item.label,
       description: item.description,
       icon: item.icon,
     }));
 
-    const actionCommands = quickActions.map((action) => ({
-      type: "action" as const,
+    const actionCommands = quickActions.map<AdminCommand>((action) => ({
+      type: "action",
       label: action,
       description: `Run action: ${action}`,
-      icon: Search, // Default icon for actions
+      icon: Search,
       action: () => {
-        // Handle specific actions
         switch (action) {
           case "Create article":
             router.push("/admin/content/new");
             break;
           case "Import URL":
-            // TODO: Implement import URL modal
             alert("Import URL functionality not implemented yet");
             break;
           case "Generate captions":
-            // TODO: Implement generate captions modal
             alert("Generate captions functionality not implemented yet");
             break;
           case "Schedule social post":
-            // TODO: Implement schedule social post modal
             alert("Schedule social post functionality not implemented yet");
             break;
           case "Upload media":
-            // TODO: Implement upload media modal
             alert("Upload media functionality not implemented yet");
             break;
           case "Invite teammate":
-            // TODO: Implement invite teammate modal
             alert("Invite teammate functionality not implemented yet");
             break;
           default:
@@ -89,7 +85,7 @@ export function AdminShell({
     }));
 
     return [...navCommands, ...actionCommands];
-  }, [adminNav, quickActions, router]);
+  }, [router, setCommandOpen]);
 
   // Filter commands based on search query
   useEffect(() => {
@@ -109,43 +105,43 @@ export function AdminShell({
     selectedIndexRef.current = -1;
   }, [searchQuery, allCommands]);
 
-  // Handle keyboard navigation for command palette
-  useEffect(() => {
-    if (!commandOpen) return;
+   // Handle keyboard navigation for command palette
+   useEffect(() => {
+     if (!commandOpen) return;
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (filteredCommands.length === 0) return;
+     const handleKeyDown = (e: KeyboardEvent) => {
+       if (filteredCommands.length === 0) return;
 
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        selectedIndexRef.current =
-          (selectedIndexRef.current + 1) % filteredCommands.length;
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        selectedIndexRef.current =
-          (selectedIndexRef.current - 1 + filteredCommands.length) %
-          filteredCommands.length;
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        if (selectedIndexRef.current >= 0 && selectedIndexRef.current < filteredCommands.length) {
-          const command = filteredCommands[selectedIndexRef.current];
-          if (command.type === "nav" && command.href) {
-            router.push(command.href);
-          } else if (command.type === "action" && command.action) {
-            command.action();
-          }
-          setCommandOpen(false);
-        }
-      } else if (e.key === "Escape") {
-        setCommandOpen(false);
-      }
-    };
+       if (e.key === "ArrowDown") {
+         e.preventDefault();
+         selectedIndexRef.current =
+           (selectedIndexRef.current + 1) % filteredCommands.length;
+       } else if (e.key === "ArrowUp") {
+         e.preventDefault();
+         selectedIndexRef.current =
+           (selectedIndexRef.current - 1 + filteredCommands.length) %
+           filteredCommands.length;
+       } else if (e.key === "Enter") {
+         e.preventDefault();
+         if (selectedIndexRef.current >= 0 && selectedIndexRef.current < filteredCommands.length) {
+           const command = filteredCommands[selectedIndexRef.current];
+           if (command.type === "nav" && command.href) {
+             router.push(command.href);
+           } else if (command.type === "action" && command.action) {
+             command.action();
+           }
+           setCommandOpen(false);
+         }
+       } else if (e.key === "Escape") {
+         setCommandOpen(false);
+       }
+     };
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-    }, [commandOpen, filteredCommands, router]);
+     document.addEventListener("keydown", handleKeyDown);
+     return () => {
+       document.removeEventListener("keydown", handleKeyDown);
+     };
+   }, [commandOpen, filteredCommands, router, setCommandOpen]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">

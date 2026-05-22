@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/admin/authz";
 import { prisma } from "@/lib/prisma";
 
 // GET admin stats
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   // Check rate limit
   if (rateLimit(request)) {
     return jsonError("Rate limit exceeded. Please try again later.", 429);

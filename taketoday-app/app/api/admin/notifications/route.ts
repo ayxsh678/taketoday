@@ -1,8 +1,9 @@
+import { NextRequest } from "next/server";
 import { notifications } from "@/lib/admin/data";
-import { jsonOk, rateLimit } from "@/lib/admin/api";
+import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   // Check rate limit
   if (rateLimit(request)) {
     return jsonError("Rate limit exceeded. Please try again later.", 429);

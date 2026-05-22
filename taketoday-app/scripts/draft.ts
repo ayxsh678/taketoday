@@ -3,7 +3,7 @@
  * TakeToday — AI Draft Generator
  *
  * Generates a ready-to-publish MDX article in the TakeToday voice.
- * Requires ANTHROPIC_API_KEY in the environment.
+ * Requires GEMINI_API_KEY in the environment.
  *
  * Usage:
  *   npm run draft -- --topic "Fed raises rates again"
@@ -12,7 +12,7 @@
  *   npm run draft -- --topic "..." --dry-run   (prints MDX, doesn't write file)
  */
 
-import Anthropic from "@anthropic-ai/sdk";
+import { getAIProvider } from "../lib/ai/index.js";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -109,7 +109,7 @@ function toMDX(draft: ArticleDraft, publishedAt: string): string {
   return `${yaml}\n\n${draft.body.trim()}\n`;
 }
 
-// ─── Claude call ─────────────────────────────────────────────────────────────
+// ─── AI call ─────────────────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `You are a writer for TakeToday, an independent news publication.
 Your job is to draft a single article from a topic or source material.
@@ -138,6 +138,21 @@ Your job is to draft a single article from a topic or source material.
 - takeaways: exactly 3 bullets. Each is concrete and non-obvious. No padding.
 - body: MDX prose. H3 headers for sections. Match word count to the chosen format.
 
+## Output Format
+You must respond with ONLY a valid JSON object, no markdown, no explanation. Schema:
+{
+  "slug": "string",
+  "title": "string",
+  "deck": "string",
+  "category": "AI | Finance | Tech | Startups | Briefings | India | International",
+  "format": "QuickNews | SmartBreakdown | DeepDive | SocialPost",
+  "region": "IN | US | GLOBAL",
+  "quickTake": "string",
+  "whyItMatters": "string",
+  "takeaways": ["string", "string", "string"],
+  "body": "string"
+}
+
 ## Examples of good quickTakes
 
 "Anthropic's new agent framework lets models explicitly give up and escalate to a human — a feature that finally makes long-running agents viable in production."
@@ -149,10 +164,11 @@ Your job is to draft a single article from a topic or source material.
 "Anthropic has announced a new feature." ❌`.trim();
 
 async function draftArticle(
-  client: Anthropic,
   input: string,
   hints: { category?: string; format?: string; region?: string },
 ): Promise<ArticleDraft> {
+  const provider = getAIProvider();
+
   const hintText =
     [
       hints.category && `Preferred category: ${hints.category}`,
@@ -169,100 +185,21 @@ async function draftArticle(
     .filter(Boolean)
     .join("\n\n");
 
-  const response = await client.messages.create({
-    model: "claude-opus-4-7",
-    max_tokens: 4096,
-    thinking: { type: "adaptive" },
-    system: [
-      {
-        type: "text",
-        text: SYSTEM_PROMPT,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    tools: [
-      {
-        name: "write_article_draft",
-        description: "Write a structured TakeToday article draft.",
-        input_schema: {
-          type: "object" as const,
-          properties: {
-            slug: {
-              type: "string",
-              description: "URL-safe kebab-case slug, ≤60 chars",
-            },
-            title: { type: "string", description: "Article headline" },
-            deck: {
-              type: "string",
-              description: "One-sentence subtitle / so-what",
-            },
-            category: {
-              type: "string",
-              enum: ["AI", "Finance", "Tech", "Startups", "Briefings", "India", "International"],
-            },
-            format: {
-              type: "string",
-              enum: [
-                "QuickNews",
-                "SmartBreakdown",
-                "DeepDive",
-                "SocialPost",
-              ],
-            },
-            region: {
-              type: "string",
-              enum: ["IN", "US", "GLOBAL"],
-              description: "Geographic audience: IN (India), US (United States), GLOBAL (cross-regional)",
-            },
-            quickTake: {
-              type: "string",
-              description: "One declarative sentence with fact + implication",
-            },
-            whyItMatters: {
-              type: "string",
-              description: "2–3 sentences on business/industry impact",
-            },
-            takeaways: {
-              type: "array",
-              items: { type: "string" },
-              minItems: 3,
-              maxItems: 3,
-              description: "Exactly 3 concrete, non-obvious bullets",
-            },
-            body: {
-              type: "string",
-              description:
-                "MDX prose body, H3 section headers, word count matching format",
-            },
-          },
-          required: [
-            "slug",
-            "title",
-            "deck",
-            "category",
-            "format",
-            "region",
-            "quickTake",
-            "whyItMatters",
-            "takeaways",
-            "body",
-          ],
-          additionalProperties: false,
-        },
-      },
-    ],
-    tool_choice: { type: "tool", name: "write_article_draft" },
-    messages: [{ role: "user", content: userMessage }],
+  const result = await provider.generateText(userMessage, {
+    model: "gemini-2.0-pro",
+    systemInstruction: SYSTEM_PROMPT,
+    responseMimeType: "application/json",
+    temperature: 0.7,
   });
 
-  const toolBlock = response.content.find((b) => b.type === "tool_use");
-  if (!toolBlock || toolBlock.type !== "tool_use") {
-    throw new Error("Claude did not return a tool_use block");
+  let draft: ArticleDraft;
+  try {
+    draft = JSON.parse(result.text.replace(/```json|```/g, "").trim());
+  } catch {
+    throw new Error(`Failed to parse Gemini JSON response: ${result.text}`);
   }
 
-  const draft = toolBlock.input as ArticleDraft;
-
-  // Normalise takeaways — Claude occasionally returns 3 but typed as string[]
+  // Normalise takeaways — Gemini occasionally returns 3 but typed as string[]
   if (!Array.isArray(draft.takeaways) || draft.takeaways.length !== 3) {
     throw new Error(`Expected 3 takeaways, got ${JSON.stringify(draft.takeaways)}`);
   }
@@ -312,15 +249,7 @@ async function main() {
   const normalizedFormat = normalizeEnum(format, ALLOWED_FORMATS, "format");
   const normalizedRegion = normalizeEnum(region, ALLOWED_REGIONS, "region") ?? "GLOBAL";
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    console.error("ANTHROPIC_API_KEY is not set");
-    process.exit(1);
-  }
-
-  const client = new Anthropic({ apiKey });
-
-  // Build the input text for Claude
+  // Build the input text for the AI
   let inputText: string;
   if (url) {
     console.log(`Fetching ${url}…`);
@@ -331,7 +260,7 @@ async function main() {
   }
 
   console.log("Drafting article…");
-  const draft = await draftArticle(client, inputText, {
+  const draft = await draftArticle(inputText, {
     category: normalizedCategory,
     format: normalizedFormat,
     region: normalizedRegion,

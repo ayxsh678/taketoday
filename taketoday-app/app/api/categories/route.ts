@@ -1,19 +1,15 @@
-import { NextRequest } from "next/server";
 import { jsonError, jsonOk } from "@/lib/admin/api";
 import { prisma } from "@/lib/prisma";
 
-// GET all active categories (public endpoint)
-export async function GET(request: Request) {
+// GET all categories (public endpoint)
+export async function GET() {
   try {
     const categories = await prisma.category.findMany({
-      where: { isActive: true },
-      orderBy: { displayOrder: "asc" },
+      orderBy: { name: "asc" },
       select: {
         id: true,
         name: true,
         slug: true,
-        description: true,
-        icon: true,
       },
     });
     return jsonOk({ categories });

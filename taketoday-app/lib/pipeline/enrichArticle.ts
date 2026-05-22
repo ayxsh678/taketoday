@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { getAIProvider } from "@/lib/ai";
+
 // ─── Validation schemas ───────────────────────────────────────────────────────
 
 const nonEmpty = z.string().min(1, "must not be empty");
@@ -11,7 +13,7 @@ const enrichmentOutputSchema = z.object({
   takeaways: takeawaysSchema,
 });
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────
 
 export type EnrichmentOutput = z.infer<typeof enrichmentOutputSchema>;
 export type EnrichableField = "quickTake" | "whyItMatters" | "takeaways";
@@ -28,7 +30,7 @@ export interface EnrichmentResult extends EnrichmentOutput {
   generated: EnrichableField[];
 }
 
-// ─── Missing-field detection ──────────────────────────────────────────────────
+// ─── Missing-field detection ────────────────────────────────────────────────
 
 function isMissingString(v: unknown): boolean {
   return !v || typeof v !== "string" || v.trim() === "";
@@ -39,7 +41,7 @@ function isMissingTakeaways(v: unknown): boolean {
   return v.some((t) => !t || typeof t !== "string" || t.trim() === "");
 }
 
-// ─── Gemini call ──────────────────────────────────────────────────────────────
+// ─── AI Pipeline ────────────────────────────────────────────────────────────
 
 const SYSTEM_PROMPT = `You are an editor for TakeToday, an independent news publication.
 Given article content, generate structured editorial metadata.
@@ -72,8 +74,7 @@ async function callGemini(article: {
   body: string;
   region: string;
 }): Promise<EnrichmentOutput> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
+  const provider = getAIProvider();
 
   const userMessage = `Title: ${article.title}
 Deck: ${article.deck}
@@ -84,61 +85,17 @@ ${article.body.trim()}
 
 Generate the editorial metadata fields. Ensure impact and framing reflect the target audience country.`;
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+  // Use generateStructured for automatic JSON parsing and validation
+  const result = await provider.generateStructured(
+    userMessage,
+    enrichmentOutputSchema,
     {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: SYSTEM_PROMPT }],
-        },
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: userMessage }],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 1024,
-          responseMimeType: "application/json",
-        },
-      }),
+      systemInstruction: SYSTEM_PROMPT,
+      temperature: 0.4,
     }
   );
 
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Gemini API error ${response.status}: ${err}`);
-  }
-
-  const data = await response.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error("Gemini returned no content");
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
-  } catch {
-    throw new Error(`Failed to parse Gemini JSON response: ${text}`);
-  }
-
-  if (
-    !parsed ||
-    typeof parsed !== "object" ||
-    !Array.isArray((parsed as Record<string, unknown>).takeaways) ||
-    (parsed as Record<string, unknown[]>).takeaways.length !== 3
-  ) {
-    throw new Error(`Expected 3 takeaways, got: ${JSON.stringify(parsed)}`);
-  }
-
-  const validated = enrichmentOutputSchema.safeParse(parsed);
-  if (!validated.success) {
-    throw new Error(`AI output failed Zod validation:\n${validated.error.message}`);
-  }
-
-  return validated.data;
+  return result;
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────

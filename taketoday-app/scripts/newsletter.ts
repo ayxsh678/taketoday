@@ -2,11 +2,11 @@
 /**
  * TakeToday — Newsletter Brief Generator
  *
- * Compiles recent articles into a Buttondown-ready email draft using Claude
+ * Compiles recent articles into a Buttondown-ready email draft using Gemini
  * to write the editorial lede and story intros.
  *
  * Requires:
- *   ANTHROPIC_API_KEY  — Claude API key
+ *   GEMINI_API_KEY     — Gemini API key
  *   BUTTONDOWN_API_KEY — Buttondown API key (skipped in --dry-run mode)
  *
  * Usage:
@@ -17,7 +17,7 @@
  *   npm run newsletter -- --dry-run --days 30
  */
 
-import Anthropic from "@anthropic-ai/sdk";
+import { getAIProvider } from "../lib/ai/index.js";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -119,7 +119,7 @@ function briefDate(): string {
   });
 }
 
-// ─── Claude editorial generation ─────────────────────────────────────────────
+// ─── AI editorial generation ─────────────────────────────────────────────────
 
 interface EditorialCopy {
   subject: string;
@@ -136,12 +136,21 @@ Voice rules:
 - No superlatives ("most important", "biggest ever") unless literally true
 - Don't say "in a world where..." or "as we navigate..."
 - Be specific — name the thing, name the number, name the consequence
-- One idea per sentence`;
+- One idea per sentence
+
+Output Format:
+You must respond with ONLY a valid JSON object. Schema:
+{
+  "subject": "string (max 60 chars)",
+  "lede": "string (3-4 sentences)",
+  "storyIntros": ["string (one sentence per story)"]
+}`.trim();
 
 async function generateEditorial(
   articles: LoadedArticle[],
-  client: Anthropic,
 ): Promise<EditorialCopy> {
+  const provider = getAIProvider();
+
   const articleSummaries = articles
     .map(
       (a, i) =>
@@ -153,60 +162,33 @@ async function generateEditorial(
 
 ${articleSummaries}
 
-Write three things:
+Write the following editorial copy:
+1. subject: A single email subject line (max 60 chars). Make it specific to the most compelling story or theme.
+2. lede: A 3–4 sentence editorial intro that ties these stories together thematically.
+3. storyIntros: exactly ${articles.length} sentences, one per story. Each contextualizes why the story belongs in this issue.
 
-1. SUBJECT — A single email subject line (max 60 chars). Make it specific to the most compelling story or theme in this batch. Not "TakeToday Weekly" — something that makes the reader open it.
+Respond in JSON format as specified in the system instructions.`;
 
-2. LEDE — A 3–4 sentence editorial intro that ties these stories together thematically. Start with the most interesting throughline, not a list of what's inside. Don't say "this week" or "in today's brief".
-
-3. STORY_INTROS — One sentence per story (${articles.length} total), in the same order as above. Each is a tightly written editorial intro that contextualizes why this particular story belongs in this issue. Not just a restatement of the deck — add a perspective or link to the broader theme.
-
-Format your response exactly like this:
-SUBJECT: [subject line]
-LEDE: [lede text]
-STORY_INTROS:
-1. [intro for story 1]
-2. [intro for story 2]
-...`;
-
-  const msg = await client.messages.create({
-    model: "claude-opus-4-7",
-    max_tokens: 1024,
-    system: EDITORIAL_SYSTEM,
-    messages: [{ role: "user", content: prompt }],
+  const result = await provider.generateText(prompt, {
+    model: "gemini-2.0-flash",
+    systemInstruction: EDITORIAL_SYSTEM,
+    responseMimeType: "application/json",
+    temperature: 0.7,
   });
 
-  const text = msg.content
-    .filter((b) => b.type === "text")
-    .map((b) => (b as { type: "text"; text: string }).text)
-    .join("");
-
-  return parseEditorialResponse(text, articles.length);
-}
-
-function parseEditorialResponse(text: string, count: number): EditorialCopy {
-  const subjectMatch = text.match(/^SUBJECT:\s*(.+)$/m);
-  const ledeMatch = text.match(/^LEDE:\s*([\s\S]+?)(?=\nSTORY_INTROS:|$)/m);
-
-  const subject = subjectMatch?.[1]?.trim() ?? `TakeToday — ${briefDate()}`;
-  const lede = ledeMatch?.[1]?.trim() ?? "";
-
-  // Extract the STORY_INTROS block first, then parse numbered lines within it.
-  // Accepting both "1." and "1)" styles, optional leading whitespace.
-  const introBlockMatch = text.match(/^STORY_INTROS:\s*\n([\s\S]+?)(?=\n[A-Z_]+:|$)/m);
-  const introBlock = introBlockMatch?.[1] ?? text;
-
-  const storyIntros: string[] = [];
-  for (let i = 1; i <= count; i++) {
-    const match = introBlock.match(new RegExp(`^\\s*${i}[.)]\\s+(.+)$`, "m"));
-    const intro = match?.[1]?.trim() ?? "";
-    if (!intro) {
-      console.warn(`⚠️  No intro found for story ${i}; email will omit it.`);
-    }
-    storyIntros.push(intro);
+  let copy: EditorialCopy;
+  try {
+    copy = JSON.parse(result.text.replace(/```json|```/g, "").trim());
+  } catch {
+    throw new Error(`Failed to parse AI response: ${result.text}`);
   }
 
-  return { subject, lede, storyIntros };
+  if (!Array.isArray(copy.storyIntros) || copy.storyIntros.length !== articles.length) {
+    console.warn(`⚠️  AI returned ${copy.storyIntros?.length ?? 0} intros; expected ${articles.length}. Padding with empty strings.`);
+    copy.storyIntros = Array(articles.length).fill("");
+  }
+
+  return copy;
 }
 
 // ─── Email composer ───────────────────────────────────────────────────────────
@@ -318,15 +300,8 @@ async function main() {
   articles.forEach((a) => console.log(`  • ${a.title} (${a.category}, ${a.publishedAt.slice(0, 10)})`));
 
   // 2. Generate editorial copy
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  if (!anthropicKey) {
-    console.error("\n❌ ANTHROPIC_API_KEY is not set.");
-    process.exit(1);
-  }
-
-  console.log("\n✍️  Generating editorial copy via Claude…");
-  const client = new Anthropic({ apiKey: anthropicKey });
-  const copy = await generateEditorial(articles, client);
+  console.log("\n✍️  Generating editorial copy via Gemini…");
+  const copy = await generateEditorial(articles);
 
   console.log(`\n   Subject: "${copy.subject}"`);
 

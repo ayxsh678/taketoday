@@ -12,32 +12,32 @@ import { useState, useEffect, useCallback, useRef } from "react";
 
 export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
   const blueprint = moduleBlueprints[moduleKey];
-  const { role, setSelectedCategory } = useAdminStore();
+  const { role } = useAdminStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterValue, setFilterValue] = useState("");
   const [draftInstructions, setDraftInstructions] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-   const [searchResults, setSearchResults] = useState<unknown[]>([]);
+  const [searchResults, setSearchResults] = useState<unknown[]>([]);
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const filterDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Debounced search handler
-  const handleSearchChange = useCallback((value: string) => {
-    setSearchQuery(value);
-    setIsSearching(true);
-    
-    // Clear previous timeout
-    if (searchDebounceRef.current) {
-      clearTimeout(searchDebounceRef.current);
-    }
-    
-    // Set new timeout
-    searchDebounceRef.current = setTimeout(() => {
-      // Perform search based on module
-      performSearch(value);
-      setIsSearching(false);
-    }, 300); // 300ms debounce
-  }, []);
+// Debounced search handler
+const handleSearchChange = useCallback((value: string) => {
+  setSearchQuery(value);
+  setIsSearching(true);
+  
+  // Clear previous timeout
+  if (searchDebounceRef.current) {
+    clearTimeout(searchDebounceRef.current);
+  }
+  
+  // Set new timeout
+  searchDebounceRef.current = setTimeout(() => {
+    // Perform search based on module
+    performSearch(value);
+    setIsSearching(false);
+  }, 300); // 300ms debounce
+}, [performSearch]);
 
   // Debounced filter handler
   const handleFilterChange = useCallback((value: string) => {

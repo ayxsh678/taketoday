@@ -27,6 +27,7 @@ enum ArticleStatus {
 enum IntegrationProvider {
   OPENAI
   ANTHROPIC
+  GEMINI
   CLOUDINARY
   X
   INSTAGRAM
