@@ -34,6 +34,7 @@ export const adminNav: AdminNavItem[] = [
   { href: "/admin/users", label: "Users", description: "Roles and permissions", icon: Users },
   { href: "/admin/notifications", label: "Notifications", description: "Alerts and failures", icon: Bell },
   { href: "/admin/settings", label: "Settings", description: "Branding and integrations", icon: Settings },
+  { href: "/admin/automation", label: "Automation Hub", description: "Scraping, AI processing, and deliverables", icon: Bot },
 ];
 
 export const quickActions = [
@@ -111,6 +112,12 @@ export const moduleBlueprints = {
     eyebrow: "Workspace",
     description: "Manage brand defaults, API keys, social integrations, SEO templates, publishing rules, and notifications.",
     actions: ["Update brand", "Rotate API key", "Connect channel", "Edit defaults"],
+  },
+  automation: {
+    title: "Automation Hub",
+    eyebrow: "Automation",
+    description: "Scheduled scraping, AI processing, and deliverable generation with single-click pipeline execution.",
+    actions: ["Run full pipeline", "Scrape sources", "Generate headlines", "Create deliverable", "View job queue"],
   },
 } as const;
 

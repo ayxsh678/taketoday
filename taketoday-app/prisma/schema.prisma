@@ -219,6 +219,28 @@ model IngestionJob {
   updatedAt   DateTime        @updatedAt
 }
 
+model Source {
+  id          String   @id @default(cuid())
+  name        String
+  url         String   @unique
+  type        String   // rss, website, api
+  active      Boolean  @default(true)
+  lastScraped DateTime?
+  articles    Article[]
+}
+
+model Job {
+  id          String    @id @default(cuid())
+  type        String    // scrape, pipeline, generate-headlines
+  status      JobStatus @default(PENDING)
+  result      Json?
+  startedAt   DateTime?
+  completedAt DateTime?
+  error       String?
+  userId      String?
+  createdAt   DateTime  @default(now())
+}
+
 model SocialPost {
   id          String         @id @default(cuid())
   articleId   String?
