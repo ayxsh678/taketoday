@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
         headline: articleData.headline,
         subheadline: articleData.subheadline,
         slug: articleData.slug,
-        body: (articleData as any).body ?? "", // Fallback if body not in schema yet
+        body: articleData.body ?? "", // Now safe due to schema update
         priorityScore: articleData.priorityScore,
         status: statusMap[articleData.status] ?? ArticleStatus.DRAFT,
         authorId: session.user.id!,
@@ -136,7 +136,8 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 },
     );
-  } catch (error: any) {
-    return jsonError(error.message || "Failed to create article", 500);
-  }
+   } catch (error) {
+     const message = error instanceof Error ? error.message : "Failed to create article";
+     return jsonError(message, 500);
+   }
 }

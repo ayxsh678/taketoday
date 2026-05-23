@@ -21,9 +21,9 @@ export async function GET(
     });
 
     return jsonOk({ categories });
-  } catch (_error) {
-    return jsonError("Failed to fetch categories", 500);
-  }
+   } catch {
+     return jsonError("Failed to fetch categories", 500);
+   }
 }
 
 // POST to create a new category
@@ -49,7 +49,7 @@ export async function POST(
     });
 
     return jsonOk({ category });
-  } catch (_error) {
-    return jsonError("Failed to create category", 500);
-  }
+   } catch {
+     return jsonError("Failed to create category", 500);
+   }
 }

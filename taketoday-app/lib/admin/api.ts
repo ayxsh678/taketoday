@@ -9,7 +9,8 @@ const MAX_REQUESTS = 60;
 
 export function rateLimit(request: NextRequest, userId?: string) {
   // Use userId if available, otherwise use IP
-  const key = userId ?? request.ip ?? 'anonymous';
+  const ip = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? 'anonymous';
+  const key = userId ?? ip ?? 'anonymous';
   const now = Date.now();
 
   if (!requestCounts.has(key)) {
@@ -47,6 +48,7 @@ export const articleMutationSchema = z.object({
   status: z.enum(["draft", "under_review", "approved", "scheduled", "published", "archived"]),
   priorityScore: z.number().int().min(0).max(100),
   tags: z.array(z.string()).default([]),
+  body: z.string().optional(),
 });
 
 export function getAdminSnapshot() {

@@ -21,40 +21,6 @@ export function ModulePage({ moduleKey }: { moduleKey: ModuleKey }) {
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const filterDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-// Debounced search handler
-const handleSearchChange = useCallback((value: string) => {
-  setSearchQuery(value);
-  setIsSearching(true);
-  
-  // Clear previous timeout
-  if (searchDebounceRef.current) {
-    clearTimeout(searchDebounceRef.current);
-  }
-  
-  // Set new timeout
-  searchDebounceRef.current = setTimeout(() => {
-    // Perform search based on module
-    performSearch(value);
-    setIsSearching(false);
-  }, 300); // 300ms debounce
-}, [performSearch]);
-
-  // Debounced filter handler
-  const handleFilterChange = useCallback((value: string) => {
-    setFilterValue(value);
-    
-    // Clear previous timeout
-    if (filterDebounceRef.current) {
-      clearTimeout(filterDebounceRef.current);
-    }
-    
-    // Set new timeout
-    filterDebounceRef.current = setTimeout(() => {
-      // Apply filter based on module
-      applyFilter(value);
-    }, 300); // 300ms debounce
-  }, []);
-
   // Perform search based on module
   const performSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
@@ -62,11 +28,11 @@ const handleSearchChange = useCallback((value: string) => {
       return;
     }
 
-    try {
-      let results = [];
-      // In a real implementation, we would call the appropriate API endpoint
-      // For now, we'll simulate with mock data based on module
-      switch (moduleKey) {
+     try {
+       let results: unknown[] = [];
+       // In a real implementation, we would call the appropriate API endpoint
+       // For now, we'll simulate with mock data based on module
+       switch (moduleKey) {
         case "content":
           // Search articles - using mock data for now
           const mockArticles = [
@@ -122,6 +88,40 @@ const handleSearchChange = useCallback((value: string) => {
     }
   }, [moduleKey]);
 
+// Debounced search handler
+const handleSearchChange = useCallback((value: string) => {
+  setSearchQuery(value);
+  setIsSearching(true);
+   
+  // Clear previous timeout
+  if (searchDebounceRef.current) {
+    clearTimeout(searchDebounceRef.current);
+  }
+   
+  // Set new timeout
+  searchDebounceRef.current = setTimeout(() => {
+    // Perform search based on module
+    performSearch(value);
+    setIsSearching(false);
+  }, 300); // 300ms debounce
+}, [performSearch]);
+
+  // Debounced filter handler
+  const handleFilterChange = useCallback((value: string) => {
+    setFilterValue(value);
+    
+    // Clear previous timeout
+    if (filterDebounceRef.current) {
+      clearTimeout(filterDebounceRef.current);
+    }
+    
+    // Set new timeout
+    filterDebounceRef.current = setTimeout(() => {
+      // Apply filter based on module
+      applyFilter(value);
+    }, 300); // 300ms debounce
+  }, []);
+
   // Clean up timeouts on unmount
   useEffect(() => {
     return () => {
@@ -170,13 +170,12 @@ const handleSearchChange = useCallback((value: string) => {
           </CardHeader>
           <CardContent className="pt-4 space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input 
-                placeholder="Search records, people, sources..." 
-                value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="h-12"
-                isLoading={isSearching}
-              />
+             <Input 
+               placeholder="Search records, people, sources..." 
+               value={searchQuery}
+               onChange={(e) => handleSearchChange(e.target.value)}
+               className="h-12"
+             />
               <Input 
                 placeholder="Filter by status, role, platform..." 
                 value={filterValue}

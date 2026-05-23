@@ -1,49 +1,48 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAutomationService } from "@/lib/python/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableRow, TableCaption } from "@/components/ui/table";
-import { AlertTriangle, Bot, CheckCircle2, Clock, LayoutGrid, TrendingUp, Zap } from "lucide-react";
+import { Bot, Clock, LayoutGrid, Search, Zap, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 
+import type { Job, Source } from "@/lib/python/client";
+
 export default function AutomationPage() {
-  const [jobs, setJobs] = useState<Array<any>>([]);
-  const [sources, setSources] = useState<Array<any>>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [sources, setSources] = useState<Source[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [isScraping, setIsScraping] = useState(false);
-  const [selectedSource, setSelectedSource] = useState<string>("");
   const [newSourceName, setNewSourceName] = useState<string>("");
   const [newSourceUrl, setNewSourceUrl] = useState<string>("");
   const [newSourceType, setNewSourceType] = useState<string>("rss");
-  const [searchParams] = useSearchParams();
   const router = useRouter();
   
-  const { client, loading, error, execute } = useAutomationService();
-
-  // Load initial data
-  useEffect(() => {
-    loadJobs();
-    loadSources();
-  }, []);
-
-  const loadJobs = async () => {
-    execute(async () => {
-      const data = await client.getJobs(undefined, 20);
-      setJobs(data.jobs || []);
-    });
-  };
-
-  const loadSources = async () => {
-    execute(async () => {
-      const data = await client.getSources();
-      setSources(data.sources || []);
-    });
-  };
+   const { client, loading, error, execute } = useAutomationService();
+   
+    const loadJobs = useCallback(async () => {
+      execute(async () => {
+        const data = await client.getJobs();
+        setJobs(data.jobs || []);
+      });
+    }, [client, execute]);
+   
+   const loadSources = useCallback(async () => {
+     execute(async () => {
+       const data = await client.getSources();
+       setSources(data.sources || []);
+     });
+   }, [client, execute]);
+   
+   // Load initial data
+   useEffect(() => {
+     loadJobs();
+     loadSources();
+   }, [loadJobs, loadSources]);
 
   const handleRunFullPipeline = async () => {
     setIsRunning(true);
@@ -89,11 +88,14 @@ export default function AutomationPage() {
     
     try {
       await execute(async () => {
-        const result = await client.createSource({
-          name: newSourceName,
-          url: newSourceUrl,
-          type: newSourceType,
-        });
+         const result = await client.createSource({
+           name: newSourceName,
+           url: newSourceUrl,
+           type: newSourceType,
+           active: true,
+           trustScore: 50,
+           trustedCategories: [],
+         });
         console.log("Source created:", result);
         // Reset form and reload sources
         setNewSourceName("");
@@ -106,25 +108,25 @@ export default function AutomationPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'queued':
-      case 'pending':
-        return <Badge tone="secondary">{status.toUpperCase()}</Badge>;
-      case 'running':
-        return <Badge tone="primary">{status.toUpperCase()}</Badge>;
-      case 'succeeded':
-      case 'success':
-        return <Badge tone="success">{status.toUpperCase()}</Badge>;
-      case 'failed':
-      case 'error':
-        return <Badge tone="destructive">{status.toUpperCase()}</Badge>;
-      case 'retrying':
-        return <Badge tone="warning">{status.toUpperCase()}</Badge>;
-      default:
-        return <Badge tone="secondary">{status}</Badge>;
-    }
-  };
+   const getStatusBadge = (status: string) => {
+     switch (status.toLowerCase()) {
+       case 'queued':
+       case 'pending':
+         return <Badge tone="neutral">{status.toUpperCase()}</Badge>;
+       case 'running':
+         return <Badge tone="blue">{status.toUpperCase()}</Badge>;
+       case 'succeeded':
+       case 'success':
+         return <Badge tone="green">{status.toUpperCase()}</Badge>;
+       case 'failed':
+       case 'error':
+         return <Badge tone="red">{status.toUpperCase()}</Badge>;
+       case 'retrying':
+         return <Badge tone="amber">{status.toUpperCase()}</Badge>;
+       default:
+         return <Badge tone="neutral">{status}</Badge>;
+     }
+   };
 
   if (loading) {
     return (
@@ -244,22 +246,26 @@ export default function AutomationPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Today's Output</CardTitle>
-            <CardDescription>AI-generated content and deliverables</CardDescription>
+             <CardTitle>Today&apos;s Output</CardTitle>
+             <CardDescription>AI&apos;generated content and deliverables</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-zinc-200">Headlines</span>
               <span className="text-xs font-mono text-zinc-200">12</span>
             </div>
-            <div class="flex items-center justify-between">
-              <span className="text-sm font-medium text-zinc-200">Captions</span>
-              <span className="text-xs font-mono text-zinc-200">45</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span className="text-sm font-medium text-zinc-200">Newsletters</span>
-              <span className="text-xs font-mono text-zinc-200">3</span>
-            </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-zinc-200">Headlines</span>
+                <span className="text-xs font-mono text-zinc-200">12</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-zinc-200">Captions</span>
+                <span className="text-xs font-mono text-zinc-200">45</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-zinc-200">Newsletters</span>
+                <span className="text-xs font-mono text-zinc-200">3</span>
+              </div>
           </CardContent>
         </Card>
 
@@ -269,18 +275,18 @@ export default function AutomationPage() {
             <CardDescription>Automation efficiency metrics</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div class="flex items-center justify-between">
-              <span className="text-sm font-medium text-zinc-200">Success Rate</span>
-              <span className="text-xs font-mono text-zinc-200">94%</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span className="text-sm font-medium text-zinc-200">Avg Job Time</span>
-              <span className="text-xs font-mono text-zinc-200">2.3s</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span className="text-sm font-medium text-zinc-200">Cost Saved</span>
-              <span className="text-xs font-mono text-zinc-200">$127</span>
-            </div>
+             <div className="flex items-center justify-between">
+               <span className="text-sm font-medium text-zinc-200">Success Rate</span>
+               <span className="text-xs font-mono text-zinc-200">94%</span>
+             </div>
+             <div className="flex items-center justify-between">
+               <span className="text-sm font-medium text-zinc-200">Avg Job Time</span>
+               <span className="text-xs font-mono text-zinc-200">2.3s</span>
+             </div>
+             <div className="flex items-center justify-between">
+               <span className="text-sm font-medium text-zinc-200">Cost Saved</span>
+               <span className="text-xs font-mono text-zinc-200">$127</span>
+             </div>
           </CardContent>
         </Card>
       </div>
@@ -293,14 +299,14 @@ export default function AutomationPage() {
             Recent automation jobs and their status
           </CardDescription>
           <div className="flex items-center justify-between">
-            <Button variant="ghost" size="icon" onClick={() => router.refresh()}>
-              <Zap className="h-4 w-4" />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger className="h-9 w-9 px-2">
-                <Button variant="ghost" size="icon">
-                  <Bot className="h-4 w-4" />
-                </Button>
+           <Button variant="ghost" className="h-8 w-8 p-1" onClick={() => router.refresh()}>
+               <Zap className="h-4 w-4" />
+           </Button>
+             <DropdownMenu>
+               <DropdownMenuTrigger className="h-9 w-9 px-2">
+                 <Button variant="ghost" className="h-8 w-8 p-1">
+                   <Bot className="h-4 w-4" />
+                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-48">
                 <DropdownMenuItem onClick={() => { /* Filter logic */ }}>
@@ -356,13 +362,13 @@ export default function AutomationPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => { /* View details */ }}>
-                          <Search className="h-3 w-3" />
-                        </Button>
+                         <Button variant="ghost" className="h-8 w-8 p-1" onClick={() => { /* View details */ }}>
+                           <Search className="h-3 w-3" />
+                         </Button>
                         {job.status === 'RUNNING' || job.status === 'QUEUED' ? (
-                          <Button variant="destructive" size="icon" onClick={() => { /* Cancel job */ }}>
-                            <X className="h-3 w-3" />
-                          </Button>
+                            <Button variant="danger" className="h-8 w-8 p-1" onClick={() => { /* Cancel job */ }}>
+                              <X className="h-3 w-3" />
+                            </Button>
                         ) : null}
                       </div>
                     </TableCell>
@@ -451,26 +457,25 @@ export default function AutomationPage() {
                       <TableCell className="text-xs break-all">{source.url}</TableCell>
                       <TableCell className="text-xs text-zinc-300">{source.type}</TableCell>
                       <TableCell>
-                        <Badge 
-                          tone={source.active ? 'success' : 'destructive'} 
-                          size="sm"
-                        >
-                          {source.active ? 'Active' : 'Inactive'}
-                        </Badge>
+                         <Badge 
+                           tone={source.active ? 'green' : 'red'}
+                         >
+                           {source.active ? 'Active' : 'Inactive'}
+                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs text-zinc-400">
                         {source.lastScraped ? new Date(source.lastScraped).toLocaleString() : 'Never'}
                       </TableCell>
                       <TableCell className="text-xs font-mono text-zinc-400">{source.articles?.length || 0}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => { /* Edit source */ }}>
-                            <Search className="h-3 w-3" />
-                          </Button>
-                          <Button variant="destructive" size="icon" onClick={() => { /* Delete source */ }}>
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
+                       <TableCell>
+                         <div className="flex items-center gap-2">
+                           <Button variant="ghost" className="h-8 w-8 p-1" onClick={() => { /* Edit source */ }}>
+                             <Search className="h-3 w-3" />
+                           </Button>
+                            <Button variant="danger" className="h-8 w-8 p-1" onClick={() => { /* Delete source */ }}>
+                              <X className="h-3 w-3" />
+                            </Button>
+                         </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -491,14 +496,3 @@ function Circle({ className, ...props }: React.SVGProps<SVGCircleElement> & { cl
   );
 }
 
-// Helper component for X icon
-function X({ className, ...props }: React.SVGProps<SVGPathElement> & { className?: string }) {
-  return (
-    <path 
-      fill-rule="evenodd" 
-      d="M16.97 0l-.708-.708L12 10.29l-4.243-4.243L8.66 0l-.708.708L10.29 1.41l-4.243 4.243L0 8.66l.708.708L1.41 10.29l4.243 4.243L8.66 16l.708.708L10.29 14.59l4.243-4.243L16 8.66l.708-.708z" 
-      {...props} 
-      className={className} 
-    />
-  );
-}

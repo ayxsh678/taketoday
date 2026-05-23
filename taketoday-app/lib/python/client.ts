@@ -7,7 +7,7 @@ export interface Job {
   id: string;
   type: string;
   status: string;
-  result?: any;
+  result?: unknown;
   startedAt?: string;
   completedAt?: string;
   error?: string;
@@ -24,7 +24,7 @@ export interface Source {
   trustedCategories: string[];
   createdAt: string;
   lastScraped?: string;
-  articles?: any[]; // Simplified for now
+  articles?: unknown[]; // Simplified for now
 }
 
 export interface AutomationService {
@@ -34,7 +34,7 @@ export interface AutomationService {
     createSource: (source: Omit<Source, "id" | "createdAt" | "lastScraped" | "articles">) => Promise<{ source: Source }>;
     runFullPipeline: () => Promise<{ message: string }>;
     scrapeSources: () => Promise<{ message: string }>;
-    postEverywhere: (articleId: string) => Promise<{ message: string; results: any[] }>;
+     postEverywhere: (articleId: string) => Promise<{ message: string; results: unknown[] }>;
   };
   loading: boolean;
   error: Error | null;
@@ -145,7 +145,7 @@ export function useAutomationService(): AutomationService {
       return response.json();
     },
     
-    postEverywhere: async (articleId: string): Promise<{ message: string; results: any[] }> => {
+     postEverywhere: async (articleId: string): Promise<{ message: string; results: unknown[] }> => {
       const response = await fetch(`${API_URL}/post-everywhere/${articleId}`, {
         method: "POST",
         headers: {

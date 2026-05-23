@@ -55,9 +55,9 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     });
 
     return jsonOk({ category });
-  } catch (error) {
-    return jsonError("Failed to update category", 500);
-  }
+   } catch {
+     return jsonError("Failed to update category", 500);
+   }
 }
 
   // DELETE a category
@@ -77,7 +77,7 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
     });
 
     return jsonOk({ category });
-  } catch (error) {
-    return jsonError("Failed to delete category", 500);
-  }
+   } catch {
+     return jsonError("Failed to delete category", 500);
+   }
 }

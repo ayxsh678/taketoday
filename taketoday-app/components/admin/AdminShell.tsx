@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Bell, Command, Search, ShieldCheck, Menu } from "lucide-react";
@@ -12,15 +11,6 @@ import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import type { AdminRole } from "@/lib/admin/types";
 import { useState, useRef, useEffect, useMemo, type ComponentType, type ReactNode } from "react";
 
-type AdminCommand = Readonly<{
-  type: "nav" | "action";
-  href?: string;
-  label: string;
-  description: string;
-  icon: ComponentType<{ className?: string }>;
-  action?: () => void;
-}>;
-
 export function AdminShell({
   children,
   role,
@@ -30,165 +20,64 @@ export function AdminShell({
   role: AdminRole;
   name: string;
 }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const pathname = usePathname();
   const router = useRouter();
-  const { commandOpen, setCommandOpen } = useAdminStore();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filteredCommands, setFilteredCommands] = useState<AdminCommand[]>([]);
-  const selectedIndexRef = useRef(-1);
 
-  const handleSidebarToggle = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
+  const isActive = (href: string) => pathname.startsWith(href);
 
-  // Prepare all available commands (nav + actions)
-  const allCommands = useMemo<AdminCommand[]>(() => {
-    const navCommands = adminNav.map<AdminCommand>((item) => ({
-      type: "nav",
-      href: item.href,
-      label: item.label,
-      description: item.description,
-      icon: item.icon,
-    }));
-
-    const actionCommands = quickActions.map<AdminCommand>((action) => ({
-      type: "action",
-      label: action,
-      description: `Run action: ${action}`,
-      icon: Search,
-      action: () => {
-        switch (action) {
-          case "Create article":
-            router.push("/admin/content/new");
-            break;
-          case "Import URL":
-            alert("Import URL functionality not implemented yet");
-            break;
-          case "Generate captions":
-            alert("Generate captions functionality not implemented yet");
-            break;
-          case "Schedule social post":
-            alert("Schedule social post functionality not implemented yet");
-            break;
-          case "Upload media":
-            alert("Upload media functionality not implemented yet");
-            break;
-          case "Invite teammate":
-            alert("Invite teammate functionality not implemented yet");
-            break;
-          default:
-            console.log(`Action not implemented: ${action}`);
-        }
-        setCommandOpen(false);
-      },
-    }));
-
-    return [...navCommands, ...actionCommands];
-  }, [router, setCommandOpen]);
-
-  // Filter commands based on search query
-  useEffect(() => {
-    if (!searchQuery) {
-      setFilteredCommands(allCommands.slice(0, 10)); // Show first 10 when empty
-      return;
-    }
-
-    const lowerQuery = searchQuery.toLowerCase();
-    const filtered = allCommands.filter(
-      (cmd) =>
-        cmd.label.toLowerCase().includes(lowerQuery) ||
-        cmd.description.toLowerCase().includes(lowerQuery)
-    );
-    setFilteredCommands(filtered);
-    // Reset selected index when filter changes
-    selectedIndexRef.current = -1;
-  }, [searchQuery, allCommands]);
-
-   // Handle keyboard navigation for command palette
-   useEffect(() => {
-     if (!commandOpen) return;
-
-     const handleKeyDown = (e: KeyboardEvent) => {
-       if (filteredCommands.length === 0) return;
-
-       if (e.key === "ArrowDown") {
-         e.preventDefault();
-         selectedIndexRef.current =
-           (selectedIndexRef.current + 1) % filteredCommands.length;
-       } else if (e.key === "ArrowUp") {
-         e.preventDefault();
-         selectedIndexRef.current =
-           (selectedIndexRef.current - 1 + filteredCommands.length) %
-           filteredCommands.length;
-       } else if (e.key === "Enter") {
-         e.preventDefault();
-         if (selectedIndexRef.current >= 0 && selectedIndexRef.current < filteredCommands.length) {
-           const command = filteredCommands[selectedIndexRef.current];
-           if (command.type === "nav" && command.href) {
-             router.push(command.href);
-           } else if (command.type === "action" && command.action) {
-             command.action();
-           }
-           setCommandOpen(false);
-         }
-       } else if (e.key === "Escape") {
-         setCommandOpen(false);
-       }
-     };
-
-     document.addEventListener("keydown", handleKeyDown);
-     return () => {
-       document.removeEventListener("keydown", handleKeyDown);
-     };
-   }, [commandOpen, filteredCommands, router, setCommandOpen]);
+  const handleSidebarToggle = () => setSidebarOpen(!sidebarOpen);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      {/* Mobile sidebar toggle button */}
-      <button
-        type="button"
-        onClick={handleSidebarToggle}
-        className="fixed inset-y-0 left-0 z-40 flex items-center px-4 md:hidden"
-        aria-label="Open sidebar"
-      >
-        <Menu className="h-6 w-6 text-zinc-400 hover:text-white" />
-      </button>
-
-      <aside 
+    <div className="flex h-screen bg-zinc-950">
+      <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-30 flex-shrink-0 w-72 border-r border-white/10 bg-zinc-950/95 px-4 py-5",
-          sidebarOpen ? "transform -translate-x-0" : "-translate-x-full",
-          "transition-transform duration-300 lg:-translate-x-0 lg:static"
+          "w-64 bg-zinc-950/50 backdrop-blur-smd border-r border-white/10 flex-shrink-0",
+          sidebarOpen ? "" : "-translate-x-full",
+          "transition-transform duration-300"
         )}
       >
-        <Link href="/admin" className="flex items-center gap-3">
-          <div className="grid h-9 w-9 place-items-center rounded-md bg-white text-sm font-bold text-zinc-950">TT</div>
-          <div>
-            <p className="text-sm font-semibold text-white">TakeToday Admin</p>
-            <p className="text-xs text-zinc-500">Editorial operating system</p>
-          </div>
-        </Link>
-
-        <nav className="mt-8 space-y-1">
-          {adminNav.map((item) => {
-            const Icon = item.icon;
-            const active = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
-                  active ? "bg-white text-zinc-950" : "text-zinc-400 hover:bg-white/[0.07] hover:text-white",
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
+        <div className="flex h-16 items-center justify-between gap-4 px-4">
+          <button onClick={handleSidebarToggle} className="p-1 rounded-md hover:bg-white/[0.08]">
+            <Menu className="h-4 w-4" />
+          </button>
+          <Link href="/" className="flex items-center gap-3">
+            <Command className="h-5 w-5" />
+            <h1 className="text-white font-bold text-xl">TakeToday</h1>
+          </Link>
+        </div>
+        <nav className="mt-6 space-y-2 px-4">
+          {adminNav.map((nav) => (
+            <Link
+              key={nav.href}
+              href={nav.href}
+              className={cn(
+                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium",
+                isActive(nav.href)
+                  ? "bg-white/[0.08] text-white"
+                  : "text-zinc-300 hover:text-white"
+              )}
+            >
+               <nav.icon className={cn("h-4 w-4")} />
+              <span>{nav.label}</span>
+            </Link>
+          ))}
         </nav>
+        <div className="mt-auto px-4 border-t border-white/10">
+          <div className="space-y-2 px-4 pt-4">
+            {quickActions.map((action) => (
+              <Button
+                key={action}
+                variant="secondary"
+                className="w-full"
+              >
+                {action}
+              </Button>
+            ))}
+          </div>
+        </div>
       </aside>
 
       <div className={cn(
@@ -222,24 +111,25 @@ export function AdminShell({
                     2
                   </span>
                 </Button>
-                {/* Notification dropdown */}
-                <DropdownMenu className="w-56 mt-2">
-                  <DropdownMenuItem onClick={() => {/* Mark all as read */}}>
-                    Mark all as read
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => {/* Go to notifications page */}}>
-                    View all notifications
-                  </DropdownMenuItem>
-                  {/* Notification items would go here */}
-                  <DropdownMenuItem className="border-t pt-2">
-                    <div className="text-xs text-zinc-500">2 new</div>
-                  </DropdownMenuItem>
-                </DropdownMenu>
+                <div className="w-56 mt-2">
+                  <DropdownMenu>
+                    <DropdownMenuItem onClick={() => {/* Mark all as read */}}>
+                      Mark all as read
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {/* Go to notifications page */}}>
+                      View all notifications
+                    </DropdownMenuItem>
+                    {/* Notification items would go here */}
+                    <DropdownMenuItem className="border-t pt-2">
+                      <span className="text-xs text-zinc-500">2 new</span>
+                    </DropdownMenuItem>
+                  </DropdownMenu>
+                </div>
               </div>
-              <div className="h-9 rounded-md border border-white/10 bg-white/[0.06] px-3 py-1.5 text-sm">
-                <span className="text-zinc-400">Signed in as </span>
-                <span className="font-medium text-white">{name}</span>
-              </div>
+            </div>
+            <div className="h-9 rounded-md border border-white/10 bg-white/[0.06] px-3 py-1.5 text-sm">
+              <span className="text-zinc-400">Signed in as </span>
+              <span className="font-medium text-white">{name}</span>
             </div>
           </div>
         </header>
@@ -262,46 +152,48 @@ export function AdminShell({
                 className="h-10 w-full bg-transparent px-2 text-sm text-white outline-none placeholder:text-zinc-500"
               />
             </div>
-            <div className="max-h-96 overflow-y-auto p-2">
-              {filteredCommands.length === 0 ? (
-                <div className="text-center py-4 text-zinc-500">
-                  No commands found
+            <div className="space-y-4 p-6">
+              <h2 className="text-white font-bold text-xl">Search</h2>
+              <div className="space-y-2">
+                <input
+                  placeholder="Type to search..."
+                  className="h-10 w-full bg-transparent px-2 text-sm text-white outline-none placeholder:text-zinc-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-zinc-400 font-medium text-sm">Modules</h3>
+                <div className="space-y-1">
+                  {adminNav.map((nav) => (
+                    <Link
+                      key={nav.href}
+                      href={nav.href}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium",
+                        isActive(nav.href)
+                          ? "bg-white/[0.08] text-white"
+                          : "text-zinc-300 hover:text-white"
+                      )}
+                    >
+              <nav.icon className={cn("h-4 w-4")} />
+                      <span>{nav.label}</span>
+                    </Link>
+                  ))}
                 </div>
-              ) : (
-                <>
-                  {filteredCommands.map((command, index) => {
-                    const isSelected = index === selectedIndexRef.current;
-                    const handleClick = () => {
-                      selectedIndexRef.current = index;
-                      if (command.type === "nav" && command.href) {
-                        router.push(command.href);
-                      } else if (command.type === "action" && command.action) {
-                        command.action();
-                      }
-                      setCommandOpen(false);
-                    };
-
-                    return (
-                      <div
-                        key={`${command.type}-${index}`}
-                        onClick={handleClick}
-                        className={cn(
-                          "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-                          isSelected
-                            ? "bg-white/[0.07] text-white"
-                            : "hover:bg-white/[0.07] hover:text-white"
-                        )}
-                      >
-                        <command.icon className="h-4 w-4 shrink-0" />
-                        <div>
-                          <p className="font-medium">{command.label}</p>
-                          <p className="text-xs text-zinc-500">{command.description}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </>
-              )}
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-zinc-400 font-medium text-sm">Quick Actions</h3>
+                <div className="space-y-1">
+                  {quickActions.map((action) => (
+                    <Button
+                      key={action}
+                      variant="secondary"
+                      className="w-full"
+                    >
+                      {action}
+                    </Button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
