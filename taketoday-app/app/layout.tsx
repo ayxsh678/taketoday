@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
-import { Inter, Instrument_Serif, JetBrains_Mono } from "next/font/google";
+import { Inter, Instrument_Serif, JetBrains_Mono, Geist } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Analytics } from "@vercel/analytics/react";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const inter = Inter({
   subsets: ["latin"],
@@ -43,7 +46,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${instrument.variable} ${jetbrains.variable}`}
+      className={cn(inter.variable, instrument.variable, jetbrains.variable, "font-sans", geist.variable)}
     >
       <body className="grain font-sans bg-paper text-ink min-h-screen">
         <Navbar />
