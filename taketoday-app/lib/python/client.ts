@@ -1,203 +1,166 @@
-/**
- * Client for communicating with the Python automation service
- */
+"use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
-interface AutomationServiceClientOptions {
-  baseUrl?: string;
-  token?: string;
+// Define types for our API responses
+export interface Job {
+  id: string;
+  type: string;
+  status: string;
+  result?: any;
+  startedAt?: string;
+  completedAt?: string;
+  error?: string;
+  createdAt: string;
 }
 
-export class AutomationServiceClient {
-  private baseUrl: string;
-  private token: string | null;
-
-  constructor(options: AutomationServiceClientOptions = {}) {
-    this.baseUrl = options.baseUrl ?? process.env.NEXT_PUBLIC_PYTHON_SERVICE_URL ?? 'http://localhost:8000';
-    this.token = options.token ?? null;
-  }
-
-  setToken(token: string) {
-    this.token = token;
-  }
-
-  private getHeaders(): HeadersInit {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
-    }
-
-    return headers;
-  }
-
-  async login(username: string, password: string) {
-    const response = await fetch(`${this.baseUrl}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, password }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Login failed: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    this.setToken(data.access_token);
-    return data;
-  }
-
-  async scrapeSources() {
-    const response = await fetch(`${this.baseUrl}/api/scrape`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Scrape failed: ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  async runFullPipeline() {
-    const response = await fetch(`${this.baseUrl}/api/pipeline/run`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Pipeline failed: ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  async generateHeadlines(count: number = 10) {
-    const response = await fetch(`${this.baseUrl}/api/ai/generate-headlines`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify({ count }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Headline generation failed: ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  async getJobs(status?: string, limit: number = 50) {
-    const params = new URLSearchParams();
-    if (status) params.append('status', status);
-    params.append('limit', limit.toString());
-
-    const response = await fetch(`${this.baseUrl}/api/jobs?${params}`, {
-      method: 'GET',
-      headers: this.getHeaders(),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch jobs: ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  async getJobStatus(jobId: string) {
-    const response = await fetch(`${this.baseUrl}/api/jobs/${jobId}`, {
-      method: 'GET',
-      headers: this.getHeaders(),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch job status: ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  async cancelJob(jobId: string) {
-    const response = await fetch(`${this.baseUrl}/api/jobs/${jobId}/cancel`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to cancel job: ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  async getSources() {
-    const response = await fetch(`${this.baseUrl}/api/sources`, {
-      method: 'GET',
-      headers: this.getHeaders(),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch sources: ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  async createSource(sourceData: any) {
-    const response = await fetch(`${this.baseUrl}/api/sources`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(sourceData),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to create source: ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  async generateDeliverable(template: string, data: any, format: string = 'html') {
-    const response = await fetch(`${this.baseUrl}/api/deliverables/generate`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify({ template, data, format }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to generate deliverable: ${response.statusText}`);
-    }
-
-    return response.json();
-  }
+export interface Source {
+  id: string;
+  name: string;
+  type: string;
+  url: string;
+  active: boolean;
+  trustScore: number;
+  trustedCategories: string[];
+  createdAt: string;
+  lastScraped?: string;
+  articles?: any[]; // Simplified for now
 }
 
-/**
- * React hook for using the automation service client
- */
-export function useAutomationService() {
-  const [client] = useState(() => new AutomationServiceClient());
+export interface AutomationService {
+  client: {
+    getJobs: (limit?: number) => Promise<{ jobs: Job[] }>;
+    getSources: () => Promise<{ sources: Source[] }>;
+    createSource: (source: Omit<Source, "id" | "createdAt" | "lastScraped" | "articles">) => Promise<{ source: Source }>;
+    runFullPipeline: () => Promise<{ message: string }>;
+    scrapeSources: () => Promise<{ message: string }>;
+    postEverywhere: (articleId: string) => Promise<{ message: string; results: any[] }>;
+  };
+  loading: boolean;
+  error: Error | null;
+  execute: <T>(fn: () => Promise<T>) => Promise<T>;
+}
+
+export function useAutomationService(): AutomationService {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  
+  // In a real implementation, we would get this from environment variables
+  const API_URL = process.env.NEXT_PUBLIC_PYTHON_SERVICE_URL || "http://localhost:8000";
+  const INTERNAL_SERVICE_TOKEN = process.env.NEXT_PUBLIC_INTERNAL_SERVICE_TOKEN || "";
 
-  const execute = useCallback(async <T>(operation: () => Promise<T>): Promise<T | null> => {
+  // Execute function with loading/error states
+  const execute = useCallback(async <T>(fn: () => Promise<T>): Promise<T> => {
     setLoading(true);
     setError(null);
     try {
-      const result = await operation();
+      const result = await fn();
       setLoading(false);
       return result;
     } catch (err) {
       setLoading(false);
-      setError(err instanceof Error ? err : new Error('Unknown error'));
-      return null;
+      setError(err instanceof Error ? err : new Error(String(err)));
+      throw err;
     }
   }, []);
+
+  // API client methods
+  const client = {
+    getJobs: async (limit = 20): Promise<{ jobs: Job[] }> => {
+      const response = await fetch(`${API_URL}/jobs?limit=${limit}`, {
+        headers: {
+          "Authorization": `Bearer ${INTERNAL_SERVICE_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch jobs: ${response.statusText}`);
+      }
+      
+      return response.json();
+    },
+    
+    getSources: async (): Promise<{ sources: Source[] }> => {
+      const response = await fetch(`${API_URL}/sources`, {
+        headers: {
+          "Authorization": `Bearer ${INTERNAL_SERVICE_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch sources: ${response.statusText}`);
+      }
+      
+      return response.json();
+    },
+    
+    createSource: async (source: Omit<Source, "id" | "createdAt" | "lastScraped" | "articles">): Promise<{ source: Source }> => {
+      const response = await fetch(`${API_URL}/sources`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${INTERNAL_SERVICE_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(source),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to create source: ${response.statusText}`);
+      }
+      
+      return response.json();
+    },
+    
+    runFullPipeline: async (): Promise<{ message: string }> => {
+      const response = await fetch(`${API_URL}/trigger-pipeline`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${INTERNAL_SERVICE_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to trigger pipeline: ${response.statusText}`);
+      }
+      
+      return response.json();
+    },
+    
+    scrapeSources: async (): Promise<{ message: string }> => {
+      const response = await fetch(`${API_URL}/scrape-now`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${INTERNAL_SERVICE_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to trigger scraping: ${response.statusText}`);
+      }
+      
+      return response.json();
+    },
+    
+    postEverywhere: async (articleId: string): Promise<{ message: string; results: any[] }> => {
+      const response = await fetch(`${API_URL}/post-everywhere/${articleId}`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${INTERNAL_SERVICE_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to trigger post everywhere: ${response.statusText}`);
+      }
+      
+      return response.json();
+    },
+  };
 
   return {
     client,
