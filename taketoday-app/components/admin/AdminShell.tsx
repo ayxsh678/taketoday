@@ -7,7 +7,12 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAdminStore } from "@/components/admin/admin-store";
-import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import type { AdminRole } from "@/lib/admin/types";
 import { useState, useRef, useEffect, useMemo, type ComponentType, type ReactNode } from "react";
 
@@ -104,28 +109,31 @@ export function AdminShell({
                 {role}
               </Badge>
               <div className="relative">
-                <Button variant="ghost" className="h-9 w-9 px-0" aria-label="Notifications">
-                  <Bell className="h-4 w-4" />
-                  {/* Unread count badge */}
-                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-zinc-50 text-xs">
-                    2
-                  </span>
-                </Button>
-                <div className="w-56 mt-2">
                   <DropdownMenu>
-                    <DropdownMenuItem onClick={() => {/* Mark all as read */}}>
-                      Mark all as read
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {/* Go to notifications page */}}>
-                      View all notifications
-                    </DropdownMenuItem>
-                    {/* Notification items would go here */}
-                    <DropdownMenuItem className="border-t pt-2">
-                      <span className="text-xs text-zinc-500">2 new</span>
-                    </DropdownMenuItem>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-9 w-9 px-0" aria-label="Notifications">
+                        <Bell className="h-4 w-4" />
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-zinc-50 text-xs">
+                          2
+                        </span>
+                      </Button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuItem onClick={() => {/* Mark all as read */}}>
+                        Mark all as read
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem onClick={() => {/* Go to notifications page */}}>
+                        View all notifications
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem className="border-t pt-2">
+                        <span className="text-xs text-zinc-500">2 new</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-              </div>
             </div>
             <div className="h-9 rounded-md border border-white/10 bg-white/[0.06] px-3 py-1.5 text-sm">
               <span className="text-zinc-400">Signed in as </span>
