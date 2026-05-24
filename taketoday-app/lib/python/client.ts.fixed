@@ -191,33 +191,54 @@ export function useAutomationService(): AutomationService {
   // Helper function to safely parse JSON response
   const safeJsonParse = async (response: Response): Promise<unknown> => {
     const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      const text = await response.text();
+    
+    // Read response body once
+    const rawText = await response.text();
+    
+    // Check if we have content
+    if (!rawText || rawText.trim() === '') {
       throw new PythonServiceError(
-        `Expected JSON response, got: ${contentType || 'unknown'}`, 
+        'Empty response body',
         {
           statusCode: response.status,
           service: 'python-service',
-          cause: { 
+          cause: { receivedContentType: contentType }
+        }
+      );
+    }
+    
+    // Check content type
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new PythonServiceError(
+        `Expected JSON response, got: ${contentType || 'unknown'}`,
+        {
+          statusCode: response.status,
+          service: 'python-service',
+          cause: {
             receivedContentType: contentType,
-            responseBody: text.substring(0, 200) // Limit logged response size
+            responseBody: rawText.substring(0, 200) // Limit logged size
           }
         }
       );
     }
-
+    
+    // Try to parse JSON
     try {
-      return await response.json();
+      return JSON.parse(rawText);
     } catch (err) {
-      const text = await response.text();
       throw new PythonServiceError(
-        `Failed to parse JSON response: ${err instanceof Error ? err.message : String(err)}`, 
+        `Failed to parse JSON response: ${err instanceof Error ? err.message : String(err)}`,
         {
           statusCode: response.status,
           service: 'python-service',
-          cause: { 
-            responseBody: text.substring(0, 200), // Limit logged response size
+          cause: {
+            responseBody: rawText.substring(0, 200), // Limit logged size
             parseError: err instanceof Error ? err.message : String(err)
+          }
+        }
+      );
+    }
+  };
           }
         }
       );

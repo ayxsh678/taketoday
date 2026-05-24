@@ -23,10 +23,11 @@ import path from "path";
 import { fileURLToPath } from "url";
 import matter from "gray-matter";
 import { loadEnv } from "./utils/loadEnv.js";
+import { appConfig } from "../../lib/config/app";
 
 loadEnv();
 
-// ─── CLI args ────────────────────────────────────────────────────────────────
+// ─── CLI args ────────────────────────────────────────────────────────
 
 function parseArgs(argv: string[]): {
   days: number;
@@ -49,7 +50,7 @@ function parseArgs(argv: string[]): {
   };
 }
 
-// ─── Article loader ───────────────────────────────────────────────────────────
+// ─── Article loader ────────────────────────────────────────────────────
 
 interface ArticleFrontmatter {
   slug: string;
@@ -70,7 +71,7 @@ interface LoadedArticle extends ArticleFrontmatter {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ARTICLES_DIR = path.join(__dirname, "../content/articles");
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL?.trim() ?? "https://taketoday.vercel.app";
+const SITE_URL = appConfig.siteUrl ?? "https://taketoday.vercel.app";
 
 async function loadRecentArticles(withinDays: number): Promise<LoadedArticle[]> {
   const cutoff = new Date(Date.now() - withinDays * 24 * 60 * 60 * 1000);
@@ -110,6 +111,8 @@ async function loadRecentArticles(withinDays: number): Promise<LoadedArticle[]> 
     .slice(0, 6);
 }
 
+// ─── Brief date ────────────────────────────────────────────────────────
+
 function briefDate(): string {
   return new Date().toLocaleDateString("en-US", {
     month: "long",
@@ -119,7 +122,7 @@ function briefDate(): string {
   });
 }
 
-// ─── AI editorial generation ─────────────────────────────────────────────────
+// ─── AI editorial generation ───────────────────────────────────────────
 
 interface EditorialCopy {
   subject: string;
@@ -191,7 +194,7 @@ Respond in JSON format as specified in the system instructions.`;
   return copy;
 }
 
-// ─── Email composer ───────────────────────────────────────────────────────────
+// ─── Email composer ────────────────────────────────────────────────────
 
 function composeEmail(articles: LoadedArticle[], copy: EditorialCopy): string {
   const date = briefDate();
@@ -233,7 +236,7 @@ function composeEmail(articles: LoadedArticle[], copy: EditorialCopy): string {
   ].join("\n");
 }
 
-// ─── Buttondown API ───────────────────────────────────────────────────────────
+// ─── Buttondown API ────────────────────────────────────────────────────
 
 const BUTTONDOWN_EMAILS_URL = "https://api.buttondown.com/v1/emails";
 
@@ -242,7 +245,7 @@ async function postToButtondown(
   body: string,
   send: boolean,
 ): Promise<{ id: string; absolute_url?: string }> {
-  const apiKey = process.env.BUTTONDOWN_API_KEY;
+  const apiKey = appConfig.buttondownApiKey;
   if (!apiKey) {
     throw new Error("BUTTONDOWN_API_KEY is not set in the environment.");
   }
@@ -281,7 +284,7 @@ async function postToButtondown(
   return data as { id: string; absolute_url?: string };
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// ─── Main ──────────────────────────────────────────────────────────────
 
 async function main() {
   const { days, dryRun, send } = parseArgs(process.argv);

@@ -10,11 +10,13 @@
  *   3. Hardcoded fallback — the current Vercel preview alias
  */
 
+import { appConfig } from "@lib/config/app";
+
 function resolveSiteUrl(): string {
-  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  const explicit = appConfig.siteUrl;
   if (explicit) return stripTrailingSlash(explicit);
 
-  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim();
+  const vercel = appConfig.vercelProjectProductionUrl;
   if (vercel) return `https://${stripTrailingSlash(vercel)}`;
 
   return "https://taketoday.vercel.app";

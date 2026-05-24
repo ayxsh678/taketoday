@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
+import { appConfig } from "@lib/config/app";
 
 const aiRequestSchema = z.object({
   mode: z.enum([
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
   const { mode, input } = parsed.data;
   return jsonOk({
     mode,
-    provider: process.env.ANTHROPIC_API_KEY ? "claude" : process.env.OPENAI_API_KEY ? "openai" : "mock",
+    provider: appConfig.anthropicApiKey ? "claude" : appConfig.openaiApiKey ? "openai" : "mock",
     output: createMockAiOutput(mode, input),
     tokensEstimated: Math.ceil(input.length / 4),
   });

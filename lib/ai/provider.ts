@@ -2,6 +2,7 @@
 
 import { z } from 'zod';
 import { AIError, AIRequestOptions, AIProvider } from './types';
+import { appConfig } from '../../config/app';
 
 const providerSchema = z.object({
   name: z.string(),
@@ -11,7 +12,7 @@ const providerSchema = z.object({
 });
 
 export const providers: Record<string, AIProvider> = {
-  gemini: new GeminiProvider(process.env.GEMINI_API_KEY),
+  gemini: new GeminiProvider(appConfig.geminiApiKey),
 };
 
 export function getAIProvider(name: string): AIProvider | null {

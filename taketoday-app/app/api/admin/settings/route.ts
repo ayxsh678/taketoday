@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
+import { appConfig } from "@lib/config/app";
 
 export async function GET(request: NextRequest) {
   // Check rate limit
@@ -15,9 +16,9 @@ export async function GET(request: NextRequest) {
     branding: { name: "TakeToday", tagline: "News. Simplified." },
     seoDefaults: { titleSuffix: "TakeToday", canonicalBase: "https://taketoday.com" },
     integrations: {
-      cloudinary: Boolean(process.env.CLOUDINARY_URL),
-      openai: Boolean(process.env.OPENAI_API_KEY),
-      anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
+      cloudinary: Boolean(appConfig.cloudinaryUrl),
+      openai: Boolean(appConfig.openaiApiKey),
+      anthropic: Boolean(appConfig.anthropicApiKey),
       social: ["X", "Instagram", "WhatsApp", "Telegram", "Facebook", "LinkedIn"],
     },
   });

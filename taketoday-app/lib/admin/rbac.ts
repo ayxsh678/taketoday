@@ -1,4 +1,5 @@
 import type { AdminPermission, AdminRole } from "@/lib/admin/types";
+import { appConfig } from "@lib/config/app";
 
 export const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
   "Super Admin": [
@@ -46,10 +47,10 @@ export function hasPermission(role: AdminRole, permission: AdminPermission) {
 }
 
 export function roleFromEmail(email?: string | null): AdminRole {
-  const superAdmins = parseEmailList(process.env.ADMIN_SUPER_ADMINS);
-  const editors = parseEmailList(process.env.ADMIN_EDITORS);
-  const contentManagers = parseEmailList(process.env.ADMIN_CONTENT_MANAGERS);
-  const socialManagers = parseEmailList(process.env.ADMIN_SOCIAL_MANAGERS);
+  const superAdmins = parseEmailList(appConfig.adminSuperAdmins.join(','));
+  const editors = parseEmailList(appConfig.adminEditors.join(','));
+  const contentManagers = parseEmailList(appConfig.adminContentManagers.join(','));
+  const socialManagers = parseEmailList(appConfig.adminSocialManagers.join(','));
 
   if (!email) return "Analyst";
   const normalized = email.toLowerCase();
@@ -61,7 +62,7 @@ export function roleFromEmail(email?: string | null): AdminRole {
 }
 
 export function isAdminEmail(email?: string | null) {
-  const allowlist = parseEmailList(process.env.ADMIN_EMAILS);
+  const allowlist = parseEmailList(appConfig.adminEmails.join(','));
   if (allowlist.size === 0) return Boolean(email);
   return email ? allowlist.has(email.toLowerCase()) : false;
 }

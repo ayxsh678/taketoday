@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { appConfig } from "@lib/config/app";
 
 /**
  * POST /api/subscribe
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const apiKey = process.env.BUTTONDOWN_API_KEY;
+  const apiKey = appConfig.buttondownApiKey;
   if (!apiKey) {
     // Fail visibly in development so misconfiguration is caught early.
     console.error("BUTTONDOWN_API_KEY is not set");

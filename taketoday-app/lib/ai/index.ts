@@ -1,6 +1,7 @@
 import { GeminiProvider } from "./gemini";
 import { AIProvider } from "./provider";
 import { validateAIConfig } from "./config";
+import { appConfig } from "@lib/config/app";
 
 let providerInstance: AIProvider | null = null;
 
@@ -17,7 +18,7 @@ export function getAIProvider(): AIProvider {
   // Validate configuration before initializing
   validateAIConfig();
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = appConfig.geminiApiKey;
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not set in environment variables");
   }

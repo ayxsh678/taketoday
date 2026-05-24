@@ -2,6 +2,7 @@ import NextAuth, { type DefaultSession } from "next-auth";
 import Google from "next-auth/providers/google";
 import { isAdminEmail, roleFromEmail } from "@/lib/admin/rbac";
 import type { AdminRole } from "@/lib/admin/types";
+import { appConfig } from "@lib/config/app";
 
 declare module "next-auth" {
   interface Session {
@@ -16,11 +17,11 @@ declare module "next-auth" {
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Google({
-      clientId: process.env.AUTH_GOOGLE_ID,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET,
+      clientId: appConfig.authGoogleId,
+      clientSecret: appConfig.authGoogleSecret,
     }),
   ],
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: appConfig.nextauthSecret,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/admin/login",

@@ -1,11 +1,37 @@
 // lib/config/app.ts
 
-import { env } from './env';
+import { env, getEnv } from './env';
 
 export const appConfig = {
-  port: parseInt(env.PORT, 10),
-  databaseUrl: env.DATABASE_URL,
-  secretKey: env.SECRET_KEY,
-  geminiApiKey: env.GEMINI_API_KEY,
+  port: parseInt((getEnv('PORT', '3000') ?? '3000'), 10),
+  databaseUrl: getEnv('DATABASE_URL', '') ?? '',
+  secretKey: getEnv('SECRET_KEY', '') ?? '',
+  geminiApiKey: getEnv('GEMINI_API_KEY', '') ?? '',
+  anthropicApiKey: getEnv('ANTHROPIC_API_KEY', '') ?? '',
+  openaiApiKey: getEnv('OPENAI_API_KEY', '') ?? '',
+  buttondownApiKey: getEnv('BUTTONDOWN_API_KEY', '') ?? '',
+  cloudinaryUrl: getEnv('CLOUDINARY_URL', '') ?? '',
+  siteUrl: getEnv('NEXT_PUBLIC_SITE_URL', 'http://localhost:3000') ?? 'http://localhost:3000',
+  firebaseApiKey: getEnv('NEXT_PUBLIC_FIREBASE_API_KEY', '') ?? '',
+  firebaseAppId: getEnv('NEXT_PUBLIC_FIREBASE_APP_ID', '') ?? '',
+  firebaseAuthDomain: getEnv('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', '') ?? '',
+  firebaseMessagingSenderId: getEnv('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID', '') ?? '',
+  firebaseProjectId: getEnv('NEXT_PUBLIC_FIREBASE_PROJECT_ID', '') ?? '',
+  firebaseStorageBucket: getEnv('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET', '') ?? '',
+  internalServiceToken: getEnv('NEXT_PUBLIC_INTERNAL_SERVICE_TOKEN', '') ?? '',
+  pythonServiceUrl: getEnv('NEXT_PUBLIC_PYTHON_SERVICE_URL', '') ?? '',
+  require2Fa: (getEnv('NEXT_PUBLIC_REQUIRE_2FA', '') as string) === "true",
+  vercelProjectProductionUrl: getEnv('VERCEL_PROJECT_PRODUCTION_URL', '') ?? '',
+  // Auth configuration
+  authGoogleId: getEnv('AUTH_GOOGLE_ID', '') ?? '',
+  authGoogleSecret: getEnv('AUTH_GOOGLE_SECRET', '') ?? '',
+  nextauthSecret: getEnv('NEXTAUTH_SECRET', '') ?? '',
+  // Admin role configuration (comma-separated email lists)
+  adminSuperAdmins: (getEnv('ADMIN_SUPER_ADMINS', '') ?? '').split(',').filter(Boolean) || [],
+  adminContentManagers: (getEnv('ADMIN_CONTENT_MANAGERS', '') ?? '').split(',').filter(Boolean) || [],
+  adminEditors: (getEnv('ADMIN_EDITORS', '') ?? '').split(',').filter(Boolean) || [],
+  adminSocialManagers: (getEnv('ADMIN_SOCIAL_MANAGERS', '') ?? '').split(',').filter(Boolean) || [],
+  adminEmails: (getEnv('ADMIN_EMAILS', '') ?? '').split(',').filter(Boolean) || [],
+  isDevelopment: (getEnv('NODE_ENV', 'development') as string) === 'development',
   // Add more configuration options as needed
 };
