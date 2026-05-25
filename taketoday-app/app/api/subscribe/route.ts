@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { appConfig } from "@lib/config/app";
+import { appConfig } from "@/lib/config/app";
 
 /**
  * POST /api/subscribe

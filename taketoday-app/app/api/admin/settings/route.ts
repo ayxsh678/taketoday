@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
-import { appConfig } from "@lib/config/app";
+import { appConfig } from "@/lib/config/app";
 
 export async function GET(request: NextRequest) {
   // Check rate limit

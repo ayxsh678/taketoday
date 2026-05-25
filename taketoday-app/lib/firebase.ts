@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { appConfig } from "@lib/config/app";
+import { appConfig } from "@/lib/config/app";
 
 const firebaseConfig = {
     apiKey: appConfig.firebaseApiKey,

@@ -1,7 +1,7 @@
 import { GeminiProvider } from "./gemini";
 import { AIProvider } from "./provider";
 import { validateAIConfig } from "./config";
-import { appConfig } from "@lib/config/app";
+import { appConfig } from "@/lib/config/app";
 
 let providerInstance: AIProvider | null = null;
 

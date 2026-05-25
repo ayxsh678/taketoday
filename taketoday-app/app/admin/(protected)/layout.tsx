@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { AdminProviders } from "@/components/admin/AdminProviders";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { redirect } from "next/navigation";
-import { appConfig } from "@lib/config/app";
+import { appConfig } from "@/lib/config/app";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();

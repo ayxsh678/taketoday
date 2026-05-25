@@ -3,7 +3,7 @@
  * Loads and validates required environment variables.
  */
 
-import { appConfig } from '@lib/config/app';
+import { appConfig } from '@/lib/config/app';
 
 /**
  * Validates that the AI configuration is properly set.

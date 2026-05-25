@@ -10,7 +10,7 @@
  *   3. Hardcoded fallback — the current Vercel preview alias
  */
 
-import { appConfig } from "@lib/config/app";
+import { appConfig } from "@/lib/config/app";
 
 function resolveSiteUrl(): string {
   const explicit = appConfig.siteUrl;

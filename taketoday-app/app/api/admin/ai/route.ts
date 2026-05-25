@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
-import { appConfig } from "@lib/config/app";
+import { appConfig } from "@/lib/config/app";
 
 const aiRequestSchema = z.object({
   mode: z.enum([

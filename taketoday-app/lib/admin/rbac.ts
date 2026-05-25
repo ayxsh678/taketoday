@@ -1,5 +1,5 @@
 import type { AdminPermission, AdminRole } from "@/lib/admin/types";
-import { appConfig } from "@lib/config/app";
+import { appConfig } from "@/lib/config/app";
 
 export const ROLE_PERMISSIONS: Record<AdminRole, readonly AdminPermission[]> = {
   "Super Admin": [
