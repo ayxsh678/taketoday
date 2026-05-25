@@ -2,7 +2,7 @@ import NextAuth, { type DefaultSession } from "next-auth";
 import Google from "next-auth/providers/google";
 import { isAdminEmail, roleFromEmail } from "@/lib/admin/rbac";
 import type { AdminRole } from "@/lib/admin/types";
-import { appConfig } from "@lib/config/app";
+import { appConfig } from "@/lib/config/app";
 
 declare module "next-auth" {
   interface Session {
