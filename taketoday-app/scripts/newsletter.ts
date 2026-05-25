@@ -23,7 +23,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import matter from "gray-matter";
 import { loadEnv } from "./utils/loadEnv.js";
-import { appConfig } from "../lib/config/app";
+import { appConfig } from "@/lib/config/app";
 
 loadEnv();
 
