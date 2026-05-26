@@ -7,7 +7,7 @@ const isBuildContext = process.env.NEXT_PHASE === 'phase-production-build' ||
                        process.env.NEXT_PHASE === 'phase-development-server';
 
 export const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'production']).default('development'),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().default('3000'),
   // DATABASE_URL is required for runtime but can be optional during build
   DATABASE_URL: z.string().optional(),
@@ -26,8 +26,9 @@ export const envSchema = z.object({
   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: z.string().optional(),
   NEXT_PUBLIC_FIREBASE_PROJECT_ID: z.string().optional(),
   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: z.string().optional(),
-  NEXT_PUBLIC_INTERNAL_SERVICE_TOKEN: z.string().optional(),
   NEXT_PUBLIC_PYTHON_SERVICE_URL: z.string().url().optional(),
+  PYTHON_SERVICE_URL: z.string().url().optional(),
+  INTERNAL_SERVICE_TOKEN: z.string().optional(),
   NEXT_PUBLIC_REQUIRE_2FA: z.string().optional(),
   VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
   // Auth configuration
@@ -61,12 +62,6 @@ if (isBuildContext) {
 }
 
 export { env };
-
-if (env.NODE_ENV === 'development') {
-  console.log(`Running in development mode with PORT=${env.PORT}`);
-} else if (env.NODE_ENV === 'production') {
-  console.log(`Running in production mode`);
-}
 
 // Helper function to get env value with runtime validation
 export function getEnv<T>(key: string, fallback?: T): T | undefined {

@@ -1,6 +1,7 @@
 import {
   Bell,
   Bot,
+  Boxes,
   ChartNoAxesCombined,
   Clapperboard,
   DatabaseZap,
@@ -24,6 +25,7 @@ export type AdminNavItem = Readonly<{
 export const adminNav: AdminNavItem[] = [
   { href: "/admin", label: "Dashboard", description: "Command center", icon: Gauge },
   { href: "/admin/content", label: "News CMS", description: "Articles and workflow", icon: FileText },
+  { href: "/admin/categories", label: "Categories", description: "Taxonomy and desks", icon: Boxes },
   { href: "/admin/ai", label: "AI Assistant", description: "Rewrite, debate, summarize", icon: Bot },
   { href: "/admin/ingestion", label: "Ingestion", description: "RSS, URL, trend pipelines", icon: DatabaseZap },
   { href: "/admin/media", label: "Media Library", description: "Images, videos, folders", icon: Image },
@@ -94,6 +96,12 @@ export const moduleBlueprints = {
     eyebrow: "Performance",
     description: "Track traffic, CTR, bounce rate, social engagement, follower growth, source quality, and AI content performance.",
     actions: ["Export CSV", "Compare period", "View top stories", "Segment sources"],
+  },
+  categories: {
+    title: "Category Management",
+    eyebrow: "Taxonomy",
+    description: "Maintain desks, category slugs, ordering, and active states for public navigation and editorial routing.",
+    actions: ["Create category", "Reorder desks", "Audit taxonomy", "Review usage"],
   },
   users: {
     title: "User Management",

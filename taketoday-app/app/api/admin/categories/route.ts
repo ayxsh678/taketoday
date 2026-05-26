@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db/prisma";
 
 // GET all categories
 export async function GET(

@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Database URL from environment
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://neondb_owner:npg_kBA6Ph2CgKcw@ep-rapid-tree-aqauzz06-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require")
+# Database URL from environment. Never ship a real hosted database fallback.
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./taketoday-dev.db")
 
 # Create engine
 engine = create_engine(DATABASE_URL, echo=False)

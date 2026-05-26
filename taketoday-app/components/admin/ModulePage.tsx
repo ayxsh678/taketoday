@@ -120,7 +120,7 @@ const handleSearchChange = useCallback((value: string) => {
       // Apply filter based on module
       applyFilter(value);
     }, 300); // 300ms debounce
-  }, []);
+  }, [applyFilter]);
 
   // Clean up timeouts on unmount
   useEffect(() => {
@@ -201,6 +201,11 @@ const handleSearchChange = useCallback((value: string) => {
               onChange={(e) => handleDraftInstructionsChange(e.target.value)}
               className="h-32"
             />
+            {(isSearching || searchResults.length > 0) && (
+              <div className="rounded-lg border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-zinc-300">
+                {isSearching ? "Searching..." : `${searchResults.length} matching result${searchResults.length === 1 ? "" : "s"}`}
+              </div>
+            )}
           </CardContent>
         </Card>
 

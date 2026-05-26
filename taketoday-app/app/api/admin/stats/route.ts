@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
-import { prisma } from "@/lib/prisma";
 
 // GET admin stats
 export async function GET(request: NextRequest) {
@@ -40,7 +39,7 @@ export async function GET(request: NextRequest) {
     };
 
     return jsonOk({ stats: statsWithDelta });
-  } catch (error) {
+  } catch {
     return jsonError("Failed to fetch stats", 500);
   }
 }

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db/prisma";
 
 type RouteContext = { params: Promise<{ id: string }> };
 

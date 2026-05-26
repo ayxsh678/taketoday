@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { appConfig } from "@/lib/config/app";
+import { useState, useCallback, useMemo } from "react";
 import { PythonServiceError } from "@/lib/errors/PythonServiceError";
 
 // Define explicit interfaces for API responses
@@ -77,13 +76,6 @@ export interface AutomationExecutionResponse {
 }
 
 // Generic Python service error response
-export interface PythonServiceErrorResponse {
-  error: string;
-  message: string;
-  details?: Record<string, unknown>;
-  timestamp: string;
-}
-
 // Automation service interface
 export interface AutomationService {
   client: {
@@ -107,10 +99,7 @@ export function useAutomationService(): AutomationService {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
     
-  // Get configuration from centralized config
-  const API_URL = appConfig.pythonServiceUrl || "http://localhost:8000";
-  const INTERNAL_SERVICE_TOKEN = appConfig.internalServiceToken || "";
-  const REQUEST_TIMEOUT = appConfig.pythonServiceTimeout; // 30s for configured service, 10s for default
+  const REQUEST_TIMEOUT = 30000;
 
   // Execute function with loading/error states
   const execute = useCallback(async <T>(fn: () => Promise<T>): Promise<T> => {
@@ -128,18 +117,13 @@ export function useAutomationService(): AutomationService {
   }, []);
 
   // Helper function to create timeout promise
-  const createTimeoutPromise = (ms: number): Promise<never> => {
+  const createTimeoutPromise = useCallback((ms: number): Promise<never> => {
     return new Promise((_, reject) => {
       setTimeout(() => reject(new Error(`Request timeout after ${ms}ms`)), ms);
     });
-  };
+  }, []);
 
-  // Helper function to handle fetch with timeout and retry logic
-  const fetchWithRetry = async (
-    url: string,
-    options: RequestInit = {},
-    retryCount = 0
-  ): Promise<Response> => {
+  const fetchWithRetry = useCallback(async (url: string, options: RequestInit = {}, retryCount = 0): Promise<Response> => {
     const maxRetries = 3;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
@@ -186,10 +170,9 @@ export function useAutomationService(): AutomationService {
 
       throw err;
     }
-  };
+  }, [createTimeoutPromise]);
 
-  // Helper function to safely parse JSON response
-  const safeJsonParse = async (response: Response): Promise<unknown> => {
+  const safeJsonParse = useCallback(async (response: Response): Promise<unknown> => {
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
       const text = await response.text();
@@ -222,188 +205,88 @@ export function useAutomationService(): AutomationService {
         }
       );
     }
-  };
+  }, []);
+
+  const unwrapAdminResponse = useCallback(async <T,>(response: Response): Promise<T> => {
+    const envelope = await safeJsonParse(response) as { ok?: boolean; data?: T; error?: string };
+    if (!response.ok || envelope.ok === false) {
+      throw new PythonServiceError(envelope.error || `Automation request failed: ${response.statusText}`, {
+        statusCode: response.status,
+        service: "python-service",
+      });
+    }
+    return envelope.data as T;
+  }, [safeJsonParse]);
 
   // API client methods
-  const client = {
+  const client = useMemo(() => ({
     getJobs: async (limit = 20): Promise<{ jobs: Job[] }> => {
       const response = await fetchWithRetry(
-        `${API_URL}/jobs?limit=${limit}`, 
-        {
-          headers: {
-            "Authorization": `Bearer ${INTERNAL_SERVICE_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-        }
+        `/api/admin/automation?resource=jobs&limit=${encodeURIComponent(String(limit))}`
       );
-      
-      if (!response.ok) {
-        const errorData = await safeJsonParse(response) as PythonServiceErrorResponse;
-        throw new PythonServiceError(
-          errorData.message || `Failed to fetch jobs: ${response.statusText}`,
-          {
-            statusCode: response.status,
-            service: 'python-service',
-            cause: errorData.details
-          }
-        );
-      }
-      
-      const data = await safeJsonParse(response);
-      return data as { jobs: Job[] };
+      return unwrapAdminResponse<{ jobs: Job[] }>(response);
     },
     
     getSources: async (): Promise<{ sources: Source[] }> => {
       const response = await fetchWithRetry(
-        `${API_URL}/sources`, 
-        {
-          headers: {
-            "Authorization": `Bearer ${INTERNAL_SERVICE_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-        }
+        "/api/admin/automation?resource=sources"
       );
-      
-      if (!response.ok) {
-        const errorData = await safeJsonParse(response) as PythonServiceErrorResponse;
-        throw new PythonServiceError(
-          errorData.message || `Failed to fetch sources: ${response.statusText}`,
-          {
-            statusCode: response.status,
-            service: 'python-service',
-            cause: errorData.details
-          }
-        );
-      }
-      
-      const data = await safeJsonParse(response);
-      return data as { sources: Source[] };
+      return unwrapAdminResponse<{ sources: Source[] }>(response);
     },
     
     createSource: async (source: Omit<Source, "id" | "createdAt" | "lastScraped" | "articles">): Promise<{ source: Source }> => {
       const response = await fetchWithRetry(
-        `${API_URL}/sources`, 
+        "/api/admin/automation",
         {
           method: "POST",
-          headers: {
-            "Authorization": `Bearer ${INTERNAL_SERVICE_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(source),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "createSource", source }),
         }
       );
-      
-      if (!response.ok) {
-        const errorData = await safeJsonParse(response) as PythonServiceErrorResponse;
-        throw new PythonServiceError(
-          errorData.message || `Failed to create source: ${response.statusText}`,
-          {
-            statusCode: response.status,
-            service: 'python-service',
-            cause: errorData.details
-          }
-        );
-      }
-      
-      const data = await safeJsonParse(response);
-      return data as { source: Source };
+      return unwrapAdminResponse<{ source: Source }>(response);
     },
     
     runFullPipeline: async (): Promise<{ message: string }> => {
       const response = await fetchWithRetry(
-        `${API_URL}/trigger-pipeline`, 
+        "/api/admin/automation",
         {
           method: "POST",
-          headers: {
-            "Authorization": `Bearer ${INTERNAL_SERVICE_TOKEN}`,
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "runFullPipeline" }),
         }
       );
-      
-      if (!response.ok) {
-        const errorData = await safeJsonParse(response) as PythonServiceErrorResponse;
-        throw new PythonServiceError(
-          errorData.message || `Failed to trigger pipeline: ${response.statusText}`,
-          {
-            statusCode: response.status,
-            service: 'python-service',
-            cause: errorData.details
-          }
-        );
-      }
-      
-      const data = await safeJsonParse(response);
-      return data as { message: string };
+      return unwrapAdminResponse<{ message: string }>(response);
     },
     
     scrapeSources: async (): Promise<{ message: string }> => {
       const response = await fetchWithRetry(
-        `${API_URL}/scrape-now`, 
+        "/api/admin/automation",
         {
           method: "POST",
-          headers: {
-            "Authorization": `Bearer ${INTERNAL_SERVICE_TOKEN}`,
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "scrapeSources" }),
         }
       );
-      
-      if (!response.ok) {
-        const errorData = await safeJsonParse(response) as PythonServiceErrorResponse;
-        throw new PythonServiceError(
-          errorData.message || `Failed to trigger scraping: ${response.statusText}`,
-          {
-            statusCode: response.status,
-            service: 'python-service',
-            cause: errorData.details
-          }
-        );
-      }
-      
-      const data = await safeJsonParse(response);
-      return data as { message: string };
+      return unwrapAdminResponse<{ message: string }>(response);
     },
     
     postEverywhere: async (articleId: string): Promise<{ message: string; results: unknown[] }> => {
       const response = await fetchWithRetry(
-        `${API_URL}/post-everywhere/${articleId}`, 
+        "/api/admin/automation",
         {
           method: "POST",
-          headers: {
-            "Authorization": `Bearer ${INTERNAL_SERVICE_TOKEN}`,
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "postEverywhere", articleId }),
         }
       );
-      
-      if (!response.ok) {
-        const errorData = await safeJsonParse(response) as PythonServiceErrorResponse;
-        throw new PythonServiceError(
-          errorData.message || `Failed to trigger post everywhere: ${response.statusText}`,
-          {
-            statusCode: response.status,
-            service: 'python-service',
-            cause: errorData.details
-          }
-        );
-      }
-      
-      const data = await safeJsonParse(response);
-      return data as { message: string; results: unknown[] };
+      return unwrapAdminResponse<{ message: string; results: unknown[] }>(response);
     },
     
     // New method: Health check
     healthCheck: async (): Promise<boolean> => {
       try {
         const response = await fetchWithRetry(
-          `${API_URL}/health`, 
-          {
-            headers: {
-              "Authorization": `Bearer ${INTERNAL_SERVICE_TOKEN}`,
-              "Accept": "application/json",
-            },
-          }
+          "/api/admin/automation?resource=health"
         );
         
         if (!response.ok) {
@@ -411,14 +294,14 @@ export function useAutomationService(): AutomationService {
           return false;
         }
         
-        const data = await safeJsonParse(response);
+        const data = await unwrapAdminResponse<HealthCheckResponse>(response);
         // Expecting { status: 'ok' } or similar
         const healthStatus = (data as HealthCheckResponse).status;
         return healthStatus === 'ok' || healthStatus === 'healthy';
       } catch (err) {
         // Any error means the service is unhealthy
         // Log the error for debugging in development
-        if (appConfig.isDevelopment) {
+        if (process.env.NODE_ENV === "development") {
           console.warn('Health check failed:', err);
         }
         return false;
@@ -428,63 +311,29 @@ export function useAutomationService(): AutomationService {
     // New method: Generate article
     generateArticle: async (request: ArticleGenerationRequest): Promise<ArticleGenerationResponse> => {
       const response = await fetchWithRetry(
-        `${API_URL}/generate-article`, 
+        "/api/admin/automation",
         {
           method: "POST",
-          headers: {
-            "Authorization": `Bearer ${INTERNAL_SERVICE_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(request),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "generateArticle", request }),
         }
       );
-      
-      if (!response.ok) {
-        const errorData = await safeJsonParse(response) as PythonServiceErrorResponse;
-        throw new PythonServiceError(
-          errorData.message || `Failed to generate article: ${response.statusText}`,
-          {
-            statusCode: response.status,
-            service: 'python-service',
-            cause: errorData.details
-          }
-        );
-      }
-      
-      const data = await safeJsonParse(response);
-      return data as ArticleGenerationResponse;
+      return unwrapAdminResponse<ArticleGenerationResponse>(response);
     },
     
     // New method: Execute automation
     executeAutomation: async (request: AutomationExecutionRequest): Promise<AutomationExecutionResponse> => {
       const response = await fetchWithRetry(
-        `${API_URL}/execute-automation`, 
+        "/api/admin/automation",
         {
           method: "POST",
-          headers: {
-            "Authorization": `Bearer ${INTERNAL_SERVICE_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(request),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "executeAutomation", request }),
         }
       );
-
-      if (!response.ok) {
-        const errorData = await safeJsonParse(response) as PythonServiceErrorResponse;
-        throw new PythonServiceError(
-          errorData.message || `Failed to execute automation: ${response.statusText}`,
-          {
-            statusCode: response.status,
-            service: 'python-service',
-            cause: errorData.details
-          }
-        );
-      }
-
-      const data = await safeJsonParse(response);
-      return data as AutomationExecutionResponse;
+      return unwrapAdminResponse<AutomationExecutionResponse>(response);
     }
-  };
+  }), [fetchWithRetry, unwrapAdminResponse]);
 
   return {
     client,

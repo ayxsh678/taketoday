@@ -1,5 +1,5 @@
 import { jsonError, jsonOk } from "@/lib/admin/api";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db/prisma";
 
 // GET all categories (public endpoint)
 export async function GET() {
@@ -13,7 +13,7 @@ export async function GET() {
       },
     });
     return jsonOk({ categories });
-  } catch (error) {
+  } catch {
     return jsonError("Failed to fetch categories", 500);
   }
 }

@@ -26,12 +26,6 @@
       "@/*": [
         "./*"
       ],
-      "@lib/*": [
-        "../lib/*"
-      ],
-      "@root/*": [
-        "../*"
-      ],
       "contentlayer/generated": [
         "./.contentlayer/generated"
       ]

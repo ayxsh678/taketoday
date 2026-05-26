@@ -44,7 +44,7 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
     expected_token = os.getenv("INTERNAL_SERVICE_TOKEN")
     if token != expected_token:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAuthorized,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
@@ -110,6 +110,8 @@ async def trigger_pipeline(background_tasks: BackgroundTasks, token: str = Depen
 # Post everywhere endpoint
 @app.post("/post-everywhere/{article_id}")
 async def post_everywhere(article_id: str, background_tasks: BackgroundTasks, token: str = Depends(verify_token)):
+    if publisher is None:
+        raise HTTPException(status_code=503, detail="Publisher is not initialized")
     # This would trigger posting to all connected platforms in background
     background_tasks.add_task(publisher.post_everywhere, article_id)
     return {"message": f"Post everywhere triggered for article {article_id} in background"}

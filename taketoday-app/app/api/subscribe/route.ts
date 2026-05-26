@@ -88,15 +88,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // Surface Buttondown's own error message when available.
-  let detail = "";
-  try {
-    const data = (await res.json()) as Record<string, unknown>;
-    detail = typeof data.detail === "string" ? data.detail : "";
-  } catch { /* ignore */ }
-
   return NextResponse.json(
-    { error: detail || "Subscription failed. Please try again." },
+    { error: "Subscription failed. Please try again." },
     { status: res.status >= 400 ? res.status : 500 },
   );
 }

@@ -1,6 +1,6 @@
 // lib/config/app.ts
 
-import { env, getEnv } from './env';
+import { getEnv } from './env';
 
 export const appConfig = {
   port: parseInt((getEnv('PORT', '3000') ?? '3000'), 10),
@@ -18,8 +18,11 @@ export const appConfig = {
   firebaseMessagingSenderId: getEnv('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID', '') ?? '',
   firebaseProjectId: getEnv('NEXT_PUBLIC_FIREBASE_PROJECT_ID', '') ?? '',
   firebaseStorageBucket: getEnv('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET', '') ?? '',
-  internalServiceToken: getEnv('NEXT_PUBLIC_INTERNAL_SERVICE_TOKEN', '') ?? '',
-  pythonServiceUrl: getEnv('NEXT_PUBLIC_PYTHON_SERVICE_URL', '') ?? '',
+  internalServiceToken: getEnv('INTERNAL_SERVICE_TOKEN', '') ?? '',
+  pythonServiceUrl:
+    getEnv('PYTHON_SERVICE_URL', '') ??
+    getEnv('NEXT_PUBLIC_PYTHON_SERVICE_URL', '') ??
+    '',
   pythonServiceTimeout: 30000,
   require2Fa: (getEnv('NEXT_PUBLIC_REQUIRE_2FA', '') as string) === "true",
   vercelProjectProductionUrl: getEnv('VERCEL_PROJECT_PRODUCTION_URL', '') ?? '',

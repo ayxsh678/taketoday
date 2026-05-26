@@ -25,14 +25,14 @@ export default function AutomationPage() {
    const { client, loading, error, execute } = useAutomationService();
    
     const loadJobs = useCallback(async () => {
-      execute(async () => {
+      return execute(async () => {
         const data = await client.getJobs();
         setJobs(data.jobs || []);
       });
     }, [client, execute]);
    
    const loadSources = useCallback(async () => {
-     execute(async () => {
+     return execute(async () => {
        const data = await client.getSources();
        setSources(data.sources || []);
      });
@@ -201,10 +201,12 @@ export default function AutomationPage() {
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-zinc-200">Service</span>
               <span className="flex items-center gap-2">
-                <Circle className="h-3 w-3 
-                  {loading ? 'bg-yellow-400 animate-pulse' 
-                  : !error && navigator.onLine ? 'bg-green-400' : 'bg-red-400'}"/>
-                <span className="text-xs">{loading ? 'Starting...' : !error && navigator.onLine ? 'Online' : 'Offline'}</span>
+                <span
+                  className={`h-3 w-3 rounded-full ${
+                    loading ? "bg-yellow-400 animate-pulse" : !error ? "bg-green-400" : "bg-red-400"
+                  }`}
+                />
+                <span className="text-xs">{loading ? "Starting..." : !error ? "Online" : "Offline"}</span>
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -488,11 +490,3 @@ export default function AutomationPage() {
     </div>
   );
 }
-
-// Helper component for status indicator
-function Circle({ className, ...props }: React.SVGProps<SVGCircleElement> & { className?: string }) {
-  return (
-    <circle cx="12" cy="12" r="10" {...props} className={className} />
-  );
-}
-

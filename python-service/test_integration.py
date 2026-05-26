@@ -7,6 +7,7 @@ import asyncio
 import os
 import sys
 from unittest.mock import Mock, AsyncMock
+import pytest
 
 # Add the app directory to the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'app'))
@@ -22,6 +23,7 @@ class MockAsyncContextManager:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         pass
 
+@pytest.mark.asyncio
 async def test_pipeline_integration():
     """Test that the pipeline integrates correctly with Gemini and database"""
     print("Testing Pipeline Integration...")

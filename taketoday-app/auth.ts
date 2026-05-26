@@ -7,6 +7,7 @@ import { appConfig } from "@/lib/config/app";
 declare module "next-auth" {
   interface Session {
     user: {
+      id?: string;
       role: AdminRole;
       isAdmin: boolean;
       twoFaVerified?: boolean;
@@ -32,11 +33,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const adminToken = token as typeof token & { role?: AdminRole; isAdmin?: boolean; twoFaVerified?: boolean };
       adminToken.role = roleFromEmail(email);
       adminToken.isAdmin = isAdminEmail(email);
-      adminToken.twoFaVerified = false; // default to false
+      adminToken.twoFaVerified = adminToken.twoFaVerified ?? false;
       return adminToken;
     },
     async session({ session, token }) {
       const adminToken = token as typeof token & { role?: AdminRole; isAdmin?: boolean; twoFaVerified?: boolean };
+      session.user.id = token.sub ?? "";
       session.user.role = adminToken.role ?? "Analyst";
       session.user.isAdmin = Boolean(adminToken.isAdmin);
       session.user.twoFaVerified = adminToken.twoFaVerified ?? false;

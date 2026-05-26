@@ -10,7 +10,7 @@ export type FeaturedSectionProps = Readonly<{
 
 export function FeaturedSection({ lead, side }: FeaturedSectionProps) {
   return (
-    <SectionShell labelledBy="lead-heading">
+    <SectionShell id="latest" labelledBy="lead-heading">
       <header className="flex items-end justify-between mb-12 lg:mb-16">
         <h2
           id="lead-heading"
@@ -19,7 +19,7 @@ export function FeaturedSection({ lead, side }: FeaturedSectionProps) {
           The Lead
         </h2>
         <Link
-          href="/today"
+          href="/#latest"
           className="reveal font-mono text-[11px] tracking-[0.18em] uppercase text-ink-500 hover:text-ink"
         >
           Today&rsquo;s Brief →

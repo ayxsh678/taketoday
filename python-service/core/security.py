@@ -3,14 +3,14 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Dict
 import os
 from dotenv import load_dotenv
+import jwt
+from jwt import InvalidTokenError
 
 load_dotenv()
 
 # Security
 security = HTTPBearer()
 
-# Mock token validation for demo
-# In production, use proper JWT validation with public key or shared secret
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, str]:
     """
     Verify JWT token
@@ -21,15 +21,26 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
     """
     token = credentials.credentials
     
-    # For demo purposes, accept any token that starts with "valid-token-"
-    # In production, replace with actual JWT validation
-    if token.startswith("valid-token-"):
-        return {"username": "admin", "role": "admin"}
-    
-    # For development, also accept a demo token from environment
-    demo_token = os.getenv("DEMO_AUTH_TOKEN")
-    if demo_token and token == demo_token:
-        return {"username": "demo_user", "role": "editor"}
+    service_token = os.getenv("INTERNAL_SERVICE_TOKEN")
+    if service_token and token == service_token:
+        return {"username": "internal-service", "role": "admin"}
+
+    jwt_secret = os.getenv("JWT_SECRET")
+    if jwt_secret:
+        try:
+            payload = jwt.decode(
+                token,
+                jwt_secret,
+                algorithms=["HS256"],
+                audience=os.getenv("JWT_AUDIENCE") or None,
+                options={"verify_aud": bool(os.getenv("JWT_AUDIENCE"))},
+            )
+            return {
+                "username": str(payload.get("sub") or payload.get("email") or "admin"),
+                "role": str(payload.get("role") or "admin"),
+            }
+        except InvalidTokenError:
+            pass
     
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

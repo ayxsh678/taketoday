@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/db/prisma";
 import { auth } from "@/auth";
 import { Prisma } from "@prisma/client";
 
@@ -20,10 +20,13 @@ export async function logAuditAction({
 }) {
   try {
     const session = await auth();
+    const actor = session?.user?.email
+      ? await prisma.adminUser.findUnique({ where: { email: session.user.email } })
+      : null;
     
      await prisma.auditLog.create({
        data: {
-         actorId: session?.user?.id,
+         actorId: actor?.id,
          action,
          entity,
          entityId,
