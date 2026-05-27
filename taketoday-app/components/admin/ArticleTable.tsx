@@ -211,8 +211,8 @@ export function ArticleTable({ queryParams }: ArticleTableProps = {}) {
   return (
     <>
       {/* ── table ── */}
-      <div className="overflow-hidden rounded-lg border border-white/10">
-        <table className="w-full text-left text-sm">
+      <div className="overflow-x-auto rounded-lg border border-white/10">
+        <table className="w-full min-w-160 text-left text-sm">
           <thead className="bg-white/4 text-xs uppercase text-zinc-500">
             <tr>
               <th className="px-4 py-3 font-medium">Story</th>

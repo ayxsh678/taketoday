@@ -177,7 +177,7 @@ export default async function AdminDashboardPage() {
           </div>
         </section>
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard
             label="Published news"
             value={formatCount(publishedTotal)}
@@ -228,7 +228,7 @@ export default async function AdminDashboardPage() {
           />
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[1.4fr_0.6fr]">
+        <section className="grid gap-6 lg:grid-cols-2 xl:grid-cols-[1.4fr_0.6fr]">
           <Card>
             <CardHeader>
               <CardTitle>Traffic Performance</CardTitle>
@@ -250,7 +250,7 @@ export default async function AdminDashboardPage() {
           </Card>
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[1.4fr_0.6fr]">
+        <section className="grid gap-6 lg:grid-cols-2 xl:grid-cols-[1.4fr_0.6fr]">
           <Card>
             <CardHeader>
               <CardTitle>Recent Content</CardTitle>

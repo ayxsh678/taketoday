@@ -208,7 +208,7 @@ export function AdminShell({
                 "group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition",
                 isActive(nav.href)
                   ? "bg-white text-zinc-950 shadow-sm"
-                  : "text-zinc-400 hover:bg-white/[0.06] hover:text-white",
+                  : "text-zinc-400 hover:bg-white/6 hover:text-white",
               )}
             >
               <nav.icon className="h-4 w-4 shrink-0" />
@@ -219,7 +219,7 @@ export function AdminShell({
 
         {/* user footer */}
         <div className="border-t border-white/10 p-4">
-          <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+          <div className="rounded-lg border border-white/10 bg-white/4 p-3">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">Signed in</p>
             <p className="mt-1 truncate text-sm font-medium text-white">{name}</p>
             <div className="mt-3 flex items-center justify-between gap-2">
@@ -268,11 +268,11 @@ export function AdminShell({
             <button
               type="button"
               onClick={() => setCommandOpen(true)}
-              className="hidden h-9 min-w-80 items-center gap-3 rounded-md border border-white/10 bg-white/[0.04] px-3 text-sm text-zinc-500 transition hover:border-white/20 hover:bg-white/[0.06] hover:text-zinc-300 md:flex"
+              className="hidden h-9 w-full max-w-xs items-center gap-3 rounded-md border border-white/10 bg-white/4 px-3 text-sm text-zinc-500 transition hover:border-white/20 hover:bg-white/6 hover:text-zinc-300 sm:flex lg:max-w-sm"
             >
-              <Search className="h-4 w-4" />
-              Search, jump to module, or run action
-              <span className="ml-auto inline-flex items-center gap-1 rounded border border-white/10 px-1.5 py-0.5 text-[11px] text-zinc-500">
+              <Search className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 flex-1 truncate text-left">Search or jump to module…</span>
+              <span className="ml-auto inline-flex shrink-0 items-center gap-1 rounded border border-white/10 px-1.5 py-0.5 text-[11px] text-zinc-500">
                 <Command className="h-3 w-3" /> K
               </span>
             </button>
@@ -316,15 +316,15 @@ export function AdminShell({
               </div>
             </div>
 
-            {/* signed-in name */}
-            <div className="hidden h-9 items-center rounded-md border border-white/10 bg-white/[0.05] px-3 text-sm sm:flex">
+            {/* signed-in name — hidden on lg+ since sidebar footer shows it */}
+            <div className="hidden h-9 items-center rounded-md border border-white/10 bg-white/5 px-3 text-sm sm:flex lg:hidden">
               <span className="text-zinc-400">Signed in as&nbsp;</span>
-              <span className="font-medium text-white">{name}</span>
+              <span className="max-w-30 truncate font-medium text-white">{name}</span>
             </div>
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
+        <main className="mx-auto w-full max-w-375 px-4 py-6 sm:px-6 lg:px-8">
           {children}
         </main>
       </div>
@@ -383,8 +383,8 @@ export function AdminShell({
                             className={cn(
                               "flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm transition",
                               isActive(nav.href)
-                                ? "bg-white/[0.08] text-white"
-                                : "text-zinc-300 hover:bg-white/[0.06] hover:text-white",
+                                ? "bg-white/8 text-white"
+                                : "text-zinc-300 hover:bg-white/6 hover:text-white",
                             )}
                           >
                             <nav.icon className="h-4 w-4 shrink-0 text-zinc-500" />
@@ -407,7 +407,7 @@ export function AdminShell({
                           <button
                             key={action}
                             type="button"
-                            className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-zinc-300 transition hover:bg-white/[0.06] hover:text-white"
+                            className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-zinc-300 transition hover:bg-white/6 hover:text-white"
                             onClick={() => runQuickAction(action)}
                           >
                             <Zap className="h-4 w-4 shrink-0 text-zinc-500" />
@@ -425,7 +425,7 @@ export function AdminShell({
                 <button
                   type="button"
                   onClick={() => void handleSignOut()}
-                  className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-white/[0.06] hover:text-red-400"
+                  className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-zinc-400 transition hover:bg-white/6 hover:text-red-400"
                 >
                   <LogOut className="h-4 w-4 shrink-0" />
                   Sign out
