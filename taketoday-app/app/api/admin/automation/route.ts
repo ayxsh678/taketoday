@@ -1,7 +1,9 @@
 import { NextRequest } from "next/server";
+import { JobStatus } from "@prisma/client";
 import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { appConfig } from "@/lib/config/app";
+import { prisma } from "@/lib/db/prisma";
 
 const RETRYABLE_STATUS = new Set([502, 503, 504]);
 
@@ -95,6 +97,63 @@ export async function GET(request: NextRequest) {
   if (resource === "sources") return proxy("/sources");
   if (resource === "health") return proxy("/health");
 
+  // DB-sourced stats (no Python service dependency)
+  if (resource === "stats") {
+    try {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+      const [
+        totalToday,
+        succeededToday,
+        totalLast30,
+        succeededLast30,
+        articlesCreatedToday,
+        socialPostsToday,
+        videoJobsToday,
+      ] = await Promise.all([
+        prisma.ingestionJob.count({ where: { createdAt: { gte: todayStart } } }),
+        prisma.ingestionJob.count({
+          where: { status: JobStatus.SUCCEEDED, createdAt: { gte: todayStart } },
+        }),
+        prisma.ingestionJob.count({ where: { createdAt: { gte: thirtyDaysAgo } } }),
+        prisma.ingestionJob.count({
+          where: { status: JobStatus.SUCCEEDED, createdAt: { gte: thirtyDaysAgo } },
+        }),
+        prisma.article.count({ where: { createdAt: { gte: todayStart } } }),
+        prisma.socialPost.count({ where: { createdAt: { gte: todayStart } } }),
+        prisma.shortVideoJob.count({ where: { createdAt: { gte: todayStart } } }),
+      ]);
+
+      const successRateToday =
+        totalToday === 0 ? null : Math.round((succeededToday / totalToday) * 100);
+      const successRateLast30 =
+        totalLast30 === 0 ? null : Math.round((succeededLast30 / totalLast30) * 100);
+
+      return jsonOk({
+        today: {
+          jobs: totalToday,
+          succeededJobs: succeededToday,
+          articles: articlesCreatedToday,
+          socialPosts: socialPostsToday,
+          videoJobs: videoJobsToday,
+          successRate: successRateToday,
+        },
+        last30: {
+          jobs: totalLast30,
+          succeededJobs: succeededLast30,
+          successRate: successRateLast30,
+        },
+      });
+    } catch (error) {
+      return jsonError(
+        error instanceof Error ? error.message : "Failed to fetch automation stats",
+        500,
+      );
+    }
+  }
+
   return jsonError("Unsupported automation resource", 400);
 }
 
@@ -126,6 +185,16 @@ export async function POST(request: NextRequest) {
   }
   if (action === "executeAutomation") {
     return proxy("/execute-automation", { method: "POST", body: JSON.stringify(body.request ?? {}) });
+  }
+  if (action === "cancelJob") {
+    const jobId = typeof body.jobId === "string" ? body.jobId : "";
+    if (!jobId) return jsonError("Missing jobId", 422);
+    return proxy(`/jobs/${encodeURIComponent(jobId)}/cancel`, { method: "POST" });
+  }
+  if (action === "deleteSource") {
+    const sourceId = typeof body.sourceId === "string" ? body.sourceId : "";
+    if (!sourceId) return jsonError("Missing sourceId", 422);
+    return proxy(`/sources/${encodeURIComponent(sourceId)}`, { method: "DELETE" });
   }
 
   return jsonError("Unsupported automation action", 400);

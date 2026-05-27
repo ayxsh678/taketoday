@@ -79,6 +79,23 @@ export interface AutomationExecutionResponse {
 }
 
 // Generic Python service error response
+// DB-sourced automation stats
+export interface AutomationStats {
+  today: {
+    jobs: number;
+    succeededJobs: number;
+    articles: number;
+    socialPosts: number;
+    videoJobs: number;
+    successRate: number | null;
+  };
+  last30: {
+    jobs: number;
+    succeededJobs: number;
+    successRate: number | null;
+  };
+}
+
 // Automation service interface
 export interface AutomationService {
   client: {
@@ -88,7 +105,9 @@ export interface AutomationService {
     runFullPipeline: () => Promise<{ message: string }>;
     scrapeSources: () => Promise<{ message: string }>;
     postEverywhere: (articleId: string) => Promise<{ message: string; results: unknown[] }>;
-    // New methods for explicit interfaces
+    cancelJob: (jobId: string) => Promise<{ message: string }>;
+    deleteSource: (sourceId: string) => Promise<{ message: string }>;
+    getStats: () => Promise<AutomationStats>;
     healthCheck: () => Promise<boolean>;
     generateArticle: (request: ArticleGenerationRequest) => Promise<ArticleGenerationResponse>;
     executeAutomation: (request: AutomationExecutionRequest) => Promise<AutomationExecutionResponse>;
@@ -158,15 +177,15 @@ export function useAutomationService(): AutomationService {
       clearTimeout(timeoutId);
 
       // Retry on network errors or abort errors (timeouts)
-      if (retryCount < maxRetries) {
-        if (err instanceof Error) {
-          if (err.name === "AbortError" || err instanceof TypeError) {
-            // Exponential backoff: 100ms, 200ms, 400ms
-            const delay = Math.pow(2, retryCount) * 100;
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return fetchWithRetry(url, options, retryCount + 1);
-          }
-        }
+      if (
+        retryCount < maxRetries &&
+        err instanceof Error &&
+        (err.name === "AbortError" || err instanceof TypeError)
+      ) {
+        // Exponential backoff: 100ms, 200ms, 400ms
+        const delay = Math.pow(2, retryCount) * 100;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return fetchWithRetry(url, options, retryCount + 1);
       }
 
       throw err;
@@ -340,7 +359,36 @@ export function useAutomationService(): AutomationService {
         }
       );
       return unwrapAdminResponse<AutomationExecutionResponse>(response);
-    }
+    },
+
+    cancelJob: async (jobId: string): Promise<{ message: string }> => {
+      const response = await fetchWithRetry(
+        "/api/admin/automation",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "cancelJob", jobId }),
+        }
+      );
+      return unwrapAdminResponse<{ message: string }>(response);
+    },
+
+    deleteSource: async (sourceId: string): Promise<{ message: string }> => {
+      const response = await fetchWithRetry(
+        "/api/admin/automation",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "deleteSource", sourceId }),
+        }
+      );
+      return unwrapAdminResponse<{ message: string }>(response);
+    },
+
+    getStats: async (): Promise<AutomationStats> => {
+      const response = await fetchWithRetry("/api/admin/automation?resource=stats");
+      return unwrapAdminResponse<AutomationStats>(response);
+    },
   }), [fetchWithRetry, unwrapAdminResponse]);
 
   return {
