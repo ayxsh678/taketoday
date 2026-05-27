@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { appConfig } from "@/lib/config/app";
 import { PythonServiceError } from "@/lib/errors/PythonServiceError";
+
+const REQUEST_TIMEOUT = appConfig.pythonServiceTimeout;
 
 // Define explicit interfaces for API responses
 export interface Job {
@@ -99,8 +102,6 @@ export function useAutomationService(): AutomationService {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
     
-  const REQUEST_TIMEOUT = 30000;
-
   // Execute function with loading/error states
   const execute = useCallback(async <T>(fn: () => Promise<T>): Promise<T> => {
     setLoading(true);
@@ -173,35 +174,42 @@ export function useAutomationService(): AutomationService {
   }, [createTimeoutPromise]);
 
   const safeJsonParse = useCallback(async (response: Response): Promise<unknown> => {
+    const rawText = await response.text();
+
+    if (!rawText) {
+      throw new PythonServiceError('Empty response body', {
+        statusCode: response.status,
+        service: 'python-service',
+      });
+    }
+
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
-      const text = await response.text();
       throw new PythonServiceError(
-        `Expected JSON response, got: ${contentType || 'unknown'}`, 
+        `Expected JSON response, got: ${contentType || 'unknown'}`,
         {
           statusCode: response.status,
           service: 'python-service',
-          cause: { 
+          cause: {
             receivedContentType: contentType,
-            responseBody: text.substring(0, 200) // Limit logged response size
-          }
+            responseBody: rawText.substring(0, 200),
+          },
         }
       );
     }
 
     try {
-      return await response.json();
+      return JSON.parse(rawText) as unknown;
     } catch (err) {
-      const text = await response.text();
       throw new PythonServiceError(
-        `Failed to parse JSON response: ${err instanceof Error ? err.message : String(err)}`, 
+        `Failed to parse JSON response: ${err instanceof Error ? err.message : String(err)}`,
         {
           statusCode: response.status,
           service: 'python-service',
-          cause: { 
-            responseBody: text.substring(0, 200), // Limit logged response size
-            parseError: err instanceof Error ? err.message : String(err)
-          }
+          cause: {
+            responseBody: rawText.substring(0, 200),
+            parseError: err instanceof Error ? err.message : String(err),
+          },
         }
       );
     }
@@ -301,7 +309,7 @@ export function useAutomationService(): AutomationService {
       } catch (err) {
         // Any error means the service is unhealthy
         // Log the error for debugging in development
-        if (process.env.NODE_ENV === "development") {
+        if (appConfig.isDevelopment) {
           console.warn('Health check failed:', err);
         }
         return false;

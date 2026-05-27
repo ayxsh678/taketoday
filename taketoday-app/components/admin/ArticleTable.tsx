@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Check, Edit3, Eye, MoreHorizontal, X } from "lucide-react";
-import { adminArticles } from "@/lib/admin/data";
+import { useEffect, useState } from "react";
+import { Check, Edit3, Eye, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
@@ -18,14 +17,100 @@ const statusTone = {
 } as const;
 
 export function ArticleTable() {
+  const [articles, setArticles] = useState<AdminArticle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<AdminArticle | null>(null);
   const [draftHeadline, setDraftHeadline] = useState("");
   const [draftSubheadline, setDraftSubheadline] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    fetchArticles();
+  }, []);
+
+  const fetchArticles = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/admin/articles");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setArticles(data.articles);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch articles");
+      console.error("Failed to fetch articles:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const openEditor = (article: AdminArticle) => {
     setSelectedArticle(article);
     setDraftHeadline(article.headline);
     setDraftSubheadline(article.subheadline);
+  };
+
+  const handleSave = async () => {
+    if (!selectedArticle) return;
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/admin/articles/${selectedArticle.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          headline: draftHeadline,
+          subheadline: draftSubheadline,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const updatedArticle = await response.json();
+      // Update the article in our local state
+      setArticles(currentArticles =>
+        currentArticles.map(article => 
+          article.id === selectedArticle!.id 
+            ? { ...article, ...updatedArticle.article, headline: draftHeadline, subheadline: draftSubheadline } 
+            : article
+        )
+      );
+      setSelectedArticle(null);
+    } catch (err) {
+      console.error("Failed to save article:", err);
+      alert("Failed to save article. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+    const handleDelete = async (articleId: string) => {
+    if (!window.confirm("Are you sure you want to delete this article?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/articles/${articleId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Remove the article from our local state
+      setArticles(currentArticles => currentArticles.filter(article => article.id !== articleId));
+    } catch (err) {
+      console.error("Failed to delete article:", err);
+      alert("Failed to delete article. Please try again.");
+    }
   };
 
   return (
@@ -43,38 +128,63 @@ export function ArticleTable() {
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
-            {adminArticles.map((article) => (
-              <tr key={article.id} className="hover:bg-white/[0.03]">
-                <td className="max-w-md px-4 py-4">
-                  <p className="font-medium text-white">{article.headline}</p>
-                  <p className="mt-1 clamp-1 text-zinc-500">{article.subheadline}</p>
-                </td>
-                <td className="px-4 py-4">
-                  <Badge tone={statusTone[article.status]}>{article.status.replace("_", " ")}</Badge>
-                </td>
-                <td className="px-4 py-4 text-zinc-300">{article.category}</td>
-                <td className="px-4 py-4 text-zinc-300">{article.priorityScore}</td>
-                <td className="px-4 py-4 text-zinc-300">{article.author}</td>
-                <td className="px-4 py-4 text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button variant="ghost" className="h-8 w-8 px-0" aria-label={`Preview ${article.headline}`}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="h-8 w-8 px-0"
-                      aria-label={`Edit ${article.headline}`}
-                      onClick={() => openEditor(article)}
-                    >
-                      <Edit3 className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" className="h-8 w-8 px-0" aria-label={`More actions for ${article.headline}`}>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-4 text-center text-zinc-400">
+                  Loading articles...
                 </td>
               </tr>
-            ))}
+            ) : error ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-4 text-center text-red-400">
+                  {error}
+                </td>
+              </tr>
+            ) : articles.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-4 text-center text-zinc-400">
+                  No articles found
+                </td>
+              </tr>
+            ) : (
+              articles.map((article) => (
+                <tr key={article.id} className="hover:bg-white/[0.03]">
+                  <td className="max-w-md px-4 py-4">
+                    <p className="font-medium text-white">{article.headline}</p>
+                    <p className="mt-1 clamp-1 text-zinc-500">{article.subheadline}</p>
+                  </td>
+                  <td className="px-4 py-4">
+                    <Badge tone={statusTone[article.status]}>{article.status.replace("_", " ")}</Badge>
+                  </td>
+                  <td className="px-4 py-4 text-zinc-300">{article.category}</td>
+                  <td className="px-4 py-4 text-zinc-300">{article.priorityScore}</td>
+                  <td className="px-4 py-4 text-zinc-300">{article.author}</td>
+                  <td className="px-4 py-4 text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" className="h-8 w-8 px-0" aria-label={`Preview ${article.headline}`}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="h-8 w-8 px-0"
+                        aria-label={`Edit ${article.headline}`}
+                        onClick={() => openEditor(article)}
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="h-8 w-8 px-0"
+                        aria-label={`Delete ${article.headline}`}
+                        onClick={() => handleDelete(article.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -116,12 +226,16 @@ export function ArticleTable() {
               </div>
             </div>
             <div className="flex justify-end gap-2 border-t border-white/10 p-5">
-              <Button variant="secondary" onClick={() => setSelectedArticle(null)}>
-                Cancel
+              <Button variant="secondary" onClick={() => setSelectedArticle(null)} disabled={isSaving}>
+                {isSaving ? "Saving..." : "Cancel"}
               </Button>
-              <Button onClick={() => setSelectedArticle(null)}>
-                <Check className="h-4 w-4" />
-                Save draft
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? "Saving..." : (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Save changes
+                  </>
+                )}
               </Button>
             </div>
           </div>
