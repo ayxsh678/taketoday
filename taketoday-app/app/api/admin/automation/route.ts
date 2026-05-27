@@ -1,9 +1,13 @@
 import { NextRequest } from "next/server";
+import { z } from "zod";
 import { JobStatus } from "@prisma/client";
 import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { appConfig } from "@/lib/config/app";
 import { prisma } from "@/lib/db/prisma";
+import { runContentPipeline } from "@/lib/content/generators/pipeline";
+import { CONTENT_FORMATS } from "@/lib/content/generators/types";
+import { getRecentContentJobs } from "@/lib/content/generators/jobTracker";
 
 const RETRYABLE_STATUS = new Set([502, 503, 504]);
 
@@ -154,6 +158,21 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Recent content pipeline jobs — polled by automation page live refresh
+  if (resource === "content-jobs") {
+    const hoursParam = request.nextUrl.searchParams.get("hours");
+    const hours = hoursParam ? Math.min(72, Math.max(1, Number(hoursParam))) : 24;
+    try {
+      const jobs = await getRecentContentJobs(isNaN(hours) ? 24 : hours);
+      return jsonOk({ jobs });
+    } catch (err) {
+      return jsonError(
+        err instanceof Error ? err.message : "Failed to fetch content jobs",
+        500,
+      );
+    }
+  }
+
   return jsonError("Unsupported automation resource", 400);
 }
 
@@ -195,6 +214,63 @@ export async function POST(request: NextRequest) {
     const sourceId = typeof body.sourceId === "string" ? body.sourceId : "";
     if (!sourceId) return jsonError("Missing sourceId", 422);
     return proxy(`/sources/${encodeURIComponent(sourceId)}`, { method: "DELETE" });
+  }
+
+  // ── Multi-format content generation pipeline ──────────────────────────────
+  if (action === "generateContent") {
+    const schema = z.object({
+      content: z.string().min(10).max(8000),
+      formats: z.array(z.enum(CONTENT_FORMATS)).min(1),
+      options: z
+        .object({
+          article: z
+            .object({
+              length: z.enum(["short", "medium", "long"]).optional(),
+              tone: z.string().optional(),
+              category: z.string().optional(),
+              region: z.string().optional(),
+            })
+            .optional(),
+          image: z
+            .object({
+              style: z.enum(["news", "social", "branded"]).optional(),
+              aspectRatio: z.enum(["1:1", "4:5", "16:9", "9:16"]).optional(),
+            })
+            .optional(),
+          video: z
+            .object({
+              type: z.enum(["reel", "explainer", "breaking"]).optional(),
+              duration: z.number().int().min(15).max(300).optional(),
+              voiceProvider: z.string().optional(),
+              avatarProvider: z.string().optional(),
+            })
+            .optional(),
+          carousel: z
+            .object({
+              format: z.enum(["instagram", "linkedin", "educational", "story"]).optional(),
+              slideCount: z.number().int().min(2).max(12).optional(),
+              brandName: z.string().optional(),
+              ctaText: z.string().optional(),
+            })
+            .optional(),
+        })
+        .optional(),
+      articleId: z.string().optional(),
+      idempotencyKey: z.string().max(128).optional(),
+    });
+
+    const parsed = schema.safeParse(body);
+    if (!parsed.success) return jsonError(parsed.error.message, 422);
+
+    try {
+      const pipelineResponse = await runContentPipeline(parsed.data);
+      return jsonOk(pipelineResponse);
+    } catch (err) {
+      return jsonError(
+        err instanceof Error ? err.message : "Content pipeline failed",
+        500,
+      );
+    }
   }
 
   return jsonError("Unsupported automation action", 400);

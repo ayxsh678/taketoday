@@ -1,44 +1,141 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
+import { JobStatus, Prisma, SocialPlatform } from "@prisma/client";
 import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { logAuditAction } from "@/lib/admin/audit";
+import { prisma } from "@/lib/db/prisma";
+
+// Display name → Prisma SocialPlatform enum
+const platformEnumMap: Record<string, SocialPlatform> = {
+  X: SocialPlatform.X,
+  Instagram: SocialPlatform.INSTAGRAM,
+  WhatsApp: SocialPlatform.WHATSAPP,
+  Telegram: SocialPlatform.TELEGRAM,
+  Facebook: SocialPlatform.FACEBOOK,
+  LinkedIn: SocialPlatform.LINKEDIN,
+  YouTube: SocialPlatform.YOUTUBE,
+};
+
+// Prisma SocialPlatform enum → display name
+const platformDisplayMap: Record<SocialPlatform, string> = {
+  X: "X",
+  INSTAGRAM: "Instagram",
+  WHATSAPP: "WhatsApp",
+  TELEGRAM: "Telegram",
+  FACEBOOK: "Facebook",
+  LINKEDIN: "LinkedIn",
+  YOUTUBE: "YouTube",
+};
+
+function mapPost(post: {
+  id: string;
+  platform: SocialPlatform;
+  copy: string;
+  status: JobStatus;
+  scheduledAt: Date | null;
+  publishedAt: Date | null;
+  retryCount: number;
+  lastError: string | null;
+  createdAt: Date;
+  articleId: string | null;
+}) {
+  return {
+    id: post.id,
+    platform: platformDisplayMap[post.platform] ?? post.platform,
+    copy: post.copy,
+    status: post.status.toLowerCase(),
+    scheduledAt: post.scheduledAt?.toISOString() ?? null,
+    publishedAt: post.publishedAt?.toISOString() ?? null,
+    retryCount: post.retryCount,
+    lastError: post.lastError,
+    createdAt: post.createdAt.toISOString(),
+    articleId: post.articleId,
+  };
+}
 
 const socialSchema = z.object({
-  platforms: z.array(z.enum(["X", "Instagram", "WhatsApp", "Telegram", "Facebook", "LinkedIn"])).min(1),
+  platforms: z
+    .array(z.enum(["X", "Instagram", "WhatsApp", "Telegram", "Facebook", "LinkedIn", "YouTube"]))
+    .min(1),
   copy: z.string().min(4),
-  scheduledAt: z.string().optional(),
+  scheduledAt: z.string().datetime().optional(),
+  articleId: z.string().optional(),
 });
 
-export async function POST(req: NextRequest) {
-  // Check rate limit
-  if (rateLimit(req)) {
-    return jsonError("Rate limit exceeded. Please try again later.", 429);
-  }
+export async function GET(request: NextRequest) {
+  if (rateLimit(request)) return jsonError("Rate limit exceeded. Please try again later.", 429);
 
   const access = await requireAdmin("social:write");
   if (!access.ok) return access.response;
 
-  const parsed = socialSchema.safeParse(await req.json());
+  const status = request.nextUrl.searchParams.get("status")?.toUpperCase();
+  const platform = request.nextUrl.searchParams.get("platform");
+  const where: Prisma.SocialPostWhereInput = {};
+
+  if (status) where.status = status as JobStatus;
+  if (platform) {
+    const enumPlatform = platformEnumMap[platform];
+    if (enumPlatform) where.platform = enumPlatform;
+  }
+
+  const [posts, counts] = await Promise.all([
+    prisma.socialPost.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    }),
+    prisma.socialPost.groupBy({ by: ["status"], _count: { id: true } }),
+  ]);
+
+  const statusCounts = Object.fromEntries(
+    counts.map((c) => [c.status.toLowerCase(), c._count.id]),
+  );
+
+  return jsonOk({ posts: posts.map(mapPost), stats: statusCounts, total: posts.length });
+}
+
+export async function POST(req: NextRequest) {
+  if (rateLimit(req)) return jsonError("Rate limit exceeded. Please try again later.", 429);
+
+  const access = await requireAdmin("social:write");
+  if (!access.ok) return access.response;
+
+  const body: unknown = await req.json().catch(() => null);
+  const parsed = socialSchema.safeParse(body);
   if (!parsed.success) return jsonError(parsed.error.message, 422);
 
-  const postData = parsed.data;
-  
-  // Log the audit action
-  await logAuditAction({
-    action: "create_social_post",
-    entity: "social_post",
-    entityId: `soc_${Date.now()}`, // Temporary ID
-    after: postData,
-  });
+  const { platforms, copy, scheduledAt, articleId } = parsed.data;
 
-  return jsonOk({
-    postId: `soc_${Date.now()}`,
-    status: postData.scheduledAt ? "scheduled" : "queued",
-    platformPreviews: postData.platforms.map((platform) => ({
-      platform,
-      estimatedReach: Math.floor(4_000 + Math.random() * 16_000),
-      retryPolicy: "3 attempts with exponential backoff",
-    })),
-  });
+  try {
+    const scheduled = scheduledAt ? new Date(scheduledAt) : null;
+    const status = scheduled ? JobStatus.QUEUED : JobStatus.QUEUED;
+
+    const posts = await Promise.all(
+      platforms.map((p) =>
+        prisma.socialPost.create({
+          data: {
+            platform: platformEnumMap[p] ?? SocialPlatform.X,
+            copy,
+            scheduledAt: scheduled,
+            status,
+            articleId: articleId ?? null,
+          },
+        }),
+      ),
+    );
+
+    await logAuditAction({
+      action: "create_social_posts",
+      entity: "social_post",
+      entityId: posts.map((p) => p.id).join(","),
+      after: { platforms, copy, scheduledAt },
+    });
+
+    return jsonOk({ posts: posts.map(mapPost) }, { status: 201 });
+  } catch (error) {
+    const { code } = error as { code?: string };
+    if (code === "P2003") return jsonError("Invalid articleId.", 422);
+    return jsonError(error instanceof Error ? error.message : "Failed to queue posts", 500);
+  }
 }

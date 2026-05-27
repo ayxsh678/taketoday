@@ -186,15 +186,19 @@ model Source {
 }
 
 model Job {
-  id          String    @id @default(cuid())
-  type        String
-  status      JobStatus @default(PENDING)
-  result      Json?
-  startedAt   DateTime?
-  completedAt DateTime?
-  error       String?
-  userId      String?
-  createdAt   DateTime  @default(now())
+  id             String    @id @default(cuid())
+  type           String
+  status         JobStatus @default(PENDING)
+  result         Json?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  error          String?
+  retryCount     Int       @default(0)
+  idempotencyKey String?   @unique
+  userId         String?
+  createdAt      DateTime  @default(now())
+
+  @@index([status, createdAt])
 }
 
 model SocialPost {
@@ -335,4 +339,5 @@ enum JobStatus {
   SUCCEEDED
   FAILED
   RETRYING
+  CANCELLED
 }

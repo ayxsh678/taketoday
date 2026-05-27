@@ -3,6 +3,23 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAutomationService } from "@/lib/python/client";
 import type { AutomationStats } from "@/lib/python/client";
+import type { ContentFormat, GenerationResult } from "@/lib/content/generators/types";
+
+// ─── Content job live status type ─────────────────────────────────────────────
+type ContentJobStatus = {
+  id: string;
+  type: string;
+  status: string;
+  retryCount: number;
+  startedAt: string | null;
+  completedAt: string | null;
+  error: string | null;
+  createdAt: string;
+};
+
+const TERMINAL_STATUSES = new Set(["SUCCEEDED", "FAILED", "CANCELLED"]);
+import { CONTENT_FORMATS } from "@/lib/content/generators/types";
+import { FORMAT_BUNDLES } from "@/lib/content/generators/pipeline";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
@@ -97,6 +114,20 @@ export default function AutomationPage() {
   const [newSourceUrl, setNewSourceUrl] = useState("");
   const [newSourceType, setNewSourceType] = useState("rss");
 
+  // content generation pipeline
+  const [genContent, setGenContent] = useState("");
+  const [genFormats, setGenFormats] = useState<ContentFormat[]>(["article"]);
+  const [genBundleKey, setGenBundleKey] = useState<string>("article_only");
+  const [genCarouselFormat, setGenCarouselFormat] = useState<"instagram" | "linkedin" | "educational" | "story">("instagram");
+  const [genSlideCount, setGenSlideCount] = useState(5);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [genResults, setGenResults] = useState<GenerationResult[] | null>(null);
+  const [genError, setGenError] = useState<string | null>(null);
+
+  // live content job status polling
+  const [contentJobs, setContentJobs] = useState<ContentJobStatus[]>([]);
+  const [pollGenJobs, setPollGenJobs] = useState(false);
+
   const router = useRouter();
   const { client, loading, error, execute } = useAutomationService();
 
@@ -131,6 +162,35 @@ export default function AutomationPage() {
     void loadStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── content job live polling ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (!pollGenJobs) return;
+    let cancelled = false;
+
+    const tick = async () => {
+      if (cancelled) return;
+      try {
+        const res = await fetch("/api/admin/automation?resource=content-jobs&hours=1");
+        const json = (await res.json()) as { ok: boolean; data?: { jobs?: ContentJobStatus[] } };
+        if (!cancelled && json.ok) {
+          const jobs = json.data?.jobs ?? [];
+          setContentJobs(jobs);
+          const allDone = jobs.length > 0 && jobs.every((j) => TERMINAL_STATUSES.has(j.status));
+          if (allDone) setPollGenJobs(false);
+        }
+      } catch {
+        // silent — poll again next tick
+      }
+    };
+
+    void tick();
+    const interval = setInterval(() => void tick(), 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [pollGenJobs]);
 
   // ── pipeline actions ────────────────────────────────────────────────────────
 
@@ -233,6 +293,43 @@ export default function AutomationPage() {
       prev.map((s) => (s.id === editingSource.id ? { ...s, name: editSourceName } : s)),
     );
     setEditingSource(null);
+  };
+
+  // ── content generation pipeline ─────────────────────────────────────────────
+
+  const handleGenerateContent = async () => {
+    if (!genContent.trim() || genFormats.length === 0) return;
+    setIsGenerating(true);
+    setGenResults(null);
+    setGenError(null);
+    try {
+      const res = await client.generateContent({
+        content: genContent,
+        formats: genFormats,
+        options: genFormats.includes("carousel")
+          ? { carousel: { format: genCarouselFormat, slideCount: genSlideCount } }
+          : undefined,
+      });
+      setGenResults(res.results);
+      setPollGenJobs(true); // start live status polling
+    } catch (err) {
+      setGenError(err instanceof Error ? err.message : "Generation failed");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleBundleSelect = (bundleKey: string) => {
+    setGenBundleKey(bundleKey);
+    const bundle = FORMAT_BUNDLES[bundleKey];
+    if (bundle) setGenFormats(bundle.formats);
+  };
+
+  const toggleFormat = (fmt: ContentFormat) => {
+    setGenFormats((prev) =>
+      prev.includes(fmt) ? prev.filter((f) => f !== fmt) : [...prev, fmt],
+    );
+    setGenBundleKey("custom");
   };
 
   // ── derived ─────────────────────────────────────────────────────────────────
@@ -769,6 +866,201 @@ export default function AutomationPage() {
                 ))}
               </TableBody>
             </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── content generation pipeline ── */}
+      <Card className="border border-white/5">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Content Generation Pipeline</CardTitle>
+          <CardDescription className="mt-1 text-sm text-zinc-400">
+            Generate article, image, video reel, or carousel from source content in one run.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {/* Bundle selector */}
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">Format bundle</p>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(FORMAT_BUNDLES).map(([key, bundle]) => (
+                <button
+                  key={key}
+                  onClick={() => handleBundleSelect(key)}
+                  className={`rounded-md border px-3 py-1.5 text-xs font-medium transition ${
+                    genBundleKey === key
+                      ? "border-white/30 bg-white/10 text-white"
+                      : "border-white/10 text-zinc-400 hover:border-white/20 hover:text-zinc-200"
+                  }`}
+                >
+                  {bundle.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Individual format toggles */}
+          <div>
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">Or pick formats manually</p>
+            <div className="flex flex-wrap gap-2">
+              {CONTENT_FORMATS.map((fmt) => (
+                <button
+                  key={fmt}
+                  onClick={() => toggleFormat(fmt)}
+                  className={`rounded-md border px-3 py-1.5 text-xs font-medium transition ${
+                    genFormats.includes(fmt)
+                      ? "border-white/30 bg-white/10 text-white"
+                      : "border-white/10 text-zinc-400 hover:border-white/20 hover:text-zinc-200"
+                  }`}
+                >
+                  {fmt.replace("_", " ")}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Carousel options (only shown when carousel selected) */}
+          {genFormats.includes("carousel") && (
+            <div className="grid gap-3 rounded-lg border border-white/10 bg-white/3 p-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-zinc-400">Carousel format</label>
+                <select
+                  value={genCarouselFormat}
+                  onChange={(e) => setGenCarouselFormat(e.target.value as typeof genCarouselFormat)}
+                  className="h-9 w-full appearance-none rounded-md border border-white/10 bg-zinc-900 px-3 text-sm text-white outline-none focus:border-white/25"
+                >
+                  <option value="instagram">Instagram</option>
+                  <option value="linkedin">LinkedIn</option>
+                  <option value="educational">Educational</option>
+                  <option value="story">Story</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-zinc-400">
+                  Slides ({genSlideCount})
+                </label>
+                <input
+                  type="range"
+                  min={2}
+                  max={12}
+                  value={genSlideCount}
+                  onChange={(e) => setGenSlideCount(Number(e.target.value))}
+                  className="mt-2 w-full accent-white"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Content input */}
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-zinc-400">Source content</label>
+            <textarea
+              value={genContent}
+              onChange={(e) => setGenContent(e.target.value)}
+              placeholder="Paste article text, headline, brief, or topic description…"
+              rows={5}
+              className="w-full rounded-md border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white outline-none transition focus:border-white/25 placeholder:text-zinc-600"
+            />
+          </div>
+
+          {genError && (
+            <p className="rounded-md border border-red-400/20 bg-red-400/10 px-3 py-2 text-sm text-red-300">
+              {genError}
+            </p>
+          )}
+
+          <Button
+            onClick={() => void handleGenerateContent()}
+            disabled={isGenerating || genContent.trim().length < 10 || genFormats.length === 0}
+            variant="primary"
+            className="w-full"
+          >
+            {isGenerating ? (
+              <><Zap className="mr-2 h-4 w-4 animate-spin" /> Generating…</>
+            ) : (
+              <><Zap className="mr-2 h-4 w-4" /> Run pipeline ({genFormats.length} format{genFormats.length !== 1 ? "s" : ""})</>
+            )}
+          </Button>
+
+          {/* Live content jobs panel — shown while polling or after run */}
+          {contentJobs.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                  Content Jobs (last 1h)
+                </p>
+                {pollGenJobs && (
+                  <span className="flex items-center gap-1 text-xs text-zinc-500">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-400" />
+                    live
+                  </span>
+                )}
+              </div>
+              <div className="overflow-hidden rounded-lg border border-white/10">
+                {contentJobs.slice(0, 10).map((job) => (
+                  <div
+                    key={job.id}
+                    className="flex items-center justify-between border-b border-white/5 px-3 py-2 last:border-0"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <span className="font-mono text-xs text-zinc-400">{job.type}</span>
+                      {job.error && (
+                        <p className="truncate text-xs text-red-400">{job.error}</p>
+                      )}
+                    </div>
+                    <div className="ml-3 flex items-center gap-2 shrink-0">
+                      {job.retryCount > 0 && (
+                        <span className="text-xs text-zinc-600">×{job.retryCount}</span>
+                      )}
+                      {getStatusBadge(job.status)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Results */}
+          {genResults && (
+            <div className="space-y-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                Results — {genResults.filter((r) => r.ok).length}/{genResults.length} succeeded
+              </p>
+              {genResults.map((result) => (
+                <div
+                  key={result.format}
+                  className={`rounded-lg border p-4 ${
+                    result.ok ? "border-green-400/20 bg-green-400/5" : "border-red-400/20 bg-red-400/5"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-white capitalize">
+                      {result.format.replace("_", " ")}
+                    </span>
+                    <Badge tone={result.ok ? "green" : "red"}>
+                      {result.ok ? "succeeded" : "failed"}
+                    </Badge>
+                  </div>
+                  {!result.ok && (
+                    <p className="mt-1 text-xs text-red-300">{result.error}</p>
+                  )}
+                  {result.ok && result.format === "carousel"
+                    ? (() => {
+                        const d = result.data as { slideCount?: number; format?: string; title?: string } | null;
+                        return d ? (
+                          <p className="mt-1 text-xs text-zinc-400">
+                            {String(d.slideCount ?? "?")} slides · {String(d.format ?? "")} ·{" "}
+                            <span className="text-zinc-300">{String(d.title ?? "")}</span>
+                          </p>
+                        ) : null;
+                      })()
+                    : null}
+                  {result.jobId && (
+                    <p className="mt-1 font-mono text-xs text-zinc-600">job: {result.jobId.slice(0, 12)}…</p>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

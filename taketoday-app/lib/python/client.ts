@@ -3,6 +3,11 @@
 import { useState, useCallback, useMemo } from "react";
 import { appConfig } from "@/lib/config/app";
 import { PythonServiceError } from "@/lib/errors/PythonServiceError";
+import type { PipelineRequest, PipelineResponse } from "@/lib/content/generators/types";
+
+// Re-export for consumers that import from this module
+export type ContentGenerationRequest = PipelineRequest;
+export type ContentPipelineResponse = PipelineResponse;
 
 const REQUEST_TIMEOUT = appConfig.pythonServiceTimeout;
 
@@ -111,6 +116,7 @@ export interface AutomationService {
     healthCheck: () => Promise<boolean>;
     generateArticle: (request: ArticleGenerationRequest) => Promise<ArticleGenerationResponse>;
     executeAutomation: (request: AutomationExecutionRequest) => Promise<AutomationExecutionResponse>;
+    generateContent: (request: ContentGenerationRequest) => Promise<ContentPipelineResponse>;
   };
   loading: boolean;
   error: Error | null;
@@ -388,6 +394,18 @@ export function useAutomationService(): AutomationService {
     getStats: async (): Promise<AutomationStats> => {
       const response = await fetchWithRetry("/api/admin/automation?resource=stats");
       return unwrapAdminResponse<AutomationStats>(response);
+    },
+
+    generateContent: async (request: PipelineRequest): Promise<PipelineResponse> => {
+      const response = await fetchWithRetry(
+        "/api/admin/automation",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "generateContent", ...request }),
+        },
+      );
+      return unwrapAdminResponse<PipelineResponse>(response);
     },
   }), [fetchWithRetry, unwrapAdminResponse]);
 
