@@ -10,15 +10,14 @@ import {
 } from "lucide-react";
 import { ArticleStatus, JobStatus, type Notification as DbNotification } from "@prisma/client";
 import { activityEvents, trafficSeries } from "@/lib/admin/data";
-import { quickActions } from "@/lib/admin/modules";
 import { prisma } from "@/lib/db/prisma";
 import { AdminMotion } from "@/components/admin/AdminMotion";
 import { ActivityTimeline } from "@/components/admin/ActivityTimeline";
 import { ArticleTable } from "@/components/admin/ArticleTable";
+import { DashboardQuickActions } from "@/components/admin/DashboardQuickActions";
 import { MetricCard } from "@/components/admin/MetricCard";
 import { MiniChart } from "@/components/admin/MiniChart";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 function formatCount(n: number): string {
@@ -168,13 +167,7 @@ export default async function AdminDashboardPage() {
               A single operating surface for editorial velocity, approvals, distribution health, and audience performance.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {quickActions.slice(0, 4).map((action, index) => (
-              <Button key={action} variant={index === 0 ? "primary" : "secondary"}>
-                {action}
-              </Button>
-            ))}
-          </div>
+          <DashboardQuickActions />
         </section>
 
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
