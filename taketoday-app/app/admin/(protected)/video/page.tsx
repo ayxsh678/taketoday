@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/input";
-import { Clock, Film, Plus, RefreshCw, Zap } from "lucide-react";
+import { Film, RefreshCw } from "lucide-react";
 
 // ─── types ────────────────────────────────────────────────────────────────────
 

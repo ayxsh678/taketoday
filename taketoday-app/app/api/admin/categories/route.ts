@@ -12,7 +12,7 @@ export async function GET(_req: NextRequest) {
   try {
     // Single query — includes article count via join table to avoid N+1
     const categories = await prisma.category.findMany({
-      orderBy: { displayOrder: "asc" },
+      orderBy: { name: "asc" },
       include: {
         _count: { select: { articles: true } },
       },

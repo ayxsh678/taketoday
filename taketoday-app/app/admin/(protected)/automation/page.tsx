@@ -31,7 +31,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useRouter } from "next/navigation";
 
 import type { Job, Source } from "@/lib/python/client";
 
@@ -128,7 +127,6 @@ export default function AutomationPage() {
   const [contentJobs, setContentJobs] = useState<ContentJobStatus[]>([]);
   const [pollGenJobs, setPollGenJobs] = useState(false);
 
-  const router = useRouter();
   const { client, loading, error, execute } = useAutomationService();
 
   // ── data loading ────────────────────────────────────────────────────────────

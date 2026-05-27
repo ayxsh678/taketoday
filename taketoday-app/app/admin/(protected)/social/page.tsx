@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Calendar, Check, ChevronDown, Globe, RefreshCw, Send, X } from "lucide-react";
+import { Calendar, Check, ChevronDown, Globe, RefreshCw, Send } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
