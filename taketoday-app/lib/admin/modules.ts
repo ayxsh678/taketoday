@@ -48,6 +48,18 @@ export const quickActions = [
   "Invite teammate",
 ] as const;
 
+export type QuickAction = (typeof quickActions)[number];
+
+// Maps each quick action label to its destination admin route
+export const quickActionRoutes: Record<QuickAction, string> = {
+  "Create article": "/admin/content",
+  "Import URL": "/admin/ingestion",
+  "Generate captions": "/admin/ai",
+  "Schedule social post": "/admin/social",
+  "Upload media": "/admin/media",
+  "Invite teammate": "/admin/users",
+};
+
 export const moduleBlueprints = {
   content: {
     title: "News Content Management",

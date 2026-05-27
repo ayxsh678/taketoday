@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ArticleStatus, Prisma } from "@prisma/client";
-import { articleMutationSchema, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
+import { articleCreateSchema, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { logAuditAction } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/authz";
 import { getOrCreateAdminUser } from "@/lib/admin/current-user";
@@ -15,10 +15,16 @@ const statusMap: Record<string, ArticleStatus> = {
   archived: ArticleStatus.ARCHIVED,
 };
 
+function slugifyTag(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export async function GET(req: NextRequest) {
-  if (rateLimit(req)) {
-    return jsonError("Rate limit exceeded. Please try again later.", 429);
-  }
+  if (rateLimit(req)) return jsonError("Rate limit exceeded. Please try again later.", 429);
 
   const access = await requireAdmin("content:read");
   if (!access.ok) return access.response;
@@ -42,122 +48,164 @@ export async function GET(req: NextRequest) {
     where.status = normalized;
   }
 
-    try {
-      const articles = await prisma.article.findMany({
-        where,
-        include: {
-          author: true,
-          categories: { include: { category: true } },
-          tags: { include: { tag: true } },
-        },
-        orderBy: { updatedAt: "desc" },
-      });
+  try {
+    const articles = await prisma.article.findMany({
+      where,
+      include: {
+        author: true,
+        categories: { include: { category: true } },
+        tags: { include: { tag: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+    });
 
-      const mappedArticles = articles.map((article) => ({
-        id: article.id,
-        headline: article.headline,
-        subheadline: article.subheadline,
-        slug: article.slug,
-        status: article.status.toLowerCase(),
-        category: article.categories[0]?.category.name ?? "Uncategorized",
-        author: article.author.name,
-        priorityScore: article.priorityScore,
-        language: article.language,
-        location: article.location,
-        breaking: article.breaking,
-        tags: article.tags.map((tag) => tag.tag.name),
-        seoTitle: article.seoTitle ?? "",
-        seoDescription: article.seoDescription ?? "",
-        sourceLink: article.sourceLink ?? undefined,
-        canonicalUrl: article.canonicalUrl ?? undefined,
-        scheduledAt: article.scheduledAt?.toISOString(),
-        publishedAt: article.publishedAt?.toISOString(),
-        updatedAt: article.updatedAt.toISOString(),
-      }));
+    const mappedArticles = articles.map((article) => ({
+      id: article.id,
+      headline: article.headline,
+      subheadline: article.subheadline,
+      slug: article.slug,
+      status: article.status.toLowerCase(),
+      category: article.categories[0]?.category.name ?? "Uncategorized",
+      author: article.author.name,
+      priorityScore: article.priorityScore,
+      language: article.language,
+      location: article.location ?? "",
+      breaking: article.breaking,
+      tags: article.tags.map((t) => t.tag.name),
+      seoTitle: article.seoTitle ?? "",
+      seoDescription: article.seoDescription ?? "",
+      sourceLink: article.sourceLink ?? undefined,
+      canonicalUrl: article.canonicalUrl ?? undefined,
+      scheduledAt: article.scheduledAt?.toISOString(),
+      publishedAt: article.publishedAt?.toISOString(),
+      updatedAt: article.updatedAt.toISOString(),
+    }));
 
-      return jsonOk({ articles: mappedArticles, total: mappedArticles.length, page: 1, pageSize: 25 });
-    } catch (error) {
-      if (error instanceof Error) {
-        // Prisma unique constraint error
-        const prismaError = error as { code?: string };
-        if (prismaError.code === 'P2002') {
-          return jsonError('A record with this slug already exists.', 400);
-        }
-        return jsonError(error.message, 500);
-      }
-      return jsonError('Failed to fetch articles', 500);
-    }
+    return jsonOk({ articles: mappedArticles, total: mappedArticles.length });
+  } catch (error) {
+    const prismaError = error as { code?: string };
+    if (prismaError.code === "P2002") return jsonError("A record with this slug already exists.", 400);
+    return jsonError(error instanceof Error ? error.message : "Failed to fetch articles", 500);
+  }
 }
 
 export async function POST(req: NextRequest) {
-  if (rateLimit(req)) {
-    return jsonError("Rate limit exceeded. Please try again later.", 429);
-  }
+  if (rateLimit(req)) return jsonError("Rate limit exceeded. Please try again later.", 429);
 
   const access = await requireAdmin("content:write");
   if (!access.ok) return access.response;
 
   const body: unknown = await req.json().catch(() => null);
-  const parsed = articleMutationSchema.safeParse(body);
+  const parsed = articleCreateSchema.safeParse(body);
   if (!parsed.success) return jsonError(parsed.error.message, 422);
 
   try {
     const author = await getOrCreateAdminUser(access.session);
-    const article = await prisma.article.create({
-      data: {
-        headline: parsed.data.headline,
-        subheadline: parsed.data.subheadline,
-        slug: parsed.data.slug,
-        body: parsed.data.body ?? "",
-        priorityScore: parsed.data.priorityScore,
-        status: statusMap[parsed.data.status] ?? ArticleStatus.DRAFT,
-        authorId: author.id,
+    const newStatus = statusMap[parsed.data.status] ?? ArticleStatus.DRAFT;
+
+    const article = await prisma.$transaction(async (tx) => {
+      // 1. Create article
+      const created = await tx.article.create({
+        data: {
+          headline: parsed.data.headline,
+          subheadline: parsed.data.subheadline,
+          slug: parsed.data.slug,
+          body: parsed.data.body,
+          priorityScore: parsed.data.priorityScore,
+          breaking: parsed.data.breaking,
+          status: newStatus,
+          language: parsed.data.language,
+          location: parsed.data.location ?? null,
+          seoTitle: parsed.data.seoTitle ?? null,
+          seoDescription: parsed.data.seoDescription ?? null,
+          scheduledAt: parsed.data.scheduledAt ? new Date(parsed.data.scheduledAt) : null,
+          publishedAt: newStatus === ArticleStatus.PUBLISHED ? new Date() : null,
+          authorId: author.id,
+        },
+      });
+
+      // 2. Link category if provided
+      if (parsed.data.categoryId) {
+        await tx.articleCategory.create({
+          data: { articleId: created.id, categoryId: parsed.data.categoryId },
+        });
+      }
+
+      // 3. Upsert and link tags
+      for (const tagName of parsed.data.tags) {
+        const slug = slugifyTag(tagName);
+        if (!slug) continue;
+        const tag = await tx.tag.upsert({
+          where: { slug },
+          update: {},
+          create: { name: tagName.trim(), slug },
+        });
+        await tx.articleTag.create({
+          data: { articleId: created.id, tagId: tag.id },
+        });
+      }
+
+      return created;
+    });
+
+    // Reload with relations for the response
+    const full = await prisma.article.findUniqueOrThrow({
+      where: { id: article.id },
+      include: {
+        author: true,
+        categories: { include: { category: true } },
+        tags: { include: { tag: true } },
       },
     });
 
     await logAuditAction({
       action: "create_article",
       entity: "article",
-      entityId: article.id,
-      after: article,
+      entityId: full.id,
+      after: full,
     });
 
-    return jsonOk({ article: { ...article, status: article.status.toLowerCase() } }, { status: 201 });
+    return jsonOk(
+      {
+        article: {
+          id: full.id,
+          headline: full.headline,
+          subheadline: full.subheadline,
+          slug: full.slug,
+          status: full.status.toLowerCase(),
+          category: full.categories[0]?.category.name ?? "Uncategorized",
+          author: full.author.name,
+          priorityScore: full.priorityScore,
+          language: full.language,
+          location: full.location ?? "",
+          breaking: full.breaking,
+          tags: full.tags.map((t) => t.tag.name),
+          seoTitle: full.seoTitle ?? "",
+          seoDescription: full.seoDescription ?? "",
+          publishedAt: full.publishedAt?.toISOString(),
+          updatedAt: full.updatedAt.toISOString(),
+        },
+      },
+      { status: 201 },
+    );
   } catch (error) {
-    if (error instanceof Error) {
-      // Prisma unique constraint error
-      const prismaError = error as { code?: string };
-      if (prismaError.code === 'P2002') {
-        return jsonError('An article with this slug already exists.', 400);
-      }
-      return jsonError(error.message, 500);
-    }
-    return jsonError('Failed to create article', 500);
+    const prismaError = error as { code?: string };
+    if (prismaError.code === "P2002") return jsonError("An article with this slug already exists.", 409);
+    if (prismaError.code === "P2003") return jsonError("Invalid category ID.", 422);
+    return jsonError(error instanceof Error ? error.message : "Failed to create article", 500);
   }
 }
 
 export async function PUT(req: NextRequest) {
-  if (rateLimit(req)) {
-    return jsonError("Rate limit exceeded. Please try again later.", 429);
-  }
-
+  if (rateLimit(req)) return jsonError("Rate limit exceeded. Please try again later.", 429);
   const access = await requireAdmin("content:write");
   if (!access.ok) return access.response;
-
-  // For PUT requests with ID in URL, we need to get it from the path
-  // Since we now have a proper [id]/route.ts, we should delegate to that
-  // For now, let's return an error indicating we need a proper ID-based route
-  return jsonError("PUT operation requires article ID. Use /api/admin/articles/[id] endpoint", 405);
+  return jsonError("PUT requires article ID. Use /api/admin/articles/[id]", 405);
 }
 
 export async function DELETE(req: NextRequest) {
-  if (rateLimit(req)) {
-    return jsonError("Rate limit exceeded. Please try again later.", 429);
-  }
-
+  if (rateLimit(req)) return jsonError("Rate limit exceeded. Please try again later.", 429);
   const access = await requireAdmin("content:write");
   if (!access.ok) return access.response;
-
-  // Similar to PUT, DELETE needs an ID
-  return jsonError("DELETE operation requires article ID. Use /api/admin/articles/[id] endpoint", 405);
+  return jsonError("DELETE requires article ID. Use /api/admin/articles/[id]", 405);
 }

@@ -59,3 +59,37 @@ export function getAdminSnapshot() {
     trafficSeries,
   };
 }
+
+// Full create schema — used for POST /api/admin/articles
+// Replaces the legacy articleMutationSchema which included unused `author`/`category` string fields.
+export const articleCreateSchema = z.object({
+  headline: z.string().min(8),
+  subheadline: z.string().min(12),
+  slug: z.string().min(3).regex(/^[a-z0-9-]+$/),
+  body: z.string().default(""),
+  status: z
+    .enum(["draft", "under_review", "approved", "scheduled", "published", "archived"])
+    .default("draft"),
+  categoryId: z.string().optional(),
+  priorityScore: z.number().int().min(0).max(100).default(50),
+  breaking: z.boolean().default(false),
+  seoTitle: z.string().max(70).optional(),
+  seoDescription: z.string().max(160).optional(),
+  tags: z.array(z.string()).default([]),
+  language: z.string().default("en"),
+  location: z.string().optional(),
+  scheduledAt: z.string().datetime().optional(),
+});
+
+// Partial update schema — used for PUT /api/admin/articles/[id]
+// All fields optional; validates only what's provided.
+export const articlePatchSchema = z.object({
+  headline: z.string().min(8).optional(),
+  subheadline: z.string().min(12).optional(),
+  body: z.string().optional(),
+  status: z.enum(["draft", "under_review", "approved", "scheduled", "published", "archived"]).optional(),
+  priorityScore: z.number().int().min(0).max(100).optional(),
+  breaking: z.boolean().optional(),
+  seoTitle: z.string().max(70).optional(),
+  seoDescription: z.string().max(160).optional(),
+});
