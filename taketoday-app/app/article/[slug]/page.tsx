@@ -12,6 +12,9 @@ import {
 import { SITE, abs } from "@/lib/site";
 import { TrackPageView } from "@/components/TrackPageView";
 
+// ISR: revalidate article pages every hour
+export const revalidate = 3600;
+
 export function generateStaticParams(): { slug: string }[] {
   return getAllArticles().map((a) => ({ slug: a.slug }));
 }

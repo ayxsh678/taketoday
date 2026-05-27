@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { JobStatus, Prisma } from "@prisma/client";
-import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
+import { captureApiError, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { logAuditAction } from "@/lib/admin/audit";
 import { prisma } from "@/lib/db/prisma";
@@ -110,6 +110,6 @@ export async function POST(req: NextRequest) {
 
     return jsonOk({ job: mapJob(job) }, { status: 201 });
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : "Failed to queue job", 500);
+    return captureApiError(error);
   }
 }

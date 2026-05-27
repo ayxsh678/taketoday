@@ -1,33 +1,50 @@
 import { NextResponse, NextRequest } from "next/server";
 import { z } from "zod";
+import * as Sentry from "@sentry/nextjs";
 import { adminArticles, adminUsers, notifications, trafficSeries } from "@/lib/admin/data";
 
-// Rate limiting
+// ─── Rate limiting ────────────────────────────────────────────────────────────
+// Role-based tiers: higher-trust roles get higher limits.
+
 const requestCounts = new Map<string, number[]>();
 const WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_REQUESTS = 60;
 
-export function rateLimit(request: NextRequest, userId?: string) {
-  // Use userId if available, otherwise use IP
-  const ip = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? 'anonymous';
-  const key = userId ?? ip ?? 'anonymous';
+const RATE_LIMIT_BY_ROLE: Record<string, number> = {
+  // Display name keys (matches session.user.role from auth.ts)
+  "Super Admin": 600,
+  Editor: 300,
+  "Content Manager": 200,
+  "Social Media Manager": 120,
+  Analyst: 60,
+  // Prisma enum keys (matches x-admin-role header set by middleware)
+  SUPER_ADMIN: 600,
+  EDITOR: 300,
+  CONTENT_MANAGER: 200,
+  SOCIAL_MEDIA_MANAGER: 120,
+};
+
+const DEFAULT_RATE_LIMIT = 60;
+
+export function rateLimit(request: NextRequest, userId?: string, role?: string) {
+  const ip =
+    request.headers.get("x-forwarded-for") ??
+    request.headers.get("x-real-ip") ??
+    "anonymous";
+  const key = userId ?? ip;
+  const maxRequests = role
+    ? (RATE_LIMIT_BY_ROLE[role] ?? DEFAULT_RATE_LIMIT)
+    : DEFAULT_RATE_LIMIT;
   const now = Date.now();
 
-  if (!requestCounts.has(key)) {
-    requestCounts.set(key, []);
+  const prev = requestCounts.get(key) ?? [];
+  const valid = prev.filter((t) => now - t < WINDOW_MS);
+
+  if (valid.length >= maxRequests) {
+    return true; // rate limited
   }
 
-  const timestamps = requestCounts.get(key)!;
-  // Remove timestamps outside the window
-  const validTimestamps = timestamps.filter((t) => now - t < WINDOW_MS);
-  requestCounts.set(key, validTimestamps);
-
-  if (validTimestamps.length >= MAX_REQUESTS) {
-    return true; // Rate limit exceeded
-  }
-
-  validTimestamps.push(now);
-  requestCounts.set(key, validTimestamps);
+  valid.push(now);
+  requestCounts.set(key, valid);
   return false;
 }
 
@@ -37,6 +54,26 @@ export function jsonOk<T>(data: T, init?: ResponseInit) {
 
 export function jsonError(message: string, status = 400) {
   return NextResponse.json({ ok: false, error: message }, { status });
+}
+
+/**
+ * Capture an unexpected error to Sentry and return a 500 response.
+ * Drop-in replacement for `jsonError(msg, 500)` inside catch blocks.
+ */
+export function captureApiError(
+  err: unknown,
+  context?: Record<string, unknown>,
+): ReturnType<typeof jsonError> {
+  const message = err instanceof Error ? err.message : "Internal server error";
+  try {
+    Sentry.captureException(err, { extra: context });
+  } catch {
+    // Sentry not configured — fallback to structured stderr
+    process.stderr.write(
+      JSON.stringify({ level: "error", message, context, ts: new Date().toISOString() }) + "\n",
+    );
+  }
+  return jsonError(message, 500);
 }
 
 export const articleMutationSchema = z.object({

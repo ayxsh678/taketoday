@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
+import { captureApiError, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { prisma } from "@/lib/db/prisma";
 
@@ -68,7 +68,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     const { code } = error as { code?: string };
     if (code === "P2002") return jsonError("A category with that name or slug already exists.", 409);
     if (code === "P2025") return jsonError("Category not found", 404);
-    return jsonError("Failed to update category", 500);
+    return captureApiError(error);
   }
 }
 
@@ -87,6 +87,6 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
     if (code === "P2025") return jsonError("Category not found", 404);
     // P2003 = foreign key constraint — articles still reference this category
     if (code === "P2003") return jsonError("Cannot delete: articles are still assigned to this category.", 409);
-    return jsonError("Failed to delete category", 500);
+    return captureApiError(error);
   }
 }

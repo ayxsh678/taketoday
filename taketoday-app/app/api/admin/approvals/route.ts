@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { ArticleStatus } from "@prisma/client";
-import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
+import { captureApiError, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { logAuditAction } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/authz";
 import { getOrCreateAdminUser } from "@/lib/admin/current-user";
@@ -151,6 +151,6 @@ export async function POST(req: NextRequest) {
 
     return jsonOk({ article: mapArticle(updated) });
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : "Decision failed", 500);
+    return captureApiError(error);
   }
 }

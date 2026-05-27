@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { AdminRole } from "@prisma/client";
 import { ADMIN_ROLES } from "@/lib/admin/types";
-import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
+import { captureApiError, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { prisma } from "@/lib/db/prisma";
 
@@ -98,6 +98,6 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     const { code } = error as { code?: string };
     if (code === "P2002") return jsonError("A user with this email already exists.", 409);
-    return jsonError(error instanceof Error ? error.message : "Failed to invite user", 500);
+    return captureApiError(error);
   }
 }

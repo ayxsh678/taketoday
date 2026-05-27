@@ -2,23 +2,36 @@ import type { MetadataRoute } from "next";
 import { CATEGORIES } from "@/types/article";
 import { getAllArticles } from "@/lib/content/queries";
 import { SITE, abs } from "@/lib/site";
+import { prisma } from "@/lib/db/prisma";
+import { ArticleStatus } from "@prisma/client";
+
+// ISR: regenerate sitemap every hour
+export const revalidate = 3600;
 
 /**
  * TakeToday — sitemap.xml
- * Next.js 15 file convention; emits one entry per static route:
- *   /
- *   /category/{ai,finance,tech,startups,briefings}
- *   /article/{slug}  (one per MDX file)
- *
- * `lastModified` is `updatedAt ?? publishedAt` for articles so Google sees
- * a real change signal when content is revised. Homepage and category pages
- * inherit the newest article date.
+ * Combines MDX content articles (contentlayer) with DB-published articles.
  */
-export default function sitemap(): MetadataRoute.Sitemap {
-  const articles = getAllArticles();
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const mdxArticles = getAllArticles();
 
-  // Newest article date — used as a proxy "last touched" for aggregate pages.
-  const newest = articles[0]?.publishedAt ?? new Date().toISOString();
+  // Fetch published DB articles (slug + updatedAt)
+  let dbArticles: { slug: string; publishedAt: Date | null; updatedAt: Date }[] = [];
+  try {
+    dbArticles = await prisma.article.findMany({
+      where: { status: ArticleStatus.PUBLISHED },
+      select: { slug: true, publishedAt: true, updatedAt: true },
+      orderBy: { publishedAt: "desc" },
+      take: 1000,
+    });
+  } catch {
+    // DB unavailable at build time — omit DB articles from sitemap
+  }
+
+  const newest =
+    dbArticles[0]?.publishedAt?.toISOString() ??
+    mdxArticles[0]?.publishedAt ??
+    new Date().toISOString();
 
   const home: MetadataRoute.Sitemap[number] = {
     url: SITE.url,
@@ -29,8 +42,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const categoryEntries: MetadataRoute.Sitemap = CATEGORIES.map((c) => {
     const lastInCat =
-      articles.find((a) => a.category === c)?.publishedAt ??
-      newest;
+      mdxArticles.find((a) => a.category === c)?.publishedAt ?? newest;
     return {
       url: abs(`/category/${c.toLowerCase()}`),
       lastModified: new Date(lastInCat),
@@ -39,12 +51,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
     };
   });
 
-  const articleEntries: MetadataRoute.Sitemap = articles.map((a) => ({
+  // MDX article entries
+  const mdxEntries: MetadataRoute.Sitemap = mdxArticles.map((a) => ({
     url: abs(`/article/${a.slug}`),
     lastModified: new Date(a.updatedAt ?? a.publishedAt),
     changeFrequency: "weekly",
     priority: 0.7,
   }));
 
-  return [home, ...categoryEntries, ...articleEntries];
+  // DB article entries (deduplicate slugs already in MDX)
+  const mdxSlugs = new Set(mdxArticles.map((a) => a.slug));
+  const dbEntries: MetadataRoute.Sitemap = dbArticles
+    .filter((a) => !mdxSlugs.has(a.slug))
+    .map((a) => ({
+      url: abs(`/article/${a.slug}`),
+      lastModified: a.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
+
+  return [home, ...categoryEntries, ...mdxEntries, ...dbEntries];
 }

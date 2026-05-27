@@ -82,11 +82,27 @@ export function AdminShell({
     }
   }, []);
 
-  // Fetch on mount; re-fetch every 60 s
+  // Subscribe to SSE stream for real-time notifications; fall back to polling
   useEffect(() => {
-    void fetchUnreadCount();
+    void fetchUnreadCount(); // initial load
+
+    // SSE — increment badge when new notification arrives
+    const es = new EventSource("/api/admin/stream");
+    es.addEventListener("notification", () => {
+      setUnreadCount((prev) => prev + 1);
+    });
+    es.onerror = () => {
+      // SSE failed — close and fall back to polling silently
+      es.close();
+    };
+
+    // Fallback polling (also catches missed events if SSE was down)
     const interval = setInterval(() => void fetchUnreadCount(), 60_000);
-    return () => clearInterval(interval);
+
+    return () => {
+      es.close();
+      clearInterval(interval);
+    };
   }, [fetchUnreadCount]);
 
   // ─── command palette keyboard shortcuts ────────────────────────────────────

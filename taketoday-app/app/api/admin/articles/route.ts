@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ArticleStatus, Prisma } from "@prisma/client";
-import { articleCreateSchema, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
+import { articleCreateSchema, captureApiError, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { logAuditAction } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/authz";
 import { getOrCreateAdminUser } from "@/lib/admin/current-user";
@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     const prismaError = error as { code?: string };
     if (prismaError.code === "P2002") return jsonError("A record with this slug already exists.", 400);
-    return jsonError(error instanceof Error ? error.message : "Failed to fetch articles", 500);
+    return captureApiError(error);
   }
 }
 
@@ -192,7 +192,7 @@ export async function POST(req: NextRequest) {
     const prismaError = error as { code?: string };
     if (prismaError.code === "P2002") return jsonError("An article with this slug already exists.", 409);
     if (prismaError.code === "P2003") return jsonError("Invalid category ID.", 422);
-    return jsonError(error instanceof Error ? error.message : "Failed to create article", 500);
+    return captureApiError(error);
   }
 }
 

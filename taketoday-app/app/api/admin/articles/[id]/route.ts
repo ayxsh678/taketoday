@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ArticleStatus, Prisma } from "@prisma/client";
-import { articlePatchSchema, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
+import { articlePatchSchema, captureApiError, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { logAuditAction } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/authz";
 import { prisma } from "@/lib/db/prisma";
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
     if (!article) return jsonError("Article not found", 404);
     return jsonOk({ article: mapArticle(article) });
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : "Failed to fetch article", 500);
+    return captureApiError(error);
   }
 }
 
@@ -120,7 +120,7 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
 
     return jsonOk({ article: mapArticle(article) });
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : "Failed to update article", 500);
+    return captureApiError(error);
   }
 }
 
@@ -142,6 +142,6 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
 
     return jsonOk({ message: "Article deleted successfully" });
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : "Failed to delete article", 500);
+    return captureApiError(error);
   }
 }

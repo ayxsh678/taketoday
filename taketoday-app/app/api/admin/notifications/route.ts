@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
+import { captureApiError, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { prisma } from "@/lib/db/prisma";
 
@@ -18,8 +18,8 @@ export async function GET(request: NextRequest) {
     const unread = notifications.filter((n) => !n.read).length;
 
     return jsonOk({ notifications, unread });
-  } catch {
-    return jsonError("Failed to fetch notifications", 500);
+  } catch (error) {
+    return captureApiError(error);
   }
 }
 
@@ -37,7 +37,7 @@ export async function PATCH(request: NextRequest) {
     });
 
     return jsonOk({ marked: count });
-  } catch {
-    return jsonError("Failed to mark notifications as read", 500);
+  } catch (error) {
+    return captureApiError(error);
   }
 }

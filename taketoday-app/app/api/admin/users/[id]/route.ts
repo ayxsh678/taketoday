@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { AdminRole } from "@prisma/client";
 import { ADMIN_ROLES } from "@/lib/admin/types";
-import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
+import { captureApiError, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { logAuditAction } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/authz";
 import { prisma } from "@/lib/db/prisma";
@@ -101,6 +101,6 @@ export async function PATCH(
   } catch (error) {
     const { code } = error as { code?: string };
     if (code === "P2025") return jsonError("User not found", 404);
-    return jsonError(error instanceof Error ? error.message : "Failed to update user", 500);
+    return captureApiError(error);
   }
 }

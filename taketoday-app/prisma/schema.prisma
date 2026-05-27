@@ -60,6 +60,9 @@ model Article {
 
   @@index([status, publishedAt])
   @@index([priorityScore])
+  @@index([scheduledAt])         // cron publish query
+  @@index([authorId])
+  @@index([createdAt])
 }
 
 model Category {
@@ -260,6 +263,8 @@ model Notification {
   kind      String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
+
+  @@index([read, createdAt])
 }
 
 model Integration {

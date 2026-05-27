@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { JobStatus, Prisma, SocialPlatform } from "@prisma/client";
-import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
+import { captureApiError, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { logAuditAction } from "@/lib/admin/audit";
 import { prisma } from "@/lib/db/prisma";
@@ -136,6 +136,6 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     const { code } = error as { code?: string };
     if (code === "P2003") return jsonError("Invalid articleId.", 422);
-    return jsonError(error instanceof Error ? error.message : "Failed to queue posts", 500);
+    return captureApiError(error);
   }
 }

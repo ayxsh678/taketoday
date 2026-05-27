@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
+import { captureApiError, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { prisma } from "@/lib/db/prisma";
 
@@ -19,8 +19,8 @@ export async function GET(_req: NextRequest) {
     });
 
     return jsonOk({ categories });
-  } catch {
-    return jsonError("Failed to fetch categories", 500);
+  } catch (error) {
+    return captureApiError(error);
   }
 }
 
@@ -52,6 +52,6 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     const { code } = error as { code?: string };
     if (code === "P2002") return jsonError("A category with that name or slug already exists.", 409);
-    return jsonError("Failed to create category", 500);
+    return captureApiError(error);
   }
 }

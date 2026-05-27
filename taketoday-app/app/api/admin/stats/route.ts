@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { ArticleStatus, JobStatus } from "@prisma/client";
-import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
+import { captureApiError, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { prisma } from "@/lib/db/prisma";
 
@@ -146,9 +146,6 @@ export async function GET(request: NextRequest) {
 
     return jsonOk({ stats });
   } catch (error) {
-    if (error instanceof Error) {
-      return jsonError(error.message, 500);
-    }
-    return jsonError("Failed to fetch stats", 500);
+    return captureApiError(error);
   }
 }
