@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useCallback } from "react";
 import { cn } from "@/lib/utils";
 
 interface TrustFlag {
@@ -29,15 +29,15 @@ export default function TrustSafetyPage() {
   const [filter, setFilter] = useState<"open" | "resolved">("open");
   const [isPending, startTransition] = useTransition();
 
-  function load() {
+  const load = useCallback(() => {
     startTransition(async () => {
       const res = await fetch(`/api/admin/trust-safety?resolved=${filter === "resolved"}&limit=100`);
       const data = await res.json() as { flags?: TrustFlag[] };
       setFlags(data.flags ?? []);
     });
-  }
+  }, [filter]);
 
-  useEffect(() => { load(); }, [filter]);
+  useEffect(() => { load(); }, [load]);
 
   async function resolveFlag(flagId: string) {
     await fetch("/api/admin/trust-safety", {

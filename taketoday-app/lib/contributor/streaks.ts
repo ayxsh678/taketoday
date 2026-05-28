@@ -127,7 +127,7 @@ export async function getUserStreaks(userId: string) {
   });
 }
 
-export async function useStreakFreeze(
+export async function applyStreakFreeze(
   userId: string,
   activityType: StreakType,
 ): Promise<{ ok: boolean; freezesLeft: number }> {

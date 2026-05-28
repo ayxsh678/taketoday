@@ -3,8 +3,6 @@ import { TrustFlagType } from "@prisma/client";
 import type { InputJsonObject } from "@prisma/client/runtime/library";
 
 const SPAM_THRESHOLD = 8;        // contributions per 6 hours
-const VOTE_BRIGADE_THRESHOLD = 5; // same-IP votes in 1 hour (approx via timing)
-const MIN_QUALITY_SCORE = 0.35;  // AI score below this = quality breach
 
 export async function analyzeContributorRisk(userId: string): Promise<{
   riskScore: number;

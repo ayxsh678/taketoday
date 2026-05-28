@@ -144,7 +144,6 @@ export async function semanticSearch(
   {
     limit = 20,
     threshold = 0.55,
-    statusFilter,
   }: { limit?: number; threshold?: number; statusFilter?: string } = {},
 ): Promise<SimilarContribution[]> {
   const embedding = await generateEmbedding(query);

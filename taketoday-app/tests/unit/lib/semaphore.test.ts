@@ -22,7 +22,7 @@ describe("Semaphore", () => {
     const results: number[] = [];
 
     let resolve1!: () => void;
-    const p1 = new Promise<void>((r) => (resolve1 = r));
+    void new Promise<void>((r) => (resolve1 = r));
 
     // Acquire manually to block
     await sem.acquire();

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
-import { MissionType, MissionStatus } from "@prisma/client";
+import { MissionType } from "@prisma/client";
 import { logActivity } from "./activity-feed";
 import { checkAndAwardBadges } from "./badges";
 

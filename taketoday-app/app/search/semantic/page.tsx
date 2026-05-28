@@ -66,7 +66,7 @@ export default function SemanticSearchPage() {
           Semantic Search
         </h1>
         <p className="text-[15px] text-ink/60 leading-relaxed">
-          Find contributions by meaning, not just keywords. Powered by vector embeddings — describe what you're looking for in natural language.
+          Find contributions by meaning, not just keywords. Powered by vector embeddings — describe what you&apos;re looking for in natural language.
         </p>
       </header>
 

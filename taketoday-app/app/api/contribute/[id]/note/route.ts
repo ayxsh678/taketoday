@@ -9,10 +9,6 @@ const noteSchema = z.object({
   type: z.enum(["CONTEXT", "CORRECTION", "MISLEADING_FRAMING", "MISSING_INFO", "OUTDATED"]),
 });
 
-const rateSchema = z.object({
-  helpful: z.boolean(),
-});
-
 type Params = { params: Promise<{ id: string }> };
 
 export async function POST(req: NextRequest, { params }: Params) {

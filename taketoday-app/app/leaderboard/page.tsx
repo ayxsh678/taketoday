@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 type BoardType = "OVERALL" | "REPORTING" | "FACT_CHECKING" | "INVESTIGATION" | "ACCURACY" | "COMMUNITY" | "RISING";
@@ -54,7 +55,6 @@ export default function LeaderboardPage() {
   }, [board]);
 
   const top3 = entries.slice(0, 3);
-  const rest = entries.slice(3);
 
   return (
     <div className="min-h-screen bg-paper">
@@ -134,7 +134,7 @@ export default function LeaderboardPage() {
                       <span className={cn("mb-1", textSizes[podiumIdx])}>{medals[podiumIdx]}</span>
                       <div className="w-8 h-8 rounded-full bg-ink/10 flex items-center justify-center text-sm font-medium overflow-hidden">
                         {entry.user.avatar ? (
-                          <img src={entry.user.avatar} alt="" className="w-full h-full object-cover" />
+                          <Image src={entry.user.avatar} alt="" width={32} height={32} className="w-full h-full object-cover" />
                         ) : (
                           entry.user.displayName[0]
                         )}
@@ -169,7 +169,7 @@ export default function LeaderboardPage() {
 
                   <div className="w-8 h-8 rounded-full bg-ink/10 flex items-center justify-center text-sm font-medium shrink-0 overflow-hidden">
                     {entry.user.avatar ? (
-                      <img src={entry.user.avatar} alt="" className="w-full h-full object-cover" />
+                      <Image src={entry.user.avatar} alt="" width={32} height={32} className="w-full h-full object-cover" />
                     ) : (
                       entry.user.displayName[0]
                     )}

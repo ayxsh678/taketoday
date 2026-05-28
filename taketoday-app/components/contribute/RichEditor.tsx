@@ -131,7 +131,7 @@ export function RichEditor({
           </ToolbarBtn>
           <div className="w-px h-4 bg-ink/15 mx-1" />
           <ToolbarBtn onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive("blockquote")} title="Blockquote">
-            "
+            {'"'}
           </ToolbarBtn>
           <ToolbarBtn onClick={() => editor.chain().focus().toggleCode().run()} active={editor.isActive("code")} title="Inline code">
             {"<>"}

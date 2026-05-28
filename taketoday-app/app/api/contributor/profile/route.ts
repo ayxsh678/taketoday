@@ -13,7 +13,7 @@ const updateProfileSchema = z.object({
   linkedinUrl: z.string().url().max(200).optional().or(z.literal("")),
 });
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const access = await requireContributor();
   if (!access.ok) return access.response;
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { prisma } from "@/lib/db/prisma";
 import { BadgeShowcase } from "@/components/contributor/BadgeShowcase";
 import { StreakWidget } from "@/components/contributor/StreakWidget";
@@ -22,11 +23,6 @@ const TYPE_ICONS: Record<string, string> = {
   BREAKING_NEWS: "⚡", INVESTIGATION: "🔍", RESEARCH: "📊", EXPLAINER: "💡",
   DATA_JOURNALISM: "📈", THREAD: "🧵", DOCUMENT_LEAK: "📄", OPINION: "✍️",
   COMMUNITY_NOTE: "📌", PHOTO_REPORT: "📷", VIDEO_REPORT: "🎥", WHISTLEBLOWER_TIP: "🔒",
-};
-
-const FACT_CHECK_COLORS: Record<string, string> = {
-  TRUE: "text-green-700", MOSTLY_TRUE: "text-green-600", PARTIALLY_TRUE: "text-yellow-600",
-  MOSTLY_FALSE: "text-orange-600", FALSE: "text-red-700", UNVERIFIABLE: "text-gray-500",
 };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
@@ -121,7 +117,7 @@ export default async function ProfilePage({ params }: Params) {
           {/* Avatar */}
           <div className={cn("relative shrink-0", "w-24 h-24 rounded-2xl ring-2 overflow-hidden", tierStyle.ring)}>
             {user.avatar ? (
-              <img src={user.avatar} alt={user.displayName} className="w-full h-full object-cover" />
+              <Image src={user.avatar} alt={user.displayName} width={96} height={96} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-ink/8 flex items-center justify-center text-4xl font-semibold text-ink/40">
                 {user.displayName[0]}

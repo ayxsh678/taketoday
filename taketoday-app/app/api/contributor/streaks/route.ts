@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireContributor } from "@/lib/contributor/authz";
-import { getUserStreaks, useStreakFreeze } from "@/lib/contributor/streaks";
+import { getUserStreaks, applyStreakFreeze } from "@/lib/contributor/streaks";
 import { StreakType } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +25,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Invalid activityType" }, { status: 400 });
   }
 
-  const result = await useStreakFreeze(auth.session.id, body.activityType as StreakType);
+  const result = await applyStreakFreeze(auth.session.id, body.activityType as StreakType);
   return NextResponse.json(result);
 }
