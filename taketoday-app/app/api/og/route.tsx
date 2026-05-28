@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
+import { SITE } from "@/lib/site";
 
 const W = 1200;
 const H = 630;
@@ -138,7 +139,7 @@ export function GET(req: NextRequest) {
               color: INK_500,
             }}
           >
-            News. Simplified.
+            {SITE.tagline}
           </span>
 
           <span

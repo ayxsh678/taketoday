@@ -29,7 +29,7 @@ function stripTrailingSlash(s: string): string {
 export const SITE = {
   url: resolveSiteUrl(),
   name: "TakeToday",
-  tagline: "News. Simplified.",
+  tagline: "signal over noise",
   description:
     "Sharp, clear breakdowns of what actually matters in AI, finance, tech, and startups — for people who hate jargon and long reads.",
   locale: "en-US",

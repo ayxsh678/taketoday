@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { SITE } from "@/lib/site";
 
 /**
  * TakeToday — Global Footer
@@ -83,7 +84,7 @@ export function Footer() {
       <div className="border-t border-ink-200/70">
         <div className="mx-auto max-w-[1400px] px-6 lg:px-10 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 font-mono text-[11px] text-ink-500">
           <span>&copy; {year} TakeToday. All rights reserved.</span>
-          <span className="tracking-[0.18em] uppercase">News. Simplified.</span>
+          <span className="tracking-[0.18em] uppercase">{SITE.tagline}</span>
         </div>
       </div>
     </footer>

@@ -3,6 +3,7 @@ import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { appConfig } from "@/lib/config/app";
 import { prisma } from "@/lib/db/prisma";
+import { SITE } from "@/lib/site";
 
 export async function GET(request: NextRequest) {
   if (rateLimit(request)) return jsonError("Rate limit exceeded. Please try again later.", 429);
@@ -39,8 +40,8 @@ export async function GET(request: NextRequest) {
 
   return jsonOk({
     branding: {
-      siteName: "TakeToday",
-      tagline: "signal over noise",
+      siteName: SITE.name,
+      tagline: SITE.tagline,
       siteUrl: appConfig.siteUrl,
     },
     seoDefaults: {

@@ -5,6 +5,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Analytics } from "@vercel/analytics/react";
 import { cn } from "@/lib/utils";
+import { SITE } from "@/lib/site";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -27,13 +28,12 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TakeToday — News. Simplified.",
-  description:
-    "The day's most important stories, cut down to what actually matters — and why you should care. No noise. No clickbait.",
+  title: `${SITE.name} — ${SITE.tagline}`,
+  description: SITE.description,
   openGraph: {
-    title: "TakeToday — News. Simplified.",
-    description: "News without noise. Built for people who want the insight.",
-    siteName: "TakeToday",
+    title: `${SITE.name} — ${SITE.tagline}`,
+    description: SITE.description,
+    siteName: SITE.name,
     type: "website",
   },
 };
