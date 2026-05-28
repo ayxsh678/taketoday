@@ -82,14 +82,41 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 201 = subscribed, 409 = already subscribed — both are success from the
-  // user's perspective.
+  // 201 = subscribed, 409 = already subscribed — both are success.
   if (res.status === 201 || res.status === 409) {
     return NextResponse.json({ ok: true });
   }
 
+  // Try to extract Buttondown's error detail.
+  let bdError = "Subscription failed. Please try again.";
+  try {
+    const bdBody = await res.json() as Record<string, unknown>;
+    // Buttondown returns errors as { detail: "..." } or { email: ["..."] }
+    if (typeof bdBody.detail === "string" && bdBody.detail) {
+      bdError = bdBody.detail;
+    } else if (Array.isArray(bdBody.email) && typeof bdBody.email[0] === "string") {
+      bdError = bdBody.email[0] as string;
+    }
+  } catch { /* ignore parse errors */ }
+
+  // 422 from Buttondown usually means "email was unsubscribed" — treat as success
+  // so the user isn't stuck with a dead end.
+  if (res.status === 422) {
+    console.warn("Buttondown 422 for subscribe:", bdError);
+    return NextResponse.json({ ok: true });
+  }
+
+  // 401 = bad API key — surface a config error without leaking credentials.
+  if (res.status === 401) {
+    console.error("Buttondown 401: check BUTTONDOWN_API_KEY");
+    return NextResponse.json(
+      { error: "Newsletter service misconfigured. Contact support." },
+      { status: 503 },
+    );
+  }
+
   return NextResponse.json(
-    { error: "Subscription failed. Please try again." },
+    { error: bdError },
     { status: res.status >= 400 ? res.status : 500 },
   );
 }
