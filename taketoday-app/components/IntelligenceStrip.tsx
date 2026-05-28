@@ -1,8 +1,8 @@
+import { NewsletterInlineForm } from "@/components/NewsletterInlineForm";
+
 /**
  * TakeToday — Intelligence Strip
- * Full-bleed, ink-black, one idea: trade your email for clarity.
- * Rendered as a server component. The form is non-functional until we
- * wire the newsletter endpoint in Phase 3.
+ * Full-bleed, ink-black. Newsletter CTA wired to POST /api/subscribe.
  */
 
 export function IntelligenceStrip() {
@@ -30,34 +30,9 @@ export function IntelligenceStrip() {
           </p>
         </div>
 
-        <form
-          className="lg:col-span-5"
-          aria-label="Subscribe to the Daily Brief"
-        >
-          <div className="flex items-center gap-2 bg-ink-700 rounded-full p-1 pl-5 ring-1 ring-ink-700/60 focus-within:ring-paper/30 transition">
-            <label htmlFor="email" className="sr-only">
-              Email address
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              autoComplete="email"
-              placeholder="you@domain.com"
-              className="flex-1 bg-transparent border-0 outline-none text-paper placeholder:text-ink-400 text-[14px] py-3"
-            />
-            <button
-              type="submit"
-              className="shrink-0 rounded-full bg-paper text-ink px-5 py-2.5 text-[13px] font-medium tracking-wide hover:bg-ink-100 transition-colors"
-            >
-              Subscribe free
-            </button>
-          </div>
-          <p className="mt-4 font-mono text-[10px] tracking-[0.18em] uppercase text-ink-400">
-            No spam. Unsubscribe anytime.
-          </p>
-        </form>
+        <div className="lg:col-span-5">
+          <NewsletterInlineForm />
+        </div>
       </div>
     </section>
   );

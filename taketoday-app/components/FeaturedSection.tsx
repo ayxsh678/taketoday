@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Article } from "contentlayer/generated";
 import { NewsCard } from "@/components/NewsCard";
 import { SectionShell } from "@/components/SectionShell";
+import { CategoryThumbnail } from "@/components/CategoryThumbnail";
 
 export type FeaturedSectionProps = Readonly<{
   lead: Article;
@@ -30,16 +31,10 @@ export function FeaturedSection({ lead, side }: FeaturedSectionProps) {
         {/* Lead */}
         <article className="lg:col-span-7 group">
           <Link href={`/article/${lead.slug}`} className="block">
-            <div className="aspect-[16/10] bg-ink-100 rounded-sm overflow-hidden mb-6">
-              <div
-                className="w-full h-full"
-                style={{
-                  background:
-                    "radial-gradient(ellipse at 30% 30%, #e5e3dd, #c9c7c1)",
-                }}
-                aria-hidden
-              />
-            </div>
+            <CategoryThumbnail
+              category={lead.category}
+              className="aspect-16/10 rounded-sm mb-6"
+            />
             <div className="flex items-center gap-3 font-mono text-[10px] tracking-[0.18em] uppercase">
               <span className="text-accent">{lead.category}</span>
               <span aria-hidden className="text-ink-300">
@@ -98,7 +93,7 @@ export function FeaturedSectionSkeleton() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
         {/* Lead skeleton */}
         <div className="lg:col-span-7 space-y-5">
-          <div className="aspect-[16/10] rounded-sm bg-ink-100 animate-pulse" />
+          <div className="aspect-16/10 rounded-sm bg-ink-100 animate-pulse" />
           <div className="h-3 w-24 rounded bg-ink-100 animate-pulse" />
           <div className="space-y-3">
             <div className="h-12 rounded bg-ink-100 animate-pulse" />

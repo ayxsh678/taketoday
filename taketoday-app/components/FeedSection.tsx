@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { NewsCard } from "@/components/NewsCard";
 import { SectionShell } from "@/components/SectionShell";
 import type { Article } from "contentlayer/generated";
@@ -7,9 +10,27 @@ export type FeedSectionProps = Readonly<{
   items: readonly Article[];
 }>;
 
-const FILTERS: readonly (Category | "All")[] = ["All", ...CATEGORIES];
+type Filter = Category | "All";
+const FILTERS: readonly Filter[] = ["All", ...CATEGORIES];
+const PAGE_SIZE = 6;
 
 export function FeedSection({ items }: FeedSectionProps) {
+  const [activeFilter, setActiveFilter] = useState<Filter>("All");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  const filtered =
+    activeFilter === "All"
+      ? items
+      : items.filter((a) => a.category === activeFilter);
+
+  const visible = filtered.slice(0, visibleCount);
+  const hasMore = visibleCount < filtered.length;
+
+  function handleFilter(f: Filter) {
+    setActiveFilter(f);
+    setVisibleCount(PAGE_SIZE); // reset pagination on filter change
+  }
+
   return (
     <SectionShell labelledBy="feed-heading">
       <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-12 lg:mb-16">
@@ -25,14 +46,15 @@ export function FeedSection({ items }: FeedSectionProps) {
           aria-label="Filter by section"
           className="flex flex-wrap items-center gap-2"
         >
-          {FILTERS.map((f, i) => (
+          {FILTERS.map((f) => (
             <button
               key={f}
               role="tab"
-              aria-selected={i === 0}
+              aria-selected={activeFilter === f}
               type="button"
+              onClick={() => handleFilter(f)}
               className={
-                i === 0
+                activeFilter === f
                   ? "rounded-full bg-ink text-paper px-3.5 py-1.5 text-[12px] font-medium tracking-wide"
                   : "rounded-full border border-ink-200 text-ink-700 px-3.5 py-1.5 text-[12px] hover:border-ink-300 hover:text-ink transition-colors"
               }
@@ -43,11 +65,18 @@ export function FeedSection({ items }: FeedSectionProps) {
         </div>
       </header>
 
-      {items.length === 0 ? (
-        <p className="text-[14px] text-ink-500">No stories yet. Check back soon.</p>
+      {visible.length === 0 ? (
+        <div className="py-16 text-center">
+          <p className="font-mono text-[11px] tracking-[0.18em] uppercase text-ink-400">
+            No stories in this section yet
+          </p>
+          <p className="mt-3 text-[14px] text-ink-500">
+            Check back soon — the desk is filing.
+          </p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">
-          {items.map((a) => (
+          {visible.map((a) => (
             <NewsCard
               key={a.slug}
               slug={a.slug}
@@ -62,14 +91,17 @@ export function FeedSection({ items }: FeedSectionProps) {
         </div>
       )}
 
-      <div className="mt-16 lg:mt-20 flex justify-center">
-        <button
-          type="button"
-          className="inline-flex items-center rounded-full border border-ink-300 text-ink px-5 py-2.5 text-[13px] font-medium tracking-wide hover:border-ink hover:bg-ink hover:text-paper transition-colors"
-        >
-          Load more
-        </button>
-      </div>
+      {hasMore && (
+        <div className="mt-16 lg:mt-20 flex justify-center">
+          <button
+            type="button"
+            onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+            className="inline-flex items-center rounded-full border border-ink-300 text-ink px-5 py-2.5 text-[13px] font-medium tracking-wide hover:border-ink hover:bg-ink hover:text-paper transition-colors"
+          >
+            Load more
+          </button>
+        </div>
+      )}
     </SectionShell>
   );
 }

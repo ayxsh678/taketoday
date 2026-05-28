@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { NewsCard } from "@/components/NewsCard";
+import { CategoryArticleGrid } from "@/components/CategoryArticleGrid";
 import { CATEGORIES, type Category } from "@/types/article";
 import { getArticlesByCategory } from "@/lib/content/queries";
 import { SITE, abs } from "@/lib/site";
@@ -167,26 +167,16 @@ export default async function CategoryPage({
         aria-label={`${cat} stories`}
         className="mx-auto max-w-[1400px] px-6 lg:px-10 pb-24 border-t border-ink-200/70 pt-14"
       >
-        {articles.length === 0 ? (
-          <p className="text-[15px] text-ink-500">
-            Nothing filed on this desk yet. Check back soon.
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-14">
-            {articles.map((a) => (
-              <NewsCard
-                key={a.slug}
-                slug={a.slug}
-                title={a.title}
-                summary={a.quickTake}
-                category={a.category}
-                readTime={a.readTime}
-                publishedAt={a.publishedAt}
-                variant="grid"
-              />
-            ))}
-          </div>
-        )}
+        <CategoryArticleGrid
+          articles={articles.map((a) => ({
+            slug: a.slug,
+            title: a.title,
+            quickTake: a.quickTake,
+            category: a.category,
+            readTime: a.readTime,
+            publishedAt: a.publishedAt,
+          }))}
+        />
       </section>
     </>
   );

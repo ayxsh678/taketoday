@@ -38,7 +38,7 @@ const websiteLd = {
     "@type": "SearchAction",
     target: {
       "@type": "EntryPoint",
-      urlTemplate: `${SITE.url}/api/search?q={search_term_string}`,
+      urlTemplate: `${SITE.url}/search?q={search_term_string}`,
     },
     "query-input": "required name=search_term_string",
   },

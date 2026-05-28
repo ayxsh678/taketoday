@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getAllArticles } from "@/lib/content/queries";
 
 /**
  * TakeToday — Hero
@@ -16,6 +17,9 @@ export function Hero() {
     year: "numeric",
   });
 
+  // Story count — replaces hardcoded "Issue 001"
+  const articleCount = getAllArticles().length;
+
   return (
     <section
       aria-labelledby="hero-headline"
@@ -25,7 +29,7 @@ export function Hero() {
         {/* Headline */}
         <div className="lg:col-span-8">
           <p className="font-mono text-[10px] tracking-[0.22em] uppercase text-ink-500">
-            <span className="text-accent">Issue 001</span>
+            <span className="text-accent">{articleCount} {articleCount === 1 ? "Story" : "Stories"}</span>
             <span className="mx-2 text-ink-300" aria-hidden>
               /
             </span>

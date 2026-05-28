@@ -4,10 +4,12 @@ import { MDXRemote } from "next-mdx-remote/rsc";
 import {
   ArticleLayout,
   articleToLayoutProps,
+  type RelatedArticle,
 } from "@/components/ArticleLayout";
 import {
   getAllArticles,
   getArticleBySlug,
+  getArticlesByCategory,
 } from "@/lib/content/queries";
 import { SITE, abs } from "@/lib/site";
 import { TrackPageView } from "@/components/TrackPageView";
@@ -71,6 +73,19 @@ export default async function ArticlePage({
 
   const { title, deck, publishedAt, updatedAt, author, category, slug: articleSlug } = article;
   const articleUrl = abs(`/article/${articleSlug}`);
+
+  // Related articles: same category, exclude current, max 3
+  const relatedArticles: RelatedArticle[] = getArticlesByCategory(category)
+    .filter((a) => a.slug !== articleSlug)
+    .slice(0, 3)
+    .map((a) => ({
+      slug: a.slug,
+      title: a.title,
+      category: a.category,
+      readTime: a.readTime,
+      publishedAt: a.publishedAt,
+      quickTake: a.quickTake,
+    }));
   const ogImage = `${SITE.url}/api/og?${new URLSearchParams({
     title,
     deck,
@@ -123,7 +138,7 @@ export default async function ArticlePage({
   };
 
   const body = <MDXRemote source={article.body.raw} />;
-  const layoutProps = articleToLayoutProps(article, body);
+  const layoutProps = articleToLayoutProps(article, body, relatedArticles);
 
   return (
     <>
