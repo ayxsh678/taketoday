@@ -2,13 +2,12 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { SearchButton } from "@/components/SearchButton";
-import { NavbarControls } from "@/components/NavbarControls";
 import { useEffect, useState } from "react";
 
 /**
  * TakeToday — Global Navbar
  * Sticky, ink-on-paper, max-width 1400px.
- * Desktop: logo + category nav + controls + subscribe CTA.
+ * Desktop: logo + category nav + search + subscribe CTA.
  * Mobile: logo + hamburger → full-screen drawer with categories.
  * Ticker strip shows real article headlines from /api/ticker.
  */
@@ -111,7 +110,6 @@ export function Navbar({ showTicker = true }: { showTicker?: boolean }) {
 
           {/* Desktop actions */}
           <div className="hidden lg:flex items-center gap-3">
-            <NavbarControls />
             <SearchButton />
             <Link
               href="/subscribe"
@@ -227,14 +225,6 @@ export function Navbar({ showTicker = true }: { showTicker?: boolean }) {
               ))}
             </ul>
           </nav>
-
-          {/* Personalisation controls */}
-          <div className="mt-10">
-            <p className="font-mono text-[10px] tracking-[0.22em] uppercase text-ink-400 mb-4">
-              Preferences
-            </p>
-            <NavbarControls />
-          </div>
 
           {/* CTA */}
           <div className="mt-10">

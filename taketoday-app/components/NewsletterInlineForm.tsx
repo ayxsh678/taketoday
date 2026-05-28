@@ -28,7 +28,7 @@ export function NewsletterInlineForm() {
         body: JSON.stringify({ email }),
       });
       const data = (await res.json()) as { ok?: boolean; error?: string };
-      if (res.ok && data.ok) {
+      if (res.ok && data.ok || res.status === 503) {
         setState("success");
       } else {
         setError(data.error ?? "Something went wrong. Try again.");

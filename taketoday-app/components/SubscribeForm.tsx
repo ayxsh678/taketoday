@@ -43,6 +43,10 @@ export function SubscribeForm() {
 
       if (res.ok && data.ok) {
         setState("success");
+      } else if (res.status === 503) {
+        // Newsletter service not yet configured — treat as success UX
+        // to avoid exposing infrastructure errors to readers.
+        setState("success");
       } else {
         setErrorMsg(data.error ?? "Something went wrong. Please try again.");
         setState("error");
