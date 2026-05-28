@@ -29,6 +29,9 @@ export async function GET(request: NextRequest) {
   const envCapabilities = {
     gemini: Boolean(appConfig.geminiApiKey),
     openai: Boolean(appConfig.openaiApiKey),
+    groq: Boolean(appConfig.groqApiKey),
+    openrouter: Boolean(appConfig.openrouterApiKey),
+    mistral: Boolean(appConfig.mistralApiKey),
     cloudinary: Boolean(appConfig.cloudinaryUrl),
     pythonService: Boolean(appConfig.pythonServiceUrl),
     google: Boolean(appConfig.authGoogleId),
@@ -36,8 +39,8 @@ export async function GET(request: NextRequest) {
 
   return jsonOk({
     branding: {
-      name: "TakeToday",
-      tagline: "News. Simplified.",
+      siteName: "TakeToday",
+      tagline: "signal over noise",
       siteUrl: appConfig.siteUrl,
     },
     seoDefaults: {

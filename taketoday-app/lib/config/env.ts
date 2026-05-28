@@ -25,8 +25,8 @@ export const envSchema = z.object({
   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: z.string().optional(),
   NEXT_PUBLIC_FIREBASE_PROJECT_ID: z.string().optional(),
   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: z.string().optional(),
-  NEXT_PUBLIC_PYTHON_SERVICE_URL: z.string().url().optional(),
-  PYTHON_SERVICE_URL: z.string().url().optional(),
+  NEXT_PUBLIC_PYTHON_SERVICE_URL: z.string().optional(),
+  PYTHON_SERVICE_URL: z.string().optional(),
   INTERNAL_SERVICE_TOKEN: z.string().optional(),
   NEXT_PUBLIC_REQUIRE_2FA: z.string().optional(),
   VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
@@ -44,6 +44,7 @@ export const envSchema = z.object({
   // Multi-provider AI keys
   GROQ_API_KEY: z.string().optional(),
   OPENROUTER_API_KEY: z.string().optional(),
+  MISTRAL_API_KEY: z.string().optional(),
 });
 
 // Parse with loose validation in build context, strict in runtime

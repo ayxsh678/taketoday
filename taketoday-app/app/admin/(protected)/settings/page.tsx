@@ -10,6 +10,9 @@ import { AlertCircle, CheckCircle2, Lock, Shield } from "lucide-react";
 interface EnvCapabilities {
   gemini: boolean;
   openai: boolean;
+  groq: boolean;
+  openrouter: boolean;
+  mistral: boolean;
   cloudinary: boolean;
   pythonService: boolean;
   google: boolean;
@@ -53,6 +56,9 @@ interface SettingsData {
 const CAPABILITY_LABELS: Record<keyof EnvCapabilities, string> = {
   gemini: "Google Gemini",
   openai: "OpenAI",
+  groq: "Groq",
+  openrouter: "OpenRouter",
+  mistral: "Mistral AI",
   cloudinary: "Cloudinary",
   pythonService: "Python Pipeline",
   google: "Google Auth",
