@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Category, Takeaways } from "@/types/article";
+import type { ArticleDoc } from "@/lib/content/queries";
 import { ReadingProgressBar } from "@/components/ReadingProgressBar";
 import { ArticleShareBar } from "@/components/ArticleShareBar";
 import { NewsCard } from "@/components/NewsCard";
@@ -33,25 +34,10 @@ export type ArticleLayoutProps = Readonly<{
   relatedArticles?: readonly RelatedArticle[];
 }>;
 
-type FlatArticle = {
-  slug: string;
-  title: string;
-  deck: string;
-  category: Category;
-  readTime: string;
-  publishedAt: string;
-  updatedAt?: string;
-  author: { name: string; type: string };
-  quickTake: string;
-  whyItMatters: string;
-  takeaways: string[];
-  [key: string]: unknown;
-};
-
 /* ── Helper ───────────────────────────────────────────────────────────────── */
 
 export function articleToLayoutProps(
-  article: FlatArticle,
+  article: ArticleDoc,
   body: React.ReactNode,
   relatedArticles?: readonly RelatedArticle[],
   image?: string
@@ -116,10 +102,10 @@ export function ArticleLayout(props: ArticleLayoutProps) {
 
       {/* ── Hero banner ─────────────────────────────────────────────────── */}
       <div
-        className={`bg-gradient-to-br ${gradient} w-full`}
+        className={`bg-linear-to-br ${gradient} w-full`}
         aria-hidden
       >
-        <div className="mx-auto max-w-[860px] px-6 lg:px-10 pt-16 lg:pt-24 pb-12 lg:pb-16">
+        <div className="mx-auto max-w-215 px-6 lg:px-10 pt-16 lg:pt-24 pb-12 lg:pb-16">
           {/* Breadcrumb */}
           <nav aria-label="Breadcrumb" className="font-mono text-[10px] tracking-[0.22em] uppercase">
             <Link href="/" className="text-ink-400 hover:text-ink-300 transition-colors">Home</Link>
@@ -137,7 +123,7 @@ export function ArticleLayout(props: ArticleLayoutProps) {
           {/* Title */}
           <h1
             id="article-title"
-            className="mt-4 font-serif text-[40px] sm:text-[52px] lg:text-[68px] leading-[1.02] tracking-[-0.03em] text-paper hyphens-auto text-pretty"
+            className="mt-4 font-serif text-[40px] sm:text-[52px] lg:text-[68px] leading-[1.02] tracking-tighter-2 text-paper hyphens-auto text-pretty"
           >
             {title}
           </h1>
@@ -176,14 +162,14 @@ export function ArticleLayout(props: ArticleLayoutProps) {
       </div>
 
       {/* ── Share bar ───────────────────────────────────────────────────── */}
-      <div className="mx-auto max-w-[860px] px-6 lg:px-10">
+      <div className="mx-auto max-w-215 px-6 lg:px-10">
         <ArticleShareBar title={title} url={articleUrl} />
       </div>
 
       {/* ── Quick Take ──────────────────────────────────────────────────── */}
       <section
         aria-labelledby="quick-take-heading"
-        className="mx-auto max-w-[860px] px-6 lg:px-10 py-8 border-y border-ink-200/70 mt-8"
+        className="mx-auto max-w-215 px-6 lg:px-10 py-8 border-y border-ink-200/70 mt-8"
       >
         <h2
           id="quick-take-heading"
@@ -191,7 +177,7 @@ export function ArticleLayout(props: ArticleLayoutProps) {
         >
           Quick Take
         </h2>
-        <p className="mt-4 font-serif italic text-[24px] lg:text-[28px] leading-[1.25] tracking-tight text-ink text-balance">
+        <p className="mt-4 font-serif italic text-[24px] lg:text-[28px] leading-tight tracking-tight text-ink text-balance">
           {quickTake}
         </p>
       </section>
@@ -203,14 +189,14 @@ export function ArticleLayout(props: ArticleLayoutProps) {
 
       {/* ── Why It Matters ──────────────────────────────────────────────── */}
       <section aria-labelledby="why-heading" className="bg-ink text-paper">
-        <div className="mx-auto max-w-[860px] px-6 lg:px-10 py-16 lg:py-20">
+        <div className="mx-auto max-w-215 px-6 lg:px-10 py-16 lg:py-20">
           <h2
             id="why-heading"
             className="font-mono text-[10px] tracking-[0.22em] uppercase text-accent"
           >
             Why It Matters
           </h2>
-          <p className="mt-5 font-serif text-[26px] lg:text-[32px] leading-[1.25] tracking-tight text-paper text-balance">
+          <p className="mt-5 font-serif text-[26px] lg:text-[32px] leading-tight tracking-tight text-paper text-balance">
             {whyItMatters}
           </p>
         </div>
@@ -219,7 +205,7 @@ export function ArticleLayout(props: ArticleLayoutProps) {
       {/* ── Takeaways ───────────────────────────────────────────────────── */}
       <section
         aria-labelledby="takeaways-heading"
-        className="mx-auto max-w-[860px] px-6 lg:px-10 py-16 lg:py-20"
+        className="mx-auto max-w-215 px-6 lg:px-10 py-16 lg:py-20"
       >
         <h2
           id="takeaways-heading"
@@ -245,7 +231,7 @@ export function ArticleLayout(props: ArticleLayoutProps) {
       {/* ── Author block ────────────────────────────────────────────────── */}
       <section
         aria-label="About the author"
-        className="mx-auto max-w-[860px] px-6 lg:px-10 py-10 border-t border-ink-200/70"
+        className="mx-auto max-w-215 px-6 lg:px-10 py-10 border-t border-ink-200/70"
       >
         <div className="flex items-start gap-5">
           <div
@@ -266,7 +252,7 @@ export function ArticleLayout(props: ArticleLayoutProps) {
       </section>
 
       {/* ── Bottom share ────────────────────────────────────────────────── */}
-      <div className="mx-auto max-w-[860px] px-6 lg:px-10 pb-10 border-t border-ink-200/70 pt-8">
+      <div className="mx-auto max-w-215 px-6 lg:px-10 pb-10 border-t border-ink-200/70 pt-8">
         <ArticleShareBar title={title} url={articleUrl} />
       </div>
 
@@ -276,7 +262,7 @@ export function ArticleLayout(props: ArticleLayoutProps) {
           aria-labelledby="related-heading"
           className="border-t border-ink-200/70 bg-ink-100/30"
         >
-          <div className="mx-auto max-w-[1400px] px-6 lg:px-10 py-16 lg:py-20">
+          <div className="mx-auto max-w-site px-6 lg:px-10 py-16 lg:py-20">
             <h2
               id="related-heading"
               className="font-serif italic text-[32px] lg:text-[40px] tracking-tight text-ink mb-12"

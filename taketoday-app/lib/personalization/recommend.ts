@@ -12,7 +12,7 @@
  * When the user has no history the original article order is preserved.
  */
 
-import type { Article } from "contentlayer/generated";
+import type { ArticleDoc } from "@/lib/content/queries";
 import type { Category } from "@/types/article";
 import type { ReadEntry } from "./storage";
 
@@ -50,7 +50,7 @@ export function preferredCategories(history: ReadEntry[]): Category[] {
 // ─── Scoring ──────────────────────────────────────────────────────────────────
 
 function scoreArticle(
-  article: Article,
+  article: ArticleDoc,
   readSlugs: Set<string>,
   categoryWeights: Map<Category, number>,
 ): number {
@@ -75,9 +75,9 @@ function scoreArticle(
  * Preserves the original order when there is no reading history.
  */
 export function rankArticles(
-  articles: readonly Article[],
+  articles: readonly ArticleDoc[],
   history: ReadEntry[],
-): readonly Article[] {
+): readonly ArticleDoc[] {
   if (history.length === 0) return [...articles];
 
   const readSlugs = new Set(history.map((e) => e.slug));

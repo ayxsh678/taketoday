@@ -1,12 +1,12 @@
 import Link from "next/link";
-import type { Article } from "contentlayer/generated";
+import type { ArticleDoc } from "@/lib/content/queries";
 import { NewsCard } from "@/components/NewsCard";
 import { SectionShell } from "@/components/SectionShell";
 import { CategoryThumbnail } from "@/components/CategoryThumbnail";
 
 export type FeaturedSectionProps = Readonly<{
-  lead: Article;
-  side: readonly Article[];
+  lead: ArticleDoc;
+  side: readonly ArticleDoc[];
 }>;
 
 export function FeaturedSection({ lead, side }: FeaturedSectionProps) {

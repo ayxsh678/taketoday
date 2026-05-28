@@ -13,14 +13,14 @@
  * No API calls, no loading states.
  */
 
-import type { Article } from "contentlayer/generated";
+import type { ArticleDoc } from "@/lib/content/queries";
 import { NewsCard } from "@/components/NewsCard";
 import { FeedSection } from "@/components/FeedSection";
 import { SectionShell } from "@/components/SectionShell";
 import { usePersonalization } from "@/hooks/usePersonalization";
 
 interface Props {
-  articles: readonly Article[];
+  articles: readonly ArticleDoc[];
 }
 
 const COUNTRY_LABELS: Record<string, string> = {
@@ -30,7 +30,7 @@ const COUNTRY_LABELS: Record<string, string> = {
 
 const VISIBLE_ARTICLE_LIMIT = 6;
 
-function ArticleGrid({ items }: { items: readonly Article[] }) {
+function ArticleGrid({ items }: { items: readonly ArticleDoc[] }) {
   if (items.length === 0) return null;
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">

@@ -1,4 +1,4 @@
-import { getAllArticles } from "@/lib/content/queries";
+import { getAllArticles, type ArticleDoc } from "@/lib/content/queries";
 import type { FeedItem } from "@/types/article";
 
 /**
@@ -7,9 +7,7 @@ import type { FeedItem } from "@/types/article";
  * Weighted field scoring — title > deck > quickTake > category > whyItMatters.
  */
 
-type ScoredArticle = ReturnType<typeof getAllArticles>[number];
-
-function score(article: ScoredArticle, q: string): number {
+function score(article: ArticleDoc, q: string): number {
   const lq = q.toLowerCase();
   const { title, deck, category, quickTake, whyItMatters } = article;
 

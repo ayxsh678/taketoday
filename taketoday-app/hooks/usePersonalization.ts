@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Article } from "contentlayer/generated";
+import type { ArticleDoc } from "@/lib/content/queries";
 import type { Category } from "@/types/article";
 import {
   loadPersonalizationData,
@@ -51,11 +51,11 @@ export interface UserPreferences {
 
 export interface PersonalizationResult {
   /** `allArticles` re-ranked by affinity + recency; read articles move down. */
-  recommendedArticles: readonly Article[];
+  recommendedArticles: readonly ArticleDoc[];
   /** Articles whose region matches the user's detected/chosen country, ranked. */
-  localArticles: readonly Article[];
+  localArticles: readonly ArticleDoc[];
   /** Articles with region === "GLOBAL", ranked. */
-  globalArticles: readonly Article[];
+  globalArticles: readonly ArticleDoc[];
   userPreferences: UserPreferences;
   /** Active country — cookie override if set, otherwise navigator-detected. */
   userCountry: UserCountry;
@@ -68,7 +68,7 @@ export interface PersonalizationResult {
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function usePersonalization(
-  allArticles: readonly Article[],
+  allArticles: readonly ArticleDoc[],
 ): PersonalizationResult {
   const [history, setHistory] = useState<ReadEntry[]>([]);
   const [userCountry, setUserCountry] = useState<UserCountry>("IN");

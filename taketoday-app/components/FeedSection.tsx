@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { NewsCard } from "@/components/NewsCard";
 import { SectionShell } from "@/components/SectionShell";
-import type { Article } from "contentlayer/generated";
+import type { ArticleDoc } from "@/lib/content/queries";
 import { CATEGORIES, type Category } from "@/types/article";
 
 export type FeedSectionProps = Readonly<{
-  items: readonly Article[];
+  items: readonly ArticleDoc[];
 }>;
 
 type Filter = Category | "All";
