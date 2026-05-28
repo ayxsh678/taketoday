@@ -49,7 +49,7 @@ async function checkPythonService(): Promise<CheckResult> {
 
 function checkEnv(): CheckResult {
   const missing: string[] = [];
-  if (!appConfig.anthropicApiKey) missing.push("ANTHROPIC_API_KEY");
+  if (!appConfig.geminiApiKey) missing.push("GEMINI_API_KEY");
   if (!appConfig.databaseUrl) missing.push("DATABASE_URL");
   if (!appConfig.nextauthSecret) missing.push("NEXTAUTH_SECRET");
   return missing.length === 0

@@ -1,11 +1,9 @@
-import Anthropic from "@anthropic-ai/sdk";
 import type { InputJsonObject } from "@prisma/client/runtime/library";
 import { appConfig } from "@/lib/config/app";
 import { prisma } from "@/lib/db/prisma";
 import { logTransparencyEvent } from "./workflow";
 import { generateEmbedding, storeEmbedding, checkForDuplicates } from "./embeddings";
-
-const anthropic = new Anthropic({ apiKey: appConfig.anthropicApiKey ?? "" });
+import { getAIProvider } from "@/lib/ai";
 
 interface AnalysisResult {
   biasScore: number;
@@ -52,22 +50,21 @@ export async function runContributionAnalysis(
   title: string,
   body: string,
 ): Promise<void> {
-  if (!appConfig.anthropicApiKey) {
-    console.warn("[ai-pipeline] ANTHROPIC_API_KEY not set — skipping analysis");
+  if (!appConfig.geminiApiKey) {
+    console.warn("[ai-pipeline] GEMINI_API_KEY not set — skipping analysis");
     return;
   }
 
   const input = `Title: ${title}\n\nContent:\n${body.slice(0, 6000)}`;
 
   try {
-    const message = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 1024,
-      system: ANALYSIS_SYSTEM_PROMPT,
-      messages: [{ role: "user", content: input }],
+    const ai = getAIProvider();
+    const response = await ai.generateText(input, {
+      systemInstruction: ANALYSIS_SYSTEM_PROMPT,
+      maxTokens: 1024,
     });
 
-    const text = message.content[0]?.type === "text" ? message.content[0].text : null;
+    const text = response.text || null;
     if (!text) return;
 
     let result: AnalysisResult;
@@ -113,7 +110,6 @@ export async function runContributionAnalysis(
       },
     });
 
-    // Also update contribution with AI-computed scores
     await prisma.contribution.update({
       where: { id: contributionId },
       data: {
@@ -135,7 +131,7 @@ export async function runContributionAnalysis(
     console.error("[ai-pipeline] Analysis failed:", err);
   }
 
-  // Generate + store embedding, check duplicates (independent of Anthropic analysis)
+  // Generate + store embedding, check duplicates (independent of AI analysis)
   try {
     const embeddingText = `${title}\n\n${body}`;
     const embedding = await generateEmbedding(embeddingText);
@@ -179,34 +175,33 @@ export async function extractFactClaims(
   title: string,
   body: string,
 ): Promise<string[]> {
-  if (!appConfig.anthropicApiKey) return [];
+  if (!appConfig.geminiApiKey) return [];
 
-  const message = await anthropic.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 512,
-    system:
-      "Extract the 5-10 most important verifiable factual claims from this article. Return a JSON array of strings — each string is one specific, verifiable claim. Only return the JSON array.",
-    messages: [{ role: "user", content: `${title}\n\n${body.slice(0, 4000)}` }],
-  });
-
-  const text = message.content[0]?.type === "text" ? message.content[0].text : "[]";
   try {
-    return JSON.parse(text.replace(/```json|```/g, "").trim()) as string[];
+    const ai = getAIProvider();
+    const response = await ai.generateText(`${title}\n\n${body.slice(0, 4000)}`, {
+      systemInstruction:
+        "Extract the 5-10 most important verifiable factual claims from this article. Return a JSON array of strings — each string is one specific, verifiable claim. Only return the JSON array.",
+      maxTokens: 512,
+    });
+    return JSON.parse(response.text.replace(/```json|```/g, "").trim()) as string[];
   } catch {
     return [];
   }
 }
 
 export async function generateAISummary(title: string, body: string): Promise<string> {
-  if (!appConfig.anthropicApiKey) return "";
+  if (!appConfig.geminiApiKey) return "";
 
-  const message = await anthropic.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 256,
-    system:
-      "Summarize this article in 2-3 tight sentences. Lead with the most important fact. No preamble. Return only the summary.",
-    messages: [{ role: "user", content: `${title}\n\n${body.slice(0, 4000)}` }],
-  });
-
-  return message.content[0]?.type === "text" ? message.content[0].text.trim() : "";
+  try {
+    const ai = getAIProvider();
+    const response = await ai.generateText(`${title}\n\n${body.slice(0, 4000)}`, {
+      systemInstruction:
+        "Summarize this article in 2-3 tight sentences. Lead with the most important fact. No preamble. Return only the summary.",
+      maxTokens: 256,
+    });
+    return response.text.trim();
+  } catch {
+    return "";
+  }
 }

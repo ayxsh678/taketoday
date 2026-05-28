@@ -6,7 +6,7 @@ import { NextRequest } from "next/server";
 // Mock appConfig so env checks pass regardless of real env
 vi.mock("@/lib/config/app", () => ({
   appConfig: {
-    anthropicApiKey: "sk-test",
+    geminiApiKey: "AIza-test",
     databaseUrl: "postgresql://test",
     nextauthSecret: "test-secret",
     pythonServiceUrl: "",

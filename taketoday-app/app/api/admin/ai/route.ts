@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import Anthropic from "@anthropic-ai/sdk";
 import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { appConfig } from "@/lib/config/app";
+import { getAIProvider } from "@/lib/ai";
 
 const MODES = [
   "rewrite",
@@ -75,31 +75,26 @@ export async function POST(req: NextRequest) {
 
   const { mode, input } = parsed.data;
 
-  // No API key in production → hard error, not silent mock
-  if (!appConfig.anthropicApiKey) {
+  if (!appConfig.geminiApiKey) {
     if (appConfig.isDevelopment) {
       return jsonOk({
         mode,
         provider: "mock",
         output: mockOutput(mode, input),
-        warning: "Dev mock: set ANTHROPIC_API_KEY to enable real outputs.",
+        warning: "Dev mock: set GEMINI_API_KEY to enable real outputs.",
       });
     }
     return jsonError("AI provider not configured. Contact your administrator.", 503);
   }
 
   try {
-    const anthropic = new Anthropic({ apiKey: appConfig.anthropicApiKey });
-
-    const message = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 512,
-      system: SYSTEM_PROMPTS[mode],
-      messages: [{ role: "user", content: input }],
+    const ai = getAIProvider();
+    const response = await ai.generateText(input, {
+      systemInstruction: SYSTEM_PROMPTS[mode],
+      maxTokens: 512,
     });
 
-    const output =
-      message.content[0]?.type === "text" ? message.content[0].text : "";
+    const output = response.text;
 
     if (!output) {
       return jsonError("AI returned an empty response. Please retry.", 502);
@@ -107,16 +102,14 @@ export async function POST(req: NextRequest) {
 
     return jsonOk({
       mode,
-      provider: "claude",
-      model: "claude-haiku-4-5-20251001",
+      provider: "gemini",
+      model: "gemini-2.0-flash",
       output,
-      inputTokens: message.usage.input_tokens,
-      outputTokens: message.usage.output_tokens,
+      inputTokens: response.usage.promptTokens,
+      outputTokens: response.usage.completionTokens,
     });
   } catch (err) {
-    const errMsg = err instanceof Error ? err.message : "Claude API error";
-
-    // Surface real errors in production — no silent mock
+    const errMsg = err instanceof Error ? err.message : "Gemini API error";
     return jsonError(`AI request failed: ${errMsg}`, 502);
   }
 }

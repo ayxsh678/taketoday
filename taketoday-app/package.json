@@ -19,7 +19,6 @@
     "newsletter": "tsx scripts/newsletter.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.90.0",
     "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^6.19.1",
     "@sentry/nextjs": "^10.54.0",

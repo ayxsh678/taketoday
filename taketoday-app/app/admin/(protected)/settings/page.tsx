@@ -8,7 +8,7 @@ import { AlertCircle, CheckCircle2, Lock, Shield } from "lucide-react";
 // ─── types ────────────────────────────────────────────────────────────────────
 
 interface EnvCapabilities {
-  anthropic: boolean;
+  gemini: boolean;
   openai: boolean;
   cloudinary: boolean;
   pythonService: boolean;
@@ -51,7 +51,7 @@ interface SettingsData {
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 const CAPABILITY_LABELS: Record<keyof EnvCapabilities, string> = {
-  anthropic: "Anthropic Claude",
+  gemini: "Google Gemini",
   openai: "OpenAI",
   cloudinary: "Cloudinary",
   pythonService: "Python Pipeline",

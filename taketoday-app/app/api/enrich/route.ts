@@ -10,7 +10,7 @@ import { readRawArticle, writeEnrichedFields } from "@/lib/pipeline/articleFile"
  * Generates any missing AI fields for the given article and writes them
  * back into the MDX frontmatter. Returns the enriched field values.
  *
- * Note: @anthropic-ai/sdk must be a production dependency (not devDependency)
+ * Note: @google/generative-ai must be a production dependency (not devDependency)
  * for this route to work in deployed environments.
  */
 export async function POST(req: NextRequest) {

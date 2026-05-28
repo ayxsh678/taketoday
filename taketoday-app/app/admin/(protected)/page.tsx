@@ -154,17 +154,39 @@ export default async function AdminDashboardPage() {
     <AdminMotion>
       <div className="space-y-6">
         {dbError && (
-          <div className="rounded-md border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
+          <div
+            className="rounded-lg px-4 py-3 text-sm"
+            style={{
+              background: "rgba(248,113,113,0.08)",
+              border: "1px solid rgba(248,113,113,0.2)",
+              color: "var(--adm-accent-red)",
+            }}
+          >
             ⚠ Database connection error — displayed values may not reflect live data.
           </div>
         )}
 
         <section className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
           <div>
-            <Badge tone="green">Live newsroom</Badge>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">Dashboard Home</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
-              A single operating surface for editorial velocity, approvals, distribution health, and audience performance.
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider"
+              style={{
+                background: "rgba(52,211,153,0.10)",
+                border: "1px solid rgba(52,211,153,0.22)",
+                color: "var(--adm-accent-green)",
+              }}
+            >
+              <span className="live-dot" />
+              Live newsroom
+            </span>
+            <h1
+              className="mt-3 text-3xl font-semibold tracking-tight"
+              style={{ color: "var(--adm-text-1)" }}
+            >
+              Dashboard
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6" style={{ color: "var(--adm-text-2)" }}>
+              Editorial velocity, approvals, distribution health, and audience performance — all in one place.
             </p>
           </div>
           <DashboardQuickActions />
@@ -176,48 +198,56 @@ export default async function AdminDashboardPage() {
             value={formatCount(publishedTotal)}
             delta={computeDelta(publishedLast30, publishedPrev30)}
             icon={Newspaper}
+            accent="blue"
           />
           <MetricCard
             label="Drafts"
             value={formatCount(draftsTotal)}
             delta={computeDelta(draftsLast30, draftsPrev30)}
             icon={FileText}
+            accent="purple"
           />
           <MetricCard
             label="Scheduled posts"
             value={formatCount(scheduledTotal)}
             delta={computeDelta(scheduledLast30, scheduledPrev30)}
             icon={CalendarClock}
+            accent="amber"
           />
           <MetricCard
             label="Pending approvals"
             value={formatCount(pendingTotal)}
             delta={computeDelta(pendingLast30, pendingPrev30)}
             icon={CheckCircle2}
+            accent="red"
           />
           <MetricCard
             label="Social posts published"
             value={formatCount(socialTotal)}
             delta={computeDelta(socialLast30, socialPrev30)}
             icon={Megaphone}
+            accent="green"
           />
           <MetricCard
             label="Website traffic"
             value={traffic === 0 ? "—" : formatCount(Math.round(traffic))}
             delta={computeDelta(Math.round(traffic), Math.round(trafficPrev))}
             icon={TrendingUp}
+            accent="blue"
           />
           <MetricCard
             label="Engagement CTR"
             value={ctr === 0 ? "—" : `${ctr.toFixed(1)}%`}
             delta="—"
             icon={MousePointerClick}
+            accent="purple"
           />
           <MetricCard
             label="AI-generated assets"
             value={formatCount(aiTotal)}
             delta={computeDelta(aiLast30, aiPrev30)}
             icon={Bot}
+            accent="ai"
           />
         </section>
 

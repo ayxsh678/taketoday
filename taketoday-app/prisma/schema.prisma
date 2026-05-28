@@ -1303,3 +1303,59 @@ enum TrustFlagType {
   SYBIL_SUSPECTED
   QUALITY_BREACH
 }
+
+// ─── PHASE E — MULTI-PROVIDER AI ORCHESTRATION ─────────────────────────────────
+
+enum AITaskType {
+  ARTICLE_GENERATION
+  CAROUSEL_GENERATION
+  SHORT_VIDEO_SCRIPT
+  SOCIAL_CAPTION
+  HEADLINE_VARIANTS
+  SEO_METADATA
+  SUMMARIZATION
+  REWRITE
+  DISTRIBUTION_POST
+  FACT_CHECK
+  TRANSLATION
+  ANALYSIS
+}
+
+model AIProviderSetting {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  isEnabled Boolean  @default(true)
+  priority  Int      @default(5)
+  config    Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AITaskRoute {
+  id        String     @id @default(cuid())
+  taskType  AITaskType @unique
+  providers Json
+  isActive  Boolean    @default(true)
+  updatedAt DateTime   @updatedAt
+  updatedBy String?
+}
+
+model AIUsageEvent {
+  id           String     @id @default(cuid())
+  taskType     AITaskType
+  provider     String
+  model        String
+  inputTokens  Int        @default(0)
+  outputTokens Int        @default(0)
+  costUsd      Float?
+  latencyMs    Int        @default(0)
+  success      Boolean    @default(true)
+  error        String?
+  metadata     Json?
+  createdAt    DateTime   @default(now())
+
+  @@index([taskType])
+  @@index([provider])
+  @@index([createdAt])
+}

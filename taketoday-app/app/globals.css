@@ -117,6 +117,140 @@ body {
 }
 
 /* -------------------------------------------------------------
+ * Admin design system — TakeToday OS
+ * Tokens for the dark admin surface, separate from the public
+ * light-theme ink/paper system. Never bleed into public pages.
+ * ------------------------------------------------------------- */
+
+:root {
+  /* Admin surface scale */
+  --adm-bg:          #07080d;
+  --adm-surface-1:   #0c0f18;
+  --adm-surface-2:   #111520;
+  --adm-surface-3:   #161b29;
+
+  /* Admin border scale */
+  --adm-border-dim:  rgba(255,255,255,0.05);
+  --adm-border:      rgba(255,255,255,0.09);
+  --adm-border-hi:   rgba(255,255,255,0.16);
+
+  /* Admin text scale */
+  --adm-text-1:      #f0f4ff;
+  --adm-text-2:      #8892aa;
+  --adm-text-3:      #4b5572;
+
+  /* Accent — used for focus rings, live dots, active nav */
+  --adm-accent-blue:   #60a5fa;
+  --adm-accent-purple: #a78bfa;
+  --adm-accent-green:  #34d399;
+  --adm-accent-amber:  #fbbf24;
+  --adm-accent-red:    #f87171;
+  --adm-accent-ai:     #818cf8;
+
+  /* Sidebar width token (used in padding offset) */
+  --sidebar-w: 260px;
+}
+
+/* Admin surface utility classes */
+.adm-card {
+  background: var(--adm-surface-1);
+  border: 1px solid var(--adm-border);
+  border-radius: 0.75rem;
+}
+
+.adm-card-hi {
+  background: var(--adm-surface-1);
+  border: 1px solid var(--adm-border-hi);
+  border-radius: 0.75rem;
+}
+
+/* Live pulse dot */
+@keyframes adm-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+.live-dot::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--adm-accent-green);
+  box-shadow: 0 0 6px var(--adm-accent-green);
+  animation: adm-pulse 2s ease-in-out infinite;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* AI shimmer — background for AI-processing states */
+@keyframes adm-shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}
+
+.ai-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--adm-surface-1) 0%,
+    rgba(129,140,248,0.15) 50%,
+    var(--adm-surface-1) 100%
+  );
+  background-size: 200% 100%;
+  animation: adm-shimmer 2.4s linear infinite;
+}
+
+/* Skeleton loader */
+.adm-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--adm-surface-2) 0%,
+    var(--adm-surface-3) 50%,
+    var(--adm-surface-2) 100%
+  );
+  background-size: 200% 100%;
+  animation: adm-shimmer 1.6s ease-in-out infinite;
+  border-radius: 0.375rem;
+}
+
+/* ── Nav active state: left border glow ── */
+.adm-nav-active {
+  position: relative;
+  background: rgba(96,165,250,0.08);
+  color: var(--adm-text-1);
+}
+.adm-nav-active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--adm-accent-blue);
+  box-shadow: 0 0 8px var(--adm-accent-blue);
+}
+
+/* ── Metric card accent top border ── */
+.metric-accent-blue   { border-top: 2px solid var(--adm-accent-blue);   }
+.metric-accent-purple { border-top: 2px solid var(--adm-accent-purple); }
+.metric-accent-green  { border-top: 2px solid var(--adm-accent-green);  }
+.metric-accent-amber  { border-top: 2px solid var(--adm-accent-amber);  }
+.metric-accent-red    { border-top: 2px solid var(--adm-accent-red);    }
+.metric-accent-ai     { border-top: 2px solid var(--adm-accent-ai);     }
+
+/* ── Glassmorphism panel — used for command palette / modals ── */
+.glass-panel {
+  background: rgba(12,15,24,0.92);
+  backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid var(--adm-border-hi);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.03) inset,
+    0 32px 80px rgba(0,0,0,0.6),
+    0 0 120px rgba(96,165,250,0.04);
+}
+
+/* -------------------------------------------------------------
  * Custom utilities
  * ------------------------------------------------------------- */
 

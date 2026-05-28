@@ -14,7 +14,6 @@ export const envSchema = z.object({
   // SECRET_KEY is critical for security but can be optional during build
   SECRET_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
-  ANTHROPIC_API_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
   BUTTONDOWN_API_KEY: z.string().optional(),
   CLOUDINARY_URL: z.string().optional(),
@@ -42,6 +41,9 @@ export const envSchema = z.object({
   ADMIN_EDITORS: z.string().optional(),
   ADMIN_SOCIAL_MANAGERS: z.string().optional(),
   ADMIN_EMAILS: z.string().optional(),
+  // Multi-provider AI keys
+  GROQ_API_KEY: z.string().optional(),
+  OPENROUTER_API_KEY: z.string().optional(),
 });
 
 // Parse with loose validation in build context, strict in runtime

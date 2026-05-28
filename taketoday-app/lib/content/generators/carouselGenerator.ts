@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { appConfig } from "@/lib/config/app";
 import type {
   CarouselFormat,
@@ -127,8 +127,8 @@ export const carouselGenerator: ContentGenerator<CarouselOutput> = {
       message: "Carousel generation started",
     });
 
-    // Dev-only mock path — no Claude call, no API key required
-    if (appConfig.isDevelopment && !appConfig.anthropicApiKey) {
+    // Dev-only mock path — no API key required
+    if (appConfig.isDevelopment && !appConfig.openaiApiKey) {
       const mock = buildMockCarousel(content, opts);
       await markSucceeded(jobId, mock as unknown as Prisma.InputJsonValue);
       pipelineLogger.info({
@@ -141,8 +141,8 @@ export const carouselGenerator: ContentGenerator<CarouselOutput> = {
       return { ok: true, format: "carousel", data: mock, jobId };
     }
 
-    if (!appConfig.anthropicApiKey) {
-      const error = "ANTHROPIC_API_KEY not configured";
+    if (!appConfig.openaiApiKey) {
+      const error = "OPENAI_API_KEY not configured";
       await markFailed(jobId, error);
       pipelineLogger.error({ stage: "generate", format: "carousel", jobId, message: error });
       return { ok: false, format: "carousel", error, jobId };
@@ -151,21 +151,25 @@ export const carouselGenerator: ContentGenerator<CarouselOutput> = {
     try {
       const output = await withRetry(
         async () => {
-          const anthropic = new Anthropic({ apiKey: appConfig.anthropicApiKey });
+          const openai = new OpenAI({ apiKey: appConfig.openaiApiKey });
 
-          const message = await anthropic.messages.create({
-            model: "claude-haiku-4-5-20251001",
+          const completion = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
             max_tokens: 2048,
-            system:
-              "You are a social media content designer. Return only valid JSON, no markdown, no explanation.",
-            messages: [{ role: "user", content: buildPrompt(content, opts) }],
+            response_format: { type: "json_object" },
+            messages: [
+              {
+                role: "system",
+                content: "You are a social media content designer. Return only valid JSON, no markdown, no explanation.",
+              },
+              { role: "user", content: buildPrompt(content, opts) },
+            ],
           });
 
-          const text =
-            message.content[0]?.type === "text" ? message.content[0].text : "";
+          const text = completion.choices[0]?.message?.content ?? "";
 
           const jsonMatch = text.match(/\{[\s\S]*\}/);
-          if (!jsonMatch) throw new Error("No JSON in Claude response");
+          if (!jsonMatch) throw new Error("No JSON in OpenAI response");
 
           return JSON.parse(jsonMatch[0]) as CarouselOutput;
         },

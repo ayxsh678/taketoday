@@ -7,7 +7,6 @@ export const appConfig = {
   databaseUrl: getEnv('DATABASE_URL', '') ?? '',
   secretKey: getEnv('SECRET_KEY', '') ?? '',
   geminiApiKey: getEnv('GEMINI_API_KEY', '') ?? '',
-  anthropicApiKey: getEnv('ANTHROPIC_API_KEY', '') ?? '',
   openaiApiKey: getEnv('OPENAI_API_KEY', '') ?? '',
   buttondownApiKey: getEnv('BUTTONDOWN_API_KEY', '') ?? '',
   cloudinaryUrl: getEnv('CLOUDINARY_URL', '') ?? '',
@@ -37,5 +36,7 @@ export const appConfig = {
   adminSocialManagers: (getEnv('ADMIN_SOCIAL_MANAGERS', '') ?? '').split(',').filter(Boolean) || [],
   adminEmails: (getEnv('ADMIN_EMAILS', '') ?? '').split(',').filter(Boolean) || [],
   isDevelopment: (getEnv('NODE_ENV', 'development') as string) === 'development',
-  // Add more configuration options as needed
+  // Multi-provider AI keys
+  groqApiKey: getEnv('GROQ_API_KEY', '') ?? '',
+  openrouterApiKey: getEnv('OPENROUTER_API_KEY', '') ?? '',
 };
