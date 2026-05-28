@@ -12,6 +12,9 @@ import {
   Settings,
   ShieldCheck,
   Users,
+  Newspaper,
+  Flag,
+  Target,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -31,6 +34,9 @@ export const adminNav: AdminNavItem[] = [
   { href: "/admin/media", label: "Media Library", description: "Images, videos, folders", icon: Image },
   { href: "/admin/social", label: "Distribution", description: "Multi-platform posting", icon: Megaphone },
   { href: "/admin/video", label: "Short Video", description: "Reels and shorts queue", icon: Clapperboard },
+  { href: "/admin/editorial", label: "Editorial Queue", description: "Contributor submissions workflow", icon: Newspaper },
+  { href: "/admin/missions", label: "Missions", description: "Civic journalism missions and quests", icon: Target },
+  { href: "/admin/trust-safety", label: "Trust & Safety", description: "Abuse flags and moderation queue", icon: Flag },
   { href: "/admin/approvals", label: "Approvals", description: "Review and audit trail", icon: ShieldCheck },
   { href: "/admin/analytics", label: "Analytics", description: "Traffic and engagement", icon: ChartNoAxesCombined },
   { href: "/admin/users", label: "Users", description: "Roles and permissions", icon: Users },

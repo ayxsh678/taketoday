@@ -112,6 +112,30 @@ export function Navbar({ showTicker = true }: { showTicker?: boolean }) {
           <div className="hidden lg:flex items-center gap-3">
             <SearchButton />
             <Link
+              href="/contribute"
+              className="text-[12px] text-ink/70 hover:text-ink transition-colors"
+            >
+              Contribute
+            </Link>
+            <Link
+              href="/investigate"
+              className="text-[12px] text-ink/70 hover:text-ink transition-colors"
+            >
+              Investigate
+            </Link>
+            <Link
+              href="/missions"
+              className="text-[12px] text-ink/70 hover:text-ink transition-colors"
+            >
+              Missions
+            </Link>
+            <Link
+              href="/leaderboard"
+              className="text-[12px] text-ink/70 hover:text-ink transition-colors"
+            >
+              Leaderboard
+            </Link>
+            <Link
               href="/subscribe"
               className="inline-flex items-center rounded-full bg-ink text-paper px-4 py-1.5 text-[12px] font-medium tracking-wide hover:bg-ink-700 transition-colors"
             >
