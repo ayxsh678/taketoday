@@ -10,9 +10,12 @@ import {
   Home,
   LogOut,
   Menu,
+  Monitor,
+  Moon,
   Radio,
   Search,
   ShieldCheck,
+  Sun,
   X,
   Zap,
 } from "lucide-react";
@@ -88,11 +91,43 @@ export function AdminShell({
   const [commandOpen, setCommandOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
+  const [adminTheme, setAdminTheme] = useState<"dark" | "light" | "system">("dark");
   const pathname = usePathname();
   const router = useRouter();
 
   const isActive = (href: string) =>
     href === "/admin" ? pathname === href : pathname.startsWith(href);
+
+  // ─── admin theme ───────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    const saved = localStorage.getItem("tt-admin-theme") as "dark" | "light" | "system" | null;
+    if (saved) setAdminTheme(saved);
+  }, []);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+
+    function applyTheme(t: "dark" | "light" | "system") {
+      const isDark = t === "dark" || (t === "system" && mq.matches);
+      html.classList.toggle("dark", isDark);
+    }
+
+    applyTheme(adminTheme);
+    const onChange = () => { if (adminTheme === "system") applyTheme("system"); };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [adminTheme]);
+
+  function cycleAdminTheme() {
+    const next = adminTheme === "dark" ? "light" : adminTheme === "light" ? "system" : "dark";
+    localStorage.setItem("tt-admin-theme", next);
+    setAdminTheme(next);
+  }
+
+  const ThemeIcon = adminTheme === "dark" ? Moon : adminTheme === "light" ? Sun : Monitor;
+  const themeLabel = adminTheme === "dark" ? "Dark" : adminTheme === "light" ? "Light" : "System";
 
   // ─── sign out ──────────────────────────────────────────────────────────────
 
@@ -178,7 +213,7 @@ export function AdminShell({
 
   return (
     <div
-      className="min-h-screen"
+      className={cn("min-h-screen", adminTheme === "light" ? "adm-light" : "")}
       style={{ background: "var(--adm-bg)", color: "var(--adm-text-1)" }}
     >
       {/* mobile overlay */}
@@ -358,7 +393,7 @@ export function AdminShell({
         <header
           className="sticky top-0 z-20 flex h-15 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8"
           style={{
-            background: "rgba(7,8,13,0.90)",
+            background: "var(--adm-header-bg)",
             backdropFilter: "blur(20px) saturate(1.3)",
             borderBottom: "1px solid var(--adm-border-dim)",
           }}
@@ -414,6 +449,17 @@ export function AdminShell({
               <Radio className="h-3 w-3" />
               Live
             </span>
+
+            {/* theme toggle */}
+            <button
+              type="button"
+              onClick={cycleAdminTheme}
+              title={`Theme: ${themeLabel} (click to cycle)`}
+              className="flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-white/6"
+              style={{ color: "var(--adm-text-2)" }}
+            >
+              <ThemeIcon className="h-4 w-4" />
+            </button>
 
             {/* notification bell */}
             <div className="relative">
@@ -475,7 +521,7 @@ export function AdminShell({
         <div
           className="fixed inset-0 z-50 p-4"
           style={{
-            background: "rgba(0,0,0,0.72)",
+            background: "var(--adm-overlay-bg)",
             backdropFilter: "blur(8px)",
           }}
           onClick={() => setCommandOpen(false)}

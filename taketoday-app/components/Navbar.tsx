@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { SearchButton } from "@/components/SearchButton";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useEffect, useState } from "react";
 
 /**
@@ -110,6 +111,7 @@ export function Navbar({ showTicker = true }: { showTicker?: boolean }) {
 
           {/* Desktop actions */}
           <div className="hidden lg:flex items-center gap-3">
+            <ThemeToggle />
             <SearchButton />
             <Link
               href="/contribute"
@@ -145,6 +147,7 @@ export function Navbar({ showTicker = true }: { showTicker?: boolean }) {
 
           {/* Mobile actions: search + hamburger */}
           <div className="flex lg:hidden items-center gap-3">
+            <ThemeToggle />
             <SearchButton />
             <button
               type="button"

@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { Analytics } from "@vercel/analytics/react";
 import { cn } from "@/lib/utils";
 import { SITE } from "@/lib/site";
+import { SiteProviders } from "./providers";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -49,9 +50,11 @@ export default function RootLayout({
       className={cn(inter.variable, instrument.variable, jetbrains.variable, "font-sans", geist.variable)}
     >
       <body className="grain font-sans bg-paper text-ink min-h-screen">
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
+        <SiteProviders>
+          <Navbar />
+          <main>{children}</main>
+          <Footer />
+        </SiteProviders>
         <Analytics />
       </body>
     </html>

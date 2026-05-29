@@ -111,6 +111,45 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* ── Public site dark mode — overrides ink/paper CSS vars ── */
+html.dark {
+  --color-paper:     #0f1117;
+  --color-ink:       #f0f4ff;
+  --color-ink-900:   #e0e6f5;
+  --color-ink-700:   #a8b4cc;
+  --color-ink-500:   #6b7894;
+  --color-ink-400:   #424e6a;
+  --color-ink-300:   #2a3452;
+  --color-ink-200:   #1c243e;
+  --color-ink-100:   #131830;
+  --color-accent:    #e86848;
+}
+
+html.dark body {
+  background: #0f1117;
+}
+
+html.dark ::selection {
+  background: #f0f4ff;
+  color: #0f1117;
+}
+
+html.dark .grain::before {
+  background-image: radial-gradient(rgba(255,255,255,0.018) 1px, transparent 1px);
+  mix-blend-mode: screen;
+}
+
+html.dark :focus-visible {
+  outline-color: #f0f4ff;
+}
+
+html.dark .article p    { color: var(--color-ink); }
+html.dark .article h2   { color: var(--color-ink); }
+html.dark .article blockquote {
+  border-left-color: var(--color-ink);
+  color: var(--color-ink);
+}
+
 ::selection {
   background: #0a0a0a;
   color: #fafaf7;
@@ -147,9 +186,37 @@ body {
   --adm-accent-red:    #f87171;
   --adm-accent-ai:     #818cf8;
 
+  /* Contextual tokens (used via inline styles in components) */
+  --adm-header-bg:     rgba(7,8,13,0.90);
+  --adm-overlay-bg:    rgba(0,0,0,0.72);
+  --adm-glass-bg:      rgba(12,15,24,0.92);
+  --adm-glass-shadow:  0 32px 80px rgba(0,0,0,0.6), 0 0 120px rgba(96,165,250,0.04);
+
   /* Sidebar width token (used in padding offset) */
   --sidebar-w: 260px;
 }
+
+/* ── Admin light theme ── */
+.adm-light {
+  --adm-bg:          #f1f4f9;
+  --adm-surface-1:   #ffffff;
+  --adm-surface-2:   #f7f9fc;
+  --adm-surface-3:   #eef1f8;
+  --adm-border-dim:  rgba(15,23,42,0.05);
+  --adm-border:      rgba(15,23,42,0.10);
+  --adm-border-hi:   rgba(15,23,42,0.20);
+  --adm-text-1:      #0f172a;
+  --adm-text-2:      #475569;
+  --adm-text-3:      #94a3b8;
+  --adm-header-bg:   rgba(241,244,249,0.92);
+  --adm-overlay-bg:  rgba(15,23,42,0.40);
+  --adm-glass-bg:    rgba(255,255,255,0.96);
+  --adm-glass-shadow: 0 8px 40px rgba(15,23,42,0.14), 0 0 0 1px rgba(15,23,42,0.10);
+}
+
+.adm-light .adm-card { background: var(--adm-surface-1); }
+.adm-light .adm-nav-active { background: rgba(96,165,250,0.10); }
+.adm-light .adm-nav-active::before { box-shadow: none; }
 
 /* Admin surface utility classes */
 .adm-card {
@@ -241,13 +308,10 @@ body {
 
 /* ── Glassmorphism panel — used for command palette / modals ── */
 .glass-panel {
-  background: rgba(12,15,24,0.92);
+  background: var(--adm-glass-bg, rgba(12,15,24,0.92));
   backdrop-filter: blur(24px) saturate(1.4);
   border: 1px solid var(--adm-border-hi);
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.03) inset,
-    0 32px 80px rgba(0,0,0,0.6),
-    0 0 120px rgba(96,165,250,0.04);
+  box-shadow: var(--adm-glass-shadow, 0 32px 80px rgba(0,0,0,0.6));
 }
 
 /* -------------------------------------------------------------
