@@ -113,25 +113,25 @@ export function Navbar({ showTicker = true }: { showTicker?: boolean }) {
             <SearchButton />
             <Link
               href="/contribute"
-              className="text-[12px] text-ink/70 hover:text-ink transition-colors"
+              className="text-[12px] text-ink hover:text-ink-700 transition-colors font-medium"
             >
               Contribute
             </Link>
             <Link
               href="/investigate"
-              className="text-[12px] text-ink/70 hover:text-ink transition-colors"
+              className="text-[12px] text-ink/80 hover:text-ink transition-colors"
             >
               Investigate
             </Link>
             <Link
               href="/missions"
-              className="text-[12px] text-ink/70 hover:text-ink transition-colors"
+              className="text-[12px] text-ink/80 hover:text-ink transition-colors"
             >
               Missions
             </Link>
             <Link
               href="/leaderboard"
-              className="text-[12px] text-ink/70 hover:text-ink transition-colors"
+              className="text-[12px] text-ink/80 hover:text-ink transition-colors"
             >
               Leaderboard
             </Link>
@@ -244,6 +244,31 @@ export function Navbar({ showTicker = true }: { showTicker?: boolean }) {
                     className="block py-3 border-b border-ink-200/60 font-serif text-[28px] tracking-tight text-ink hover:text-ink-700 transition-colors"
                   >
                     {c.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Open journalism links */}
+          <nav aria-label="Open journalism" className="mt-8">
+            <p className="font-mono text-[10px] tracking-[0.22em] uppercase text-ink-400 mb-4">
+              Open Journalism
+            </p>
+            <ul className="space-y-1">
+              {[
+                { label: "Contribute", href: "/contribute" },
+                { label: "Investigate", href: "/investigate" },
+                { label: "Missions", href: "/missions" },
+                { label: "Leaderboard", href: "/leaderboard" },
+              ].map((item) => (
+                <li key={item.label}>
+                  <Link
+                    href={item.href}
+                    onClick={() => setMenuOpen(false)}
+                    className="block py-2.5 border-b border-ink-200/60 font-sans text-[16px] text-ink hover:text-ink-700 transition-colors"
+                  >
+                    {item.label}
                   </Link>
                 </li>
               ))}

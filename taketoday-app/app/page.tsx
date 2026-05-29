@@ -8,6 +8,7 @@ import {
 import { FeedSectionSkeleton } from "@/components/FeedSection";
 import { PersonalizedFeedSection } from "@/components/PersonalizedFeedSection";
 import { IntelligenceStrip } from "@/components/IntelligenceStrip";
+import { OpenJournalismStrip } from "@/components/OpenJournalismStrip";
 import { getAllArticles, getFeaturedArticles } from "@/lib/content/queries";
 import { SITE } from "@/lib/site";
 
@@ -67,6 +68,7 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd) }}
       />
       <Hero />
+      <OpenJournalismStrip />
       <Suspense fallback={<FeaturedSectionSkeleton />}>
         <FeaturedLoader />
       </Suspense>

@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
 
   // Environment-detected capabilities (no DB needed)
   const envCapabilities = {
+    anthropic: Boolean(appConfig.anthropicApiKey),
     gemini: Boolean(appConfig.geminiApiKey),
     openai: Boolean(appConfig.openaiApiKey),
     groq: Boolean(appConfig.groqApiKey),
