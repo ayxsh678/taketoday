@@ -3,8 +3,7 @@
 import { z } from 'zod';
 
 // Determine if we're in a build context where we want to be more lenient
-const isBuildContext = process.env.NEXT_PHASE === 'phase-production-build' || 
-                       process.env.NEXT_PHASE === 'phase-development-server';
+const isBuildContext = process.env.NEXT_PHASE === 'phase-production-build';
 
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
