@@ -8,7 +8,6 @@ export const appConfig = {
   secretKey: getEnv('SECRET_KEY', '') ?? '',
   geminiApiKey: getEnv('GEMINI_API_KEY', '') ?? '',
   openaiApiKey: getEnv('OPENAI_API_KEY', '') ?? '',
-  anthropicApiKey: getEnv('ANTHROPIC_API_KEY', '') ?? '',
   buttondownApiKey: getEnv('BUTTONDOWN_API_KEY', '') ?? '',
   cloudinaryUrl: getEnv('CLOUDINARY_URL', '') ?? '',
   siteUrl: getEnv('NEXT_PUBLIC_SITE_URL', 'http://localhost:3000') ?? 'http://localhost:3000',

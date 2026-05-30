@@ -206,7 +206,7 @@ export default function SocialPage() {
         ).map(({ key, label, tone }) => (
           <div
             key={key}
-            className="rounded-lg border border-white/10 bg-white/5.5 p-4"
+            className="rounded-lg border border-white/10 bg-white/5 p-4"
           >
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-medium text-zinc-400">{label}</span>

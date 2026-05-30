@@ -15,7 +15,6 @@ export const envSchema = z.object({
   SECRET_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
   OPENAI_API_KEY: z.string().optional(),
-  ANTHROPIC_API_KEY: z.string().optional(),
   BUTTONDOWN_API_KEY: z.string().optional(),
   CLOUDINARY_URL: z.string().optional(),
   // NEXT_PUBLIC_SITE_URL should have a safe fallback for development/build

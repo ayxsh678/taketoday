@@ -196,7 +196,7 @@ export default function MediaPage() {
                   <button
                     key={folder.id}
                     onClick={() => setCurrentFolderId(folder.id)}
-                    className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5.5 px-4 py-3 text-left transition hover:bg-white/10"
+                    className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-left transition hover:bg-white/10"
                   >
                     <Folder className="h-5 w-5 shrink-0 text-sky-400" />
                     <div className="min-w-0">

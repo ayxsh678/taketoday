@@ -214,6 +214,14 @@ export default function ContentPage() {
   };
 
   const handleCreate = async () => {
+    if (form.headline.trim().length < 8) {
+      setCreateError("Headline must be at least 8 characters.");
+      return;
+    }
+    if (form.subheadline.trim().length < 12) {
+      setCreateError("Subheadline must be at least 12 characters.");
+      return;
+    }
     setIsCreating(true);
     setCreateError(null);
 
