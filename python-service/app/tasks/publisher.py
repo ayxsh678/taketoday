@@ -17,7 +17,7 @@ class Publisher:
         """
         try:
             # Validate platform against SocialPlatform enum
-            valid_platforms = ["X", "INSTAGRAM", "WHATSAPP", "TELEGRAM", "FACEBOOK", "LINKEDIN", "YOUTUBE"]
+            valid_platforms = ["X", "INSTAGRAM", "WHATSAPP", "TELEGRAM", "FACEBOOK", "LINKEDIN", "YOUTUBE", "THREADS"]
             if platform not in valid_platforms:
                 raise ValueError(f"Invalid platform: {platform}. Must be one of {valid_platforms}")
             
@@ -101,12 +101,13 @@ class Publisher:
             # Map IntegrationProvider to SocialPlatform
             provider_to_platform = {
                 "X": "X",
-                "INSTAGRAM": "INSTAGRAM", 
+                "INSTAGRAM": "INSTAGRAM",
                 "WHATSAPP": "WHATSAPP",
                 "TELEGRAM": "TELEGRAM",
                 "FACEBOOK": "FACEBOOK",
                 "LINKEDIN": "LINKEDIN",
-                "YOUTUBE": "YOUTUBE"
+                "YOUTUBE": "YOUTUBE",
+                "THREADS": "THREADS",
             }
             
             try:
@@ -120,7 +121,7 @@ class Publisher:
                 
                 # If no integrations found, use default platforms
                 if not platforms:
-                    platforms = ["X", "INSTAGRAM", "FACEBOOK", "LINKEDIN"]  # Default platforms
+                    platforms = ["X", "INSTAGRAM", "FACEBOOK", "LINKEDIN", "THREADS"]  # Default platforms
                     
             except Exception as e:
                 logger.warning(f"Could not fetch integrations from database: {e}")

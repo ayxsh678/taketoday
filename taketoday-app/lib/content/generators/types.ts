@@ -33,6 +33,12 @@ export interface CarouselOptions {
   slideCount?: number;
   brandName?: string;
   ctaText?: string;
+  /**
+   * Visual template ID. Defaults to "taketoday-dark".
+   * "taketoday-dark": black bg, white serif headline, red accent subheadline,
+   *   body with "quoted" red highlights, full-bleed bottom image, @taketoday.co watermark.
+   */
+  templateId?: "taketoday-dark" | "minimal-light";
 }
 
 export interface GenerationOptions {
@@ -93,7 +99,11 @@ export interface CarouselSlide {
   /** "title" = first slide, "content" = middle slides, "cta" = last slide */
   type: "title" | "content" | "cta";
   heading: string;
+  /** Red accent subheadline (taketoday-dark template) */
+  accentHeading?: string;
   body: string;
+  /** Comma-separated key terms to highlight in red in the body */
+  highlightTerms?: string;
   /** Prompt description for downstream image generation */
   imagePrompt: string;
   visualStyle: string;
@@ -101,6 +111,7 @@ export interface CarouselSlide {
 
 export interface CarouselOutput {
   title: string;
+  templateId?: string;
   format: CarouselFormat;
   slideCount: number;
   slides: CarouselSlide[];

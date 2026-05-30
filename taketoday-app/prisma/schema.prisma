@@ -226,6 +226,7 @@ model ShortVideoJob {
   script         String
   voiceProvider  String?
   avatarProvider String?
+  templateId     String?   @default("taketoday-news")
   subtitleUrl    String?
   status         JobStatus @default(QUEUED)
   publishQueue   Json?
@@ -336,6 +337,7 @@ enum SocialPlatform {
   FACEBOOK
   LINKEDIN
   YOUTUBE
+  THREADS
 }
 
 enum JobStatus {

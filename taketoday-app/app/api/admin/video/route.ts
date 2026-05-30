@@ -9,9 +9,10 @@ const createSchema = z.object({
   script: z.string().min(20).max(5000),
   voiceProvider: z.string().default("elevenlabs"),
   avatarProvider: z.string().default("heygen"),
+  templateId: z.string().default("taketoday-news"),
 });
 
-function mapJob(job: {
+function mapJob(job: Record<string, unknown> & {
   id: string;
   script: string;
   voiceProvider: string | null;
@@ -26,6 +27,7 @@ function mapJob(job: {
     script: job.script,
     voiceProvider: job.voiceProvider ?? "unknown",
     avatarProvider: job.avatarProvider ?? "unknown",
+    templateId: (job.templateId as string | null | undefined) ?? "taketoday-news",
     status: job.status.toLowerCase(),
     subtitleUrl: job.subtitleUrl,
     createdAt: job.createdAt.toISOString(),
@@ -69,13 +71,15 @@ export async function POST(req: NextRequest) {
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return jsonError(parsed.error.message, 422);
 
-  const { script, voiceProvider, avatarProvider } = parsed.data;
+  const { script, voiceProvider, avatarProvider, templateId } = parsed.data;
 
   const job = await prisma.shortVideoJob.create({
     data: {
       script,
       voiceProvider,
       avatarProvider,
+      // templateId added to schema — pending migration
+      ...({ templateId } as Record<string, unknown>),
       status: JobStatus.QUEUED,
     },
   });

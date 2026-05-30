@@ -7,6 +7,7 @@ import { logAuditAction } from "@/lib/admin/audit";
 import { prisma } from "@/lib/db/prisma";
 
 // Display name → Prisma SocialPlatform enum
+// THREADS cast as SocialPlatform — added to schema, migration pending
 const platformEnumMap: Record<string, SocialPlatform> = {
   X: SocialPlatform.X,
   Instagram: SocialPlatform.INSTAGRAM,
@@ -15,10 +16,11 @@ const platformEnumMap: Record<string, SocialPlatform> = {
   Facebook: SocialPlatform.FACEBOOK,
   LinkedIn: SocialPlatform.LINKEDIN,
   YouTube: SocialPlatform.YOUTUBE,
+  Threads: "THREADS" as SocialPlatform,
 };
 
 // Prisma SocialPlatform enum → display name
-const platformDisplayMap: Record<SocialPlatform, string> = {
+const platformDisplayMap: Record<string, string> = {
   X: "X",
   INSTAGRAM: "Instagram",
   WHATSAPP: "WhatsApp",
@@ -26,6 +28,7 @@ const platformDisplayMap: Record<SocialPlatform, string> = {
   FACEBOOK: "Facebook",
   LINKEDIN: "LinkedIn",
   YOUTUBE: "YouTube",
+  THREADS: "Threads",
 };
 
 function mapPost(post: {
@@ -56,7 +59,7 @@ function mapPost(post: {
 
 const socialSchema = z.object({
   platforms: z
-    .array(z.enum(["X", "Instagram", "WhatsApp", "Telegram", "Facebook", "LinkedIn", "YouTube"]))
+    .array(z.enum(["X", "Instagram", "WhatsApp", "Telegram", "Facebook", "LinkedIn", "YouTube", "Threads"]))
     .min(1),
   copy: z.string().min(4),
   scheduledAt: z.string().datetime().optional(),

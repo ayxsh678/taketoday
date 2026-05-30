@@ -31,6 +31,9 @@ export async function GET(req: NextRequest) {
 
   const q = req.nextUrl.searchParams.get("q")?.toLowerCase() ?? "";
   const status = req.nextUrl.searchParams.get("status");
+  const page = Math.max(1, parseInt(req.nextUrl.searchParams.get("page") ?? "1", 10));
+  const limit = Math.min(50, Math.max(1, parseInt(req.nextUrl.searchParams.get("limit") ?? "20", 10)));
+  const skip = (page - 1) * limit;
   const where: Prisma.ArticleWhereInput = {};
 
   if (q) {
@@ -49,15 +52,20 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const articles = await prisma.article.findMany({
-      where,
-      include: {
-        author: true,
-        categories: { include: { category: true } },
-        tags: { include: { tag: true } },
-      },
-      orderBy: { updatedAt: "desc" },
-    });
+    const [articles, total] = await Promise.all([
+      prisma.article.findMany({
+        where,
+        include: {
+          author: true,
+          categories: { include: { category: true } },
+          tags: { include: { tag: true } },
+        },
+        orderBy: { updatedAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.article.count({ where }),
+    ]);
 
     const mappedArticles = articles.map((article) => ({
       id: article.id,
@@ -81,7 +89,13 @@ export async function GET(req: NextRequest) {
       updatedAt: article.updatedAt.toISOString(),
     }));
 
-    return jsonOk({ articles: mappedArticles, total: mappedArticles.length });
+    return jsonOk({
+      articles: mappedArticles,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (error) {
     const prismaError = error as { code?: string };
     if (prismaError.code === "P2002") return jsonError("A record with this slug already exists.", 400);

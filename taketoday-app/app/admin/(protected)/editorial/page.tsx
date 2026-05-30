@@ -54,8 +54,8 @@ export default async function EditorialQueuePage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-ink">Editorial Queue</h1>
-        <p className="text-ink/60 text-sm mt-1">
+        <h1 className="text-2xl font-bold" style={{ color: "var(--adm-text-1)" }}>Editorial Queue</h1>
+        <p className="text-sm mt-1" style={{ color: "var(--adm-text-2)" }}>
           Community contributions awaiting editorial processing — {contributions.length} active
         </p>
       </div>
@@ -66,9 +66,9 @@ export default async function EditorialQueuePage() {
           const count = byStage[stage]?.length ?? 0;
           const meta = WORKFLOW_STAGE_META[stage];
           return (
-            <div key={stage} className="bg-white border border-ink/10 rounded-xl p-3 text-center">
-              <div className="text-2xl font-bold text-ink">{count}</div>
-              <div className="text-xs text-ink/60 mt-0.5">{meta.label}</div>
+            <div key={stage} className="rounded-xl p-3 text-center" style={{ background: "var(--adm-surface-1)", border: "1px solid var(--adm-border)" }}>
+              <div className="text-2xl font-bold" style={{ color: "var(--adm-text-1)" }}>{count}</div>
+              <div className="text-xs mt-0.5" style={{ color: "var(--adm-text-2)" }}>{meta.label}</div>
             </div>
           );
         })}
@@ -83,7 +83,7 @@ export default async function EditorialQueuePage() {
 
           return (
             <div key={stage}>
-              <h2 className="text-sm font-semibold text-ink/70 uppercase tracking-wider mb-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--adm-text-2)" }}>
                 {meta.label} ({items.length})
               </h2>
               <div className="space-y-3">
@@ -91,11 +91,12 @@ export default async function EditorialQueuePage() {
                   <Link
                     key={c.id}
                     href={`/contribute/${c.id}`}
-                    className="flex items-start gap-4 bg-white border border-ink/10 rounded-xl p-4 hover:border-ink/25 transition-colors"
+                    className="flex items-start gap-4 rounded-xl p-4 transition-colors hover:opacity-90"
+                    style={{ background: "var(--adm-surface-1)", border: "1px solid var(--adm-border)" }}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className="text-xs font-mono text-ink/50">{c.type.replace(/_/g, " ")}</span>
+                        <span className="text-xs font-mono" style={{ color: "var(--adm-text-3)" }}>{c.type.replace(/_/g, " ")}</span>
                         {c.isBreaking && (
                           <span className="text-xs font-bold text-red-600">BREAKING</span>
                         )}
@@ -103,8 +104,8 @@ export default async function EditorialQueuePage() {
                           <span className="text-xs text-blue-600">🤖 AI</span>
                         )}
                       </div>
-                      <h3 className="font-medium text-ink leading-snug mb-1 truncate">{c.title}</h3>
-                      <div className="flex flex-wrap gap-3 text-xs text-ink/50">
+                      <h3 className="font-medium leading-snug mb-1 truncate" style={{ color: "var(--adm-text-1)" }}>{c.title}</h3>
+                      <div className="flex flex-wrap gap-3 text-xs" style={{ color: "var(--adm-text-3)" }}>
                         <span>@{c.author.username}</span>
                         {c.author.isVerifiedJournalist && <span className="text-blue-500">✓</span>}
                         <span>{c.author.reputation?.tier ?? "NEWCOMER"}</span>
@@ -137,7 +138,7 @@ export default async function EditorialQueuePage() {
         })}
 
         {contributions.length === 0 && (
-          <div className="text-center py-16 text-ink/40">
+          <div className="text-center py-16" style={{ color: "var(--adm-text-3)" }}>
             No submissions in the queue. Share the contribution portal to get started.
           </div>
         )}

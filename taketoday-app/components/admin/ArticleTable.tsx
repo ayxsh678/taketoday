@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, ChevronDown, Edit3, Eye, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Edit3, Eye, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
@@ -87,10 +87,17 @@ interface ArticleTableProps {
   queryParams?: { q?: string; status?: string };
 }
 
+const PAGE_SIZE = 20;
+
 export function ArticleTable({ queryParams }: ArticleTableProps = {}) {
   const [articles, setArticles] = useState<AdminArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // pagination
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   // edit modal
   const [selectedArticle, setSelectedArticle] = useState<AdminArticle | null>(null);
@@ -102,11 +109,16 @@ export function ArticleTable({ queryParams }: ArticleTableProps = {}) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Re-fetch when query params change
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [queryParams?.q, queryParams?.status]);
+
+  // Re-fetch when page or query params change
   useEffect(() => {
     void fetchArticles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryParams?.q, queryParams?.status]);
+  }, [page, queryParams?.q, queryParams?.status]);
 
   // ─── data fetching ──────────────────────────────────────────────────────────
 
@@ -116,11 +128,15 @@ export function ArticleTable({ queryParams }: ArticleTableProps = {}) {
       const url = new URL("/api/admin/articles", window.location.origin);
       if (queryParams?.q) url.searchParams.set("q", queryParams.q);
       if (queryParams?.status) url.searchParams.set("status", queryParams.status);
+      url.searchParams.set("page", String(page));
+      url.searchParams.set("limit", String(PAGE_SIZE));
       const res = await fetch(url.toString());
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      // API wraps in { ok: true, data: { articles: [...] } }
-      setArticles((json.data as { articles: AdminArticle[] }).articles ?? []);
+      const data = json.data as { articles: AdminArticle[]; total: number; totalPages: number };
+      setArticles(data.articles ?? []);
+      setTotal(data.total ?? 0);
+      setTotalPages(data.totalPages ?? 1);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch articles");
@@ -315,6 +331,38 @@ export function ArticleTable({ queryParams }: ArticleTableProps = {}) {
           </tbody>
         </table>
       </div>
+
+      {/* ── pagination ── */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-1 pt-3">
+          <p className="text-xs text-zinc-500">
+            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} of {total}
+          </p>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              className="h-8 w-8 px-0"
+              disabled={page <= 1 || loading}
+              onClick={() => setPage((p) => p - 1)}
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="min-w-12 text-center text-xs text-zinc-400">
+              {page} / {totalPages}
+            </span>
+            <Button
+              variant="ghost"
+              className="h-8 w-8 px-0"
+              disabled={page >= totalPages || loading}
+              onClick={() => setPage((p) => p + 1)}
+              aria-label="Next page"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* ── edit modal ── */}
       {selectedArticle && draft && (

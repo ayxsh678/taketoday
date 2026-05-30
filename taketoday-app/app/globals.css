@@ -218,6 +218,28 @@ html.dark .article blockquote {
 .adm-light .adm-nav-active { background: rgba(96,165,250,0.10); }
 .adm-light .adm-nav-active::before { box-shadow: none; }
 
+/* Remap hardcoded dark-mode colours so all admin pages stay readable in light mode */
+.adm-light .text-white,
+.adm-light .text-zinc-100,
+.adm-light .text-zinc-200,
+.adm-light .text-zinc-300 { color: var(--adm-text-1) !important; }
+.adm-light .text-zinc-400,
+.adm-light .text-zinc-500 { color: var(--adm-text-2) !important; }
+.adm-light .text-zinc-600 { color: var(--adm-text-3) !important; }
+.adm-light .border-white\/4,
+.adm-light .border-white\/5,
+.adm-light .border-white\/6,
+.adm-light .border-white\/8,
+.adm-light .border-white\/10,
+.adm-light .border-white\/12 { border-color: var(--adm-border) !important; }
+.adm-light .bg-white\/3,
+.adm-light .bg-white\/4,
+.adm-light .bg-white\/5,
+.adm-light .bg-white\/6,
+.adm-light .bg-white\/7,
+.adm-light .bg-white\/8 { background-color: var(--adm-surface-2) !important; }
+
+
 /* Admin surface utility classes */
 .adm-card {
   background: var(--adm-surface-1);

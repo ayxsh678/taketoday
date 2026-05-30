@@ -27,7 +27,7 @@ import {
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
-const PLATFORMS = ["X", "Instagram", "WhatsApp", "Telegram", "Facebook", "LinkedIn", "YouTube"];
+const PLATFORMS = ["X", "Instagram", "WhatsApp", "Telegram", "Facebook", "LinkedIn", "YouTube", "Threads"];
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
