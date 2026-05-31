@@ -61,8 +61,18 @@ vi.mock("@/lib/db/prisma", () => ({
     reviewComment: {
       create: vi.fn(),
     },
+    contribution: {
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
+    contributionEmbedding: {
+      upsert: vi.fn(),
+    },
     $transaction: vi.fn(),
     $queryRaw: vi.fn(),
+    $executeRaw: vi.fn(),
   },
 }));
 

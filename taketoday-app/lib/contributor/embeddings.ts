@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { Prisma } from "@prisma/client";
 import { appConfig } from "@/lib/config/app";
 import { prisma } from "@/lib/db/prisma";
 
@@ -81,6 +82,12 @@ export async function findSimilarContributions(
 
   type RawRow = { contribution_id: string; similarity: number };
 
+  // Build the optional exclusion clause using Prisma.sql so it composes correctly
+  // into the outer $queryRaw template (Prisma.empty produces an empty fragment, not a nested call)
+  const excludeClause = excludeId
+    ? Prisma.sql`AND ce."contributionId" != ${excludeId}`
+    : Prisma.empty;
+
   const rows = await prisma.$queryRaw<RawRow[]>`
     SELECT
       ce."contributionId" AS contribution_id,
@@ -89,7 +96,7 @@ export async function findSimilarContributions(
     WHERE
       ce.embedding IS NOT NULL
       AND 1 - (ce.embedding <=> ${vectorLiteral}::vector) > ${threshold}
-      ${excludeId ? prisma.$queryRaw`AND ce."contributionId" != ${excludeId}` : prisma.$queryRaw``}
+      ${excludeClause}
     ORDER BY ce.embedding <=> ${vectorLiteral}::vector
     LIMIT ${limit}
   `;
