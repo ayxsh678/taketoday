@@ -7,16 +7,26 @@ from datetime import datetime
 import hashlib
 import re
 from bs4 import BeautifulSoup
+from core.ssrf import validate_url
 
 logger = logging.getLogger(__name__)
+
+# Per-request limits [SEC-09]
+_REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=10, connect=5)
+_MAX_RESPONSE_BYTES = 10 * 1024 * 1024  # 10 MB
 
 class Scraper:
     def __init__(self):
         self.session = None
     
-    async def _get_session(self):
+    async def _get_session(self) -> aiohttp.ClientSession:
         if self.session is None or self.session.closed:
-            self.session = aiohttp.ClientSession()
+            # ttl_dns_cache=0: disable DNS caching to reduce DNS-rebinding window
+            connector = aiohttp.TCPConnector(ttl_dns_cache=0)
+            self.session = aiohttp.ClientSession(
+                connector=connector,
+                timeout=_REQUEST_TIMEOUT,
+            )
         return self.session
     
     async def close(self):
@@ -25,9 +35,15 @@ class Scraper:
     
     async def scrape_source(self, source_url: str, source_type: str) -> List[Dict[str, Any]]:
         """
-        Scrape articles from a source based on its type
-        Returns list of article dictionaries
+        Scrape articles from a source based on its type.
+        Returns list of article dictionaries.
         """
+        # SSRF guard: validate URL before any network access [SEC-09]
+        ssrf_error = validate_url(source_url)
+        if ssrf_error:
+            logger.warning(f"Blocked fetch of '{source_url}': {ssrf_error}")
+            return []
+
         try:
             if source_type == "rss":
                 return await self._scrape_rss(source_url)
@@ -38,10 +54,22 @@ class Scraper:
             else:
                 logger.warning(f"Unknown source type: {source_type}")
                 return []
+        except aiohttp.ServerTimeoutError:
+            logger.error(f"Timeout scraping {source_url}")
+            return []
         except Exception as e:
             logger.error(f"Error scraping {source_url}: {str(e)}")
             return []
     
+    async def _read_bounded(self, response: aiohttp.ClientResponse) -> bytes:
+        """Read a response body up to _MAX_RESPONSE_BYTES; raise if exceeded."""
+        data = await response.content.read(_MAX_RESPONSE_BYTES + 1)
+        if len(data) > _MAX_RESPONSE_BYTES:
+            raise ValueError(
+                f"Response exceeds size limit ({_MAX_RESPONSE_BYTES // (1024 * 1024)} MB)"
+            )
+        return data
+
     async def _scrape_rss(self, url: str) -> List[Dict[str, Any]]:
         """Scrape articles from RSS feed"""
         try:
@@ -50,8 +78,9 @@ class Scraper:
                 if response.status != 200:
                     logger.error(f"Failed to fetch RSS feed {url}: {response.status}")
                     return []
-                
-                content = await response.text()
+
+                raw = await self._read_bounded(response)
+                content = raw.decode(errors="replace")
                 feed = feedparser.parse(content)
                 
                 articles = []
@@ -79,8 +108,9 @@ class Scraper:
                 if response.status != 200:
                     logger.error(f"Failed to fetch website {url}: {response.status}")
                     return []
-                
-                html = await response.text()
+
+                raw = await self._read_bounded(response)
+                html = raw.decode(errors="replace")
                 soup = BeautifulSoup(html, 'html.parser')
                 
                 # Look for common article patterns
@@ -148,8 +178,10 @@ class Scraper:
                 if response.status != 200:
                     logger.error(f"Failed to fetch API {url}: {response.status}")
                     return []
-                
-                data = await response.json()
+
+                import json as _json
+                raw = await self._read_bounded(response)
+                data = _json.loads(raw)
                 
                 # Handle common API response formats
                 articles = []

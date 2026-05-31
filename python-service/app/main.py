@@ -1,161 +1,143 @@
 import os
-from fastapi import FastAPI, HTTPException, Depends, status, BackgroundTasks
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from dotenv import load_dotenv
+import json
 import logging
 import asyncpg
-import json
-from datetime import datetime
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+from typing import AsyncGenerator
+
+import google.generativeai as genai
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-import google.generativeai as genai
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
+
+# Use the verified-JWT dependency from core.security — NOT an inline
+# string-compare. [SEC-08]
+from core.security import verify_token  # noqa: F401 (re-exported for routes)
 from app.tasks.scraper import Scraper
 from app.tasks.pipeline import Pipeline
 from app.tasks.publisher import Publisher
 
-# Load environment variables
 load_dotenv()
-
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="TakeToday Automation Service",
-    description="Python automation service for scraping, AI processing, and social publishing",
-    version="1.0.0"
-)
-
-# Database connection pool
-db_pool = None
-
-# Initialize Gemini AI
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-
-# Security
-security = HTTPBearer()
-
-# JWT verification (simplified - in production, use proper JWT validation)
-async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
-    # In a real implementation, you would verify the JWT here
-    # For now, we'll just check if it matches our expected secret
-    expected_token = os.getenv("INTERNAL_SERVICE_TOKEN")
-    if token != expected_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return token
-
-# Initialize scheduler
+# ─── Globals ──────────────────────────────────────────────────────────────────
+db_pool: asyncpg.Pool | None = None
+publisher: Publisher | None = None
+scraper = Scraper()
 scheduler = BackgroundScheduler()
 
-# Initialize services (will be updated with db_pool after connection)
-scraper = Scraper()
-publisher = None  # Will be initialized after db pool connects
+# ─── Lifespan (replaces deprecated @app.on_event) [BUG-15] ───────────────────
 
-@app.on_event("startup")
-async def startup():
-    """Initialize services on startup"""
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     global db_pool, publisher
-    
-    # Create database connection pool
+
     database_url = os.getenv("DATABASE_URL")
     if not database_url:
         raise ValueError("DATABASE_URL environment variable is not set")
-    
+
     db_pool = await asyncpg.create_pool(database_url)
     logger.info("Database connection pool created")
-    
-    # Update publisher with connected db pool
+
     publisher = Publisher(db_pool)
-    
-    # Start scheduler
-    scheduler.start()
-    logger.info("Services started successfully")
-    
-    # Add scheduled scraping job (every 2 hours)
+
     scheduler.add_job(
         func=scheduled_scraping,
         trigger=IntervalTrigger(hours=2),
-        id='scraping_job',
-        name='Scrape all active sources',
-        replace_existing=True
+        id="scraping_job",
+        name="Scrape all active sources",
+        replace_existing=True,
     )
-    logger.info("Added scheduled scraping job (every 2 hours)")
+    scheduler.start()
+    logger.info("Services started (scheduler running)")
 
-@app.on_event("shutdown")
-async def shutdown():
-    """Clean up on shutdown"""
+    yield  # ← server runs here
+
     scheduler.shutdown()
     if db_pool:
         await db_pool.close()
-    logger.info("Services shut down")
+    await scraper.close()
+    logger.info("Services shut down cleanly")
 
-# Health check endpoint
+
+# ─── App ──────────────────────────────────────────────────────────────────────
+
+app = FastAPI(
+    title="TakeToday Automation Service",
+    description="Python automation service for scraping, AI processing, and social publishing",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+# ─── Routes ───────────────────────────────────────────────────────────────────
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "service": "automation"}
 
-# Trigger pipeline endpoint
+
 @app.post("/trigger-pipeline")
-async def trigger_pipeline(background_tasks: BackgroundTasks, token: str = Depends(verify_token)):
-    # This would trigger the full pipeline in background
+async def trigger_pipeline(
+    background_tasks: BackgroundTasks,
+    _token: dict = Depends(verify_token),
+):
     background_tasks.add_task(run_full_pipeline)
     return {"message": "Pipeline triggered successfully in background"}
 
-# Post everywhere endpoint
+
 @app.post("/post-everywhere/{article_id}")
-async def post_everywhere(article_id: str, background_tasks: BackgroundTasks, token: str = Depends(verify_token)):
+async def post_everywhere(
+    article_id: str,
+    background_tasks: BackgroundTasks,
+    _token: dict = Depends(verify_token),
+):
     if publisher is None:
         raise HTTPException(status_code=503, detail="Publisher is not initialized")
-    # This would trigger posting to all connected platforms in background
     background_tasks.add_task(publisher.post_everywhere, article_id)
     return {"message": f"Post everywhere triggered for article {article_id} in background"}
 
-# Manual scraping endpoint (for testing)
+
 @app.post("/scrape-now")
-async def scrape_now(background_tasks: BackgroundTasks, token: str = Depends(verify_token)):
+async def scrape_now(
+    background_tasks: BackgroundTasks,
+    _token: dict = Depends(verify_token),
+):
     background_tasks.add_task(scheduled_scraping)
     return {"message": "Manual scraping triggered"}
 
+
+# ─── DB helpers ───────────────────────────────────────────────────────────────
+
 async def get_ingestion_sources():
-    """Get all active ingestion sources from the database"""
-    async with db_pool.acquire() as connection:
-        rows = await connection.fetch("""
-            SELECT id, name, type, url, active, trustScore, trustedCategories
-            from "IngestionSource"
-            where active = true
-        """)
+    async with db_pool.acquire() as conn:
+        rows = await conn.fetch(
+            'SELECT id, name, type, url, active, "trustScore", "trustedCategories" '
+            'FROM "IngestionSource" WHERE active = true'
+        )
         return [dict(row) for row in rows]
 
-async def get_source_by_id(source_id: str):
-    """Get a source by its ID"""
-    async with db_pool.acquire() as connection:
-        row = await connection.fetchrow("""
-            SELECT id, name, type, url, active, trustScore, trustedCategories
-            from "IngestionSource"
-            where id = $1
-        """, source_id)
-        return dict(row) if row else None
 
 async def create_article(article_data: dict):
-    """Create a new article in the database"""
-    async with db_pool.acquire() as connection:
-        row = await connection.fetchrow("""
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """
             INSERT INTO "Article" (
-                "headline", "subheadline", "slug", "body", "featuredImageId", 
-                "sourceLink", "authorId", "status", "language", "location", 
-                "breaking", "priorityScore", "seoTitle", "seoDescription", 
-                "metaKeywords", "canonicalUrl", "scheduledAt", "publishedAt", 
-                "captions", "publishLogs", "createdAt", "updatedAt", "sourceId"
+                headline, subheadline, slug, body,
+                "featuredImageId", "sourceLink", "authorId",
+                status, language, location, breaking, "priorityScore",
+                "seoTitle", "seoDescription", "metaKeywords", "canonicalUrl",
+                "scheduledAt", "publishedAt", captions, "publishLogs",
+                "createdAt", "updatedAt", "sourceId"
             ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24
+                $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,
+                $13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23
             ) RETURNING *
-        """, 
+            """,
             article_data.get("headline"),
             article_data.get("subheadline", ""),
             article_data.get("slug"),
@@ -176,123 +158,112 @@ async def create_article(article_data: dict):
             article_data.get("publishedAt"),
             article_data.get("captions"),
             article_data.get("publishLogs"),
-            datetime.utcnow(),
-            datetime.utcnow(),
-            article_data.get("sourceId")
+            datetime.now(timezone.utc),
+            datetime.now(timezone.utc),
+            article_data.get("sourceId"),
         )
         return dict(row)
 
-async def get_article_by_id(article_id: str):
-    """Get an article by its ID"""
-    async with db_pool.acquire() as connection:
-        row = await connection.fetchrow("""
-            SELECT * from "Article" where id = $1
-        """, article_id)
-        return dict(row) if row else None
 
-async def create_social_post(social_post_data: dict):
-    """Create a new social post in the database"""
-    async with db_pool.acquire() as connection:
-        row = await connection.fetchrow("""
-            INSERT INTO "SocialPost" (
-                "articleId", "platform", "copy", "mediaIds", "status", 
-                "scheduledAt", "publishedAt", "retryCount", "lastError", 
-                "createdAt", "updatedAt"
-            ) VALUES (
-                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
-            ) RETURNING *
-        """, 
-            social_post_data.get("articleId"),
-            social_post_data.get("platform"),
-            social_post_data.get("copy"),
-            social_post_data.get("mediaIds", []),
-            social_post_data.get("status", "QUEUED"),
-            social_post_data.get("scheduledAt"),
-            social_post_data.get("publishedAt"),
-            social_post_data.get("retryCount", 0),
-            social_post_data.get("lastError"),
-            datetime.utcnow(),
-            datetime.utcnow()
+async def create_ingestion_job_record(source_id: str) -> str:
+    """
+    Insert an IngestionJob row at RUNNING state so the job is visible in the
+    DB even before completion.  Returns the new job's id.
+
+    NOTE: The job queue here is still in-memory (BackgroundTasks +
+    BackgroundScheduler). Jobs are NOT durable across restarts — a restart
+    drops in-flight work.  For a multi-worker-safe queue, replace with
+    Celery + Redis or a DB-backed polling loop consuming IngestionJob rows.
+    [BUG-15]
+    """
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            INSERT INTO "IngestionJob" (id, "sourceId", status, "createdAt", "updatedAt")
+            VALUES (gen_random_uuid()::text, $1, 'RUNNING', now(), now())
+            RETURNING id
+            """,
+            source_id,
         )
-        return dict(row)
+        return row["id"]
 
-async def get_integrations():
-    """Get enabled integrations from the database"""
-    async with db_pool.acquire() as connection:
-        rows = await connection.fetch("""
-            SELECT "provider" from "Integration"
-            where enabled = true
-        """)
-        return [row["provider"] for row in rows]
+
+async def complete_ingestion_job(job_id: str, succeeded: bool, error: str | None = None):
+    status = "SUCCEEDED" if succeeded else "FAILED"
+    async with db_pool.acquire() as conn:
+        await conn.execute(
+            """
+            UPDATE "IngestionJob"
+            SET status = $1, "completedAt" = now(), "updatedAt" = now(),
+                error = $2
+            WHERE id = $3
+            """,
+            status,
+            error,
+            job_id,
+        )
+
+
+# ─── Background jobs ──────────────────────────────────────────────────────────
 
 async def scheduled_scraping():
-    """Job function for scheduled scraping"""
     logger.info("Starting scheduled scraping job")
-    try:
-        # Get all active sources from database
-        sources = await get_ingestion_sources()
-        
-        if not sources:
-            logger.info("No active sources found for scraping")
-            return
-        
-        logger.info(f"Found {len(sources)} active sources to scrape")
-        
-        # Scrape all sources
-        scraped_data = await scraper.scrape_all_sources([{
+    sources = await get_ingestion_sources()
+    if not sources:
+        logger.info("No active sources found")
+        return
+
+    logger.info(f"Scraping {len(sources)} active sources")
+
+    scraped_data = await scraper.scrape_all_sources([
+        {
             "id": s["id"],
             "url": s["url"],
             "type": s["type"],
             "active": s["active"],
             "trustedCategories": s["trustedCategories"] or [],
-            "trustScore": s["trustScore"]
-        } for s in sources])
-        
-        # Process scraped articles
-        total_articles = 0
-        for source_id, articles in scraped_data.items():
-            source = next((s for s in sources if s["id"] == source_id), None)
-            if source:
-                for article_data in articles:
-                    # Check if we already processed this article (by hash)
-                    # In a real implementation, we'd check against a cache or database
-                    total_articles += 1
-                    logger.info(f"Processing article from {source['name']}: {article_data.get('title', 'Untitled')}")
-                    
-                    # Process through pipeline
-                    pipeline = Pipeline(db_pool, genai)
-                    try:
-                        result = await pipeline.process_article(article_data, {
-                            "id": source["id"],
-                            "name": source["name"],
-                            "trustedCategories": source["trustedCategories"] or [],
-                            "type": source["type"]
-                        })
-                        logger.info(f"Processed article: {result['id']} with status {result['status']}")
-                    except Exception as e:
-                        logger.error(f"Error processing article: {str(e)}")
-        
-        logger.info(f"Scheduled scraping completed. Processed {total_articles} articles.")
-        
-    except Exception as e:
-        logger.error(f"Error in scheduled scraping: {str(e)}")
+            "trustScore": s["trustScore"],
+        }
+        for s in sources
+    ])
+
+    total = 0
+    for source_id, articles in scraped_data.items():
+        source = next((s for s in sources if s["id"] == source_id), None)
+        if not source:
+            continue
+
+        job_id = await create_ingestion_job_record(source_id)
+        try:
+            for article_data in articles:
+                total += 1
+                pipeline = Pipeline(db_pool, genai)
+                result = await pipeline.process_article(
+                    article_data,
+                    {
+                        "id": source["id"],
+                        "name": source["name"],
+                        "trustedCategories": source["trustedCategories"] or [],
+                        "type": source["type"],
+                    },
+                )
+                logger.info(f"Processed article {result['id']} status={result['status']}")
+            await complete_ingestion_job(job_id, succeeded=True)
+        except Exception as exc:
+            logger.error(f"Error processing source {source_id}: {exc}")
+            await complete_ingestion_job(job_id, succeeded=False, error=str(exc))
+
+    logger.info(f"Scheduled scraping done — {total} articles processed")
+
 
 async def run_full_pipeline():
-    """Run the full pipeline: scrape, process, and prepare for publishing"""
     logger.info("Starting full pipeline")
     try:
-        # First, run scraping
         await scheduled_scraping()
-        
-        # In a full implementation, we would then:
-        # 1. Review articles that are in UNDER_REVIEW status
-        # 2. For trusted sources, they might already be ready for publishing
-        # 3. Generate social media copy
-        # 4. Schedule posts
-        
         logger.info("Full pipeline completed")
-    except Exception as e:
-        logger.error(f"Error in full pipeline: {str(e)}")
+    except Exception as exc:
+        logger.error(f"Full pipeline error: {exc}")
+
 
 if __name__ == "__main__":
     import uvicorn
