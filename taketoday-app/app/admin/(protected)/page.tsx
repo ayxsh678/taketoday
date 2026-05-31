@@ -8,9 +8,9 @@ import {
   Newspaper,
   TrendingUp,
 } from "lucide-react";
-import { ArticleStatus, JobStatus, type Notification as DbNotification } from "@prisma/client";
-import { activityEvents, trafficSeries } from "@/lib/admin/data";
+import { ArticleStatus, JobStatus, type Notification as DbNotification, type AuditLog } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
+import type { ActivityEvent } from "@/lib/admin/types";
 import { AdminMotion } from "@/components/admin/AdminMotion";
 import { ActivityTimeline } from "@/components/admin/ActivityTimeline";
 import { ArticleTable } from "@/components/admin/ArticleTable";
@@ -34,6 +34,33 @@ function computeDelta(current: number, prev: number): string {
   return `${sign}${pct.toFixed(1)}%`;
 }
 
+function relativeTime(date: Date): string {
+  const mins = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr${hrs > 1 ? "s" : ""} ago`;
+  return `${Math.floor(hrs / 24)} day${Math.floor(hrs / 24) > 1 ? "s" : ""} ago`;
+}
+
+type AuditLogWithActor = AuditLog & { actor: { name: string } | null };
+
+function auditToActivity(log: AuditLogWithActor): ActivityEvent {
+  const action = log.action.toLowerCase().replace(/_/g, " ");
+  const severity: ActivityEvent["severity"] =
+    /delete|reject|fail|revoke/.test(action) ? "danger" :
+    /publish|approve|succeed|complete/.test(action) ? "success" :
+    /review|submit|warn/.test(action) ? "warning" : "info";
+  return {
+    id: log.id,
+    actor: log.actor?.name ?? "System",
+    action,
+    target: `${log.entity}${log.entityId ? ` · ${log.entityId.slice(-6)}` : ""}`,
+    at: relativeTime(log.createdAt),
+    severity,
+  };
+}
+
 export default async function AdminDashboardPage() {
   const now = new Date();
   const d30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -47,6 +74,8 @@ export default async function AdminDashboardPage() {
   let traffic = 0, trafficPrev = 0, ctr = 0;
   let aiTotal = 0, aiLast30 = 0, aiPrev30 = 0;
   let dbNotifications: DbNotification[] = [];
+  let trafficSeriesData: { label: string; value: number }[] = [];
+  let liveActivityEvents: ActivityEvent[] = [];
   let dbError = false;
 
   try {
@@ -76,6 +105,8 @@ export default async function AdminDashboardPage() {
       trafficPrevAgg,
       ctrAgg,
       notifications,
+      recentPageviews,
+      recentAuditLogs,
     ] = await Promise.all([
       prisma.article.count({ where: { status: ArticleStatus.PUBLISHED } }),
       prisma.article.count({ where: { status: ArticleStatus.PUBLISHED, publishedAt: { gte: d30 } } }),
@@ -122,6 +153,23 @@ export default async function AdminDashboardPage() {
         orderBy: { createdAt: "desc" },
         take: 5,
       }),
+
+      // 7-day daily traffic series for the mini chart
+      prisma.analyticsEvent.findMany({
+        where: {
+          type: "pageview",
+          createdAt: { gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) },
+        },
+        select: { createdAt: true, value: true },
+        orderBy: { createdAt: "asc" },
+      }),
+
+      // Recent audit log for the activity timeline
+      prisma.auditLog.findMany({
+        include: { actor: { select: { name: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 8,
+      }),
     ]);
 
     publishedTotal = _publishedTotal;
@@ -146,6 +194,22 @@ export default async function AdminDashboardPage() {
     aiLast30 = videoJobsLast30 + ingestionLast30;
     aiPrev30 = videoJobsPrev30 + ingestionPrev30;
     dbNotifications = notifications;
+
+    // Build 7-day daily traffic series from AnalyticsEvent rows
+    const byDay: Record<string, number> = {};
+    for (const ev of recentPageviews) {
+      const key = ev.createdAt.toISOString().slice(0, 10);
+      byDay[key] = (byDay[key] ?? 0) + ev.value;
+    }
+    trafficSeriesData = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(now.getTime() - (6 - i) * 24 * 60 * 60 * 1000);
+      return {
+        label: d.toLocaleDateString("en-US", { weekday: "short" }),
+        value: Math.round(byDay[d.toISOString().slice(0, 10)] ?? 0),
+      };
+    });
+
+    liveActivityEvents = recentAuditLogs.map(auditToActivity);
   } catch {
     dbError = true;
   }
@@ -258,7 +322,7 @@ export default async function AdminDashboardPage() {
               <CardDescription>Audience trend for the last seven publishing windows.</CardDescription>
             </CardHeader>
             <CardContent>
-              <MiniChart data={trafficSeries} />
+              <MiniChart data={trafficSeriesData} />
             </CardContent>
           </Card>
 
@@ -268,7 +332,11 @@ export default async function AdminDashboardPage() {
               <CardDescription>Approvals, AI jobs, publishing status, and distribution events.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ActivityTimeline events={activityEvents} />
+              {liveActivityEvents.length > 0 ? (
+                <ActivityTimeline events={liveActivityEvents} />
+              ) : (
+                <p className="text-sm text-zinc-500">No activity recorded yet.</p>
+              )}
             </CardContent>
           </Card>
         </section>

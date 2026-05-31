@@ -1,8 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { z } from "zod";
 import * as Sentry from "@sentry/nextjs";
-import { adminArticles, adminUsers, notifications, trafficSeries } from "@/lib/admin/data";
-
 // ─── Rate limiting ────────────────────────────────────────────────────────────
 // Role-based tiers: higher-trust roles get higher limits.
 
@@ -87,15 +85,6 @@ export const articleMutationSchema = z.object({
   tags: z.array(z.string()).default([]),
   body: z.string().optional(),
 });
-
-export function getAdminSnapshot() {
-  return {
-    articles: adminArticles,
-    users: adminUsers,
-    notifications,
-    trafficSeries,
-  };
-}
 
 // Full create schema — used for POST /api/admin/articles
 // Replaces the legacy articleMutationSchema which included unused `author`/`category` string fields.
