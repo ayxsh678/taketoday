@@ -31,6 +31,8 @@ export const envSchema = z.object({
   // Upstash Redis — required for durable rate limiting across serverless instances
   UPSTASH_REDIS_REST_URL: z.string().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
+  // Resend — transactional email (password reset, email verification)
+  RESEND_API_KEY: z.string().optional(),
   // Auth configuration
   AUTH_GOOGLE_ID: z.string().optional(),
   AUTH_GOOGLE_SECRET: z.string().optional(),

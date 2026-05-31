@@ -400,10 +400,38 @@ model PublicUser {
   endorsementsGiven         ContributorEndorsement[]   @relation("EndorsementFrom")
   endorsementsReceived      ContributorEndorsement[]   @relation("EndorsementTo")
   trustFlags                TrustFlag[]
+  passwordResetTokens       PasswordResetToken[]
+  emailVerificationTokens   EmailVerificationToken[]
 
   @@index([username])
   @@index([role])
   @@index([createdAt])
+}
+
+model PasswordResetToken {
+  id        String     @id @default(cuid())
+  userId    String
+  tokenHash String     @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime   @default(now())
+  user      PublicUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model EmailVerificationToken {
+  id        String     @id @default(cuid())
+  userId    String
+  tokenHash String     @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime   @default(now())
+  user      PublicUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Contribution {

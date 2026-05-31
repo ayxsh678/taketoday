@@ -2,6 +2,9 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { jsonOk, jsonError } from "@/lib/admin/api";
+import { generateToken, verifyTokenExpiry } from "@/lib/tokens";
+import { sendEmailVerificationEmail } from "@/lib/integrations/resend";
+import { appConfig } from "@/lib/config/app";
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -62,6 +65,15 @@ export async function POST(req: NextRequest) {
       createdAt: true,
     },
   });
+
+  // Send verification email — fire-and-forget, non-blocking
+  const { plaintext, hash } = generateToken();
+  void prisma.emailVerificationToken.create({
+    data: { userId: user.id, tokenHash: hash, expiresAt: verifyTokenExpiry() },
+  }).then(() => {
+    const verifyUrl = `${appConfig.siteUrl}/api/contributor/verify-email?token=${plaintext}`;
+    return sendEmailVerificationEmail(user.email, verifyUrl);
+  }).catch(() => { /* non-fatal */ });
 
   return jsonOk({ user }, { status: 201 });
 }
