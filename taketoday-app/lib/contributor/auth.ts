@@ -4,6 +4,7 @@ import Google from "next-auth/providers/google";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { appConfig } from "@/lib/config/app";
+import { createGoogleUser } from "./auth-helpers";
 import type { ContributorRole, ReputationTier } from "./types";
 
 declare module "next-auth" {
@@ -85,20 +86,31 @@ export const contributorAuth = NextAuth({
   callbacks: {
     async jwt({ token, user, account }) {
       if (user && account) {
-        // First sign-in — upsert PublicUser
-        const existingUser = await prisma.publicUser.findUnique({
-          where: { email: token.email! },
+        const email = token.email!;
+
+        let existing = await prisma.publicUser.findUnique({
+          where: { email },
           include: { reputation: true },
         });
 
-        if (existingUser) {
-          token.contributorId = existingUser.id;
-          token.contributorRole = existingUser.role;
-          token.contributorTier = existingUser.reputation?.tier ?? "NEWCOMER";
-          token.contributorScore = existingUser.reputation?.overallScore ?? 0;
-          token.username = existingUser.username;
-          token.isVerifiedJournalist = existingUser.isVerifiedJournalist;
-          token.suspendedAt = existingUser.suspendedAt;
+        // Auto-create PublicUser on first Google sign-in.
+        // Credentials sign-in requires explicit registration (/contribute/register).
+        if (!existing && account.provider === "google") {
+          existing = await createGoogleUser(
+            email,
+            token.name ?? "",
+            token.picture ?? null,
+          );
+        }
+
+        if (existing) {
+          token.contributorId = existing.id;
+          token.contributorRole = existing.role;
+          token.contributorTier = existing.reputation?.tier ?? "NEWCOMER";
+          token.contributorScore = existing.reputation?.overallScore ?? 0;
+          token.username = existing.username;
+          token.isVerifiedJournalist = existing.isVerifiedJournalist;
+          token.suspendedAt = existing.suspendedAt;
         }
       }
       return token;

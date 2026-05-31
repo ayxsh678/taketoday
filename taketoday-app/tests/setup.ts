@@ -71,6 +71,11 @@ vi.mock("@/lib/db/prisma", () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
+    publicUser: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
     contributionEmbedding: {
       upsert: vi.fn(),
     },
