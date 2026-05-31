@@ -22,7 +22,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   secret: appConfig.nextauthSecret,
-  session: { strategy: "jwt" },
+  // 8-hour TTL: cap the window where a revoked admin retains access via stale JWT
+  session: { strategy: "jwt", maxAge: 8 * 60 * 60 },
   pages: {
     signIn: "/admin/login",
   },

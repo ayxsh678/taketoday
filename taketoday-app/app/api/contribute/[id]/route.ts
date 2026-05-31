@@ -60,36 +60,38 @@ export async function GET(_req: NextRequest, { params }: Params) {
       },
       evidence: {
         orderBy: { createdAt: "desc" },
+        take: 20,
         include: {
           submittedBy: { select: { id: true, username: true, displayName: true } },
         },
       },
-      citations: { orderBy: { accessedAt: "desc" } },
+      citations: { orderBy: { accessedAt: "desc" }, take: 20 },
       factChecks: {
         orderBy: { createdAt: "desc" },
+        take: 10,
         include: {
           checker: { select: { id: true, username: true, displayName: true, isVerifiedJournalist: true } },
         },
       },
-      communityVotes: {
-        select: { type: true, weight: true },
-      },
       communityNotes: {
         where: { status: "VISIBLE" },
         orderBy: { helpful: "desc" },
+        take: 10,
         include: {
           author: { select: { id: true, username: true, displayName: true } },
         },
       },
       transparencyLogs: {
         orderBy: { createdAt: "asc" },
+        take: 50,
       },
       aiAnalysis: true,
       editorialDecisions: {
         where: { publiclyVisible: true },
         orderBy: { createdAt: "desc" },
+        take: 5,
       },
-      corrections: { orderBy: { createdAt: "desc" } },
+      corrections: { orderBy: { createdAt: "desc" }, take: 10 },
       forks: {
         select: {
           id: true,
@@ -98,19 +100,21 @@ export async function GET(_req: NextRequest, { params }: Params) {
           author: { select: { username: true, displayName: true } },
           createdAt: true,
         },
+        take: 10,
       },
     },
   });
 
   if (!contribution) return jsonError("Contribution not found", 404);
 
-  // Aggregate community vote counts
-  const voteSummary = contribution.communityVotes.reduce(
-    (acc, v) => {
-      acc[v.type] = (acc[v.type] ?? 0) + v.weight;
-      return acc;
-    },
-    {} as Record<string, number>,
+  // Aggregate community vote summary via groupBy — avoids loading every row [BUG-16]
+  const voteGroups = await prisma.communityVote.groupBy({
+    by: ["type"],
+    where: { contributionId: id },
+    _sum: { weight: true },
+  });
+  const voteSummary = Object.fromEntries(
+    voteGroups.map((g) => [g.type, g._sum.weight ?? 0]),
   );
 
   return jsonOk({ contribution: { ...contribution, voteSummary } });

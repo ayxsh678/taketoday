@@ -78,7 +78,8 @@ export const contributorAuth = NextAuth({
     }),
   ],
   secret: appConfig.nextauthSecret,
-  session: { strategy: "jwt" },
+  // 24-hour TTL: cap the window where a suspended contributor retains access
+  session: { strategy: "jwt", maxAge: 24 * 60 * 60 },
   pages: {
     signIn: "/contribute/login",
     newUser: "/contribute/onboarding",

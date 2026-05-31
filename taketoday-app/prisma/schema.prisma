@@ -136,6 +136,8 @@ model MediaAsset {
   galleryFor   ArticleGallery[]
   folder       MediaFolder?     @relation(fields: [folderId], references: [id])
   tags         MediaTag[]
+
+  @@index([folderId])
 }
 
 model MediaTag {
@@ -223,6 +225,8 @@ model SocialPost {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   article     Article?       @relation(fields: [articleId], references: [id])
+
+  @@index([articleId])
 }
 
 model ShortVideoJob {
@@ -247,6 +251,8 @@ model ReviewComment {
   createdAt DateTime  @default(now())
   article   Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
   author    AdminUser @relation(fields: [authorId], references: [id])
+
+  @@index([articleId])
 }
 
 model AnalyticsEvent {
@@ -260,6 +266,7 @@ model AnalyticsEvent {
   article   Article? @relation(fields: [articleId], references: [id])
 
   @@index([type, createdAt])
+  @@index([articleId])
 }
 
 model Notification {
@@ -537,6 +544,7 @@ model Evidence {
   submittedBy      PublicUser   @relation(fields: [submittedById], references: [id])
 
   @@index([contributionId])
+  @@index([submittedById])
 }
 
 model CitationNode {
@@ -574,6 +582,7 @@ model FactCheck {
   checker         PublicUser       @relation(fields: [checkerId], references: [id])
 
   @@index([contributionId])
+  @@index([checkerId])
 }
 
 model CommunityVote {
@@ -589,6 +598,7 @@ model CommunityVote {
 
   @@unique([contributionId, userId])
   @@index([contributionId])
+  @@index([userId])
 }
 
 model CommunityNote {
@@ -683,6 +693,7 @@ model EditorialDecision {
   editor          AdminUser    @relation(fields: [editorId], references: [id])
 
   @@index([contributionId])
+  @@index([editorId])
 }
 
 model Correction {
@@ -699,6 +710,7 @@ model Correction {
   contribution     Contribution       @relation(fields: [contributionId], references: [id], onDelete: Cascade)
 
   @@index([contributionId])
+  @@index([correctedById])
 }
 
 model Investigation {

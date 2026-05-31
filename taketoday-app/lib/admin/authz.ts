@@ -4,6 +4,7 @@ import { hasPermission } from "@/lib/admin/rbac";
 import { checkRateLimit } from "@/lib/rate-limit";
 import type { AdminPermission } from "@/lib/admin/types";
 import { prisma } from "@/lib/db/prisma";
+import { isAdminEmail } from "@/lib/admin/rbac";
 
 // ─── lastActiveAt heartbeat ───────────────────────────────────────────────────
 // Fire-and-forget — doesn't block the request. Throttled to once per minute
@@ -33,6 +34,19 @@ export async function requireAdmin(permission?: AdminPermission) {
 
   if (!session?.user?.isAdmin) {
     return { ok: false as const, response: jsonError("Unauthorized", 401) };
+  }
+
+  // Re-validate revokedAt from DB on every request — catches revocations that
+  // occurred after the JWT was issued (JWT TTL is 8h, revocation is immediate). [SEC-05]
+  const email = session.user.email ?? "";
+  if (email && isAdminEmail(email)) {
+    const dbAdmin = await prisma.adminUser.findUnique({
+      where: { email },
+      select: { revokedAt: true },
+    });
+    if (dbAdmin?.revokedAt) {
+      return { ok: false as const, response: jsonError("Access revoked. Please contact your administrator.", 401) };
+    }
   }
 
   // Role-aware rate limiting backed by Upstash Redis (shared across all

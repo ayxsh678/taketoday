@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       status: ArticleStatus.SCHEDULED,
       scheduledAt: { lte: now },
     },
-    select: { id: true, headline: true, slug: true, scheduledAt: true },
+    select: { id: true, headline: true, slug: true, scheduledAt: true, publishLogs: true },
   });
 
   if (due.length === 0) {
@@ -54,19 +54,16 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  // Write publish log on each article for audit trail
+  // Append to publish log — preserve history across multiple publish/schedule cycles
+  const newEntry = { published: now.toISOString(), trigger: "scheduled_cron" };
   await Promise.allSettled(
-    ids.map((id) =>
-      prisma.article.update({
+    due.map(({ id, publishLogs }) => {
+      const existing = Array.isArray(publishLogs) ? publishLogs : publishLogs ? [publishLogs] : [];
+      return prisma.article.update({
         where: { id },
-        data: {
-          publishLogs: {
-            published: now.toISOString(),
-            trigger: "scheduled_cron",
-          },
-        },
-      }),
-    ),
+        data: { publishLogs: [...existing, newEntry] },
+      });
+    }),
   );
 
   // Send newsletter broadcast for each published article (fire-and-forget)
