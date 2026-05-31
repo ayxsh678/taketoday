@@ -43,6 +43,11 @@ model Article {
   canonicalUrl    String?
   scheduledAt     DateTime?
   publishedAt     DateTime?
+  quickTake       String?
+  whyItMatters    String?
+  takeaways       String[]          @default([])
+  format          String            @default("Article")
+  region          String            @default("GLOBAL")
   captions        Json?
   publishLogs     Json?
   createdAt       DateTime          @default(now())

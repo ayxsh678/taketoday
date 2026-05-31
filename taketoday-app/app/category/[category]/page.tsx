@@ -111,7 +111,7 @@ export default async function CategoryPage({
   if (!cat) notFound();
 
   const copy = CATEGORY_COPY[cat];
-  const articles = getArticlesByCategory(cat);
+  const articles = await getArticlesByCategory(cat);
 
   const breadcrumbLd = {
     "@context": "https://schema.org",

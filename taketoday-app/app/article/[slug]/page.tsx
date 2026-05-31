@@ -17,8 +17,9 @@ import { TrackPageView } from "@/components/TrackPageView";
 // ISR: revalidate article pages every hour
 export const revalidate = 3600;
 
-export function generateStaticParams(): { slug: string }[] {
-  return getAllArticles().map((a) => ({ slug: a.slug }));
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  const articles = await getAllArticles();
+  return articles.map((a) => ({ slug: a.slug }));
 }
 
 export async function generateMetadata({
@@ -27,7 +28,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const a = getArticleBySlug(slug);
+  const a = await getArticleBySlug(slug);
   if (!a) return { title: "Not found — TakeToday" };
 
   const { title, deck, publishedAt, updatedAt, author, category } = a;
@@ -68,14 +69,14 @@ export default async function ArticlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const article = getArticleBySlug(slug);
+  const article = await getArticleBySlug(slug);
   if (!article) notFound();
 
   const { title, deck, publishedAt, updatedAt, author, category, slug: articleSlug } = article;
   const articleUrl = abs(`/article/${articleSlug}`);
 
   // Related articles: same category, exclude current, max 3
-  const relatedArticles: RelatedArticle[] = getArticlesByCategory(category)
+  const relatedArticles: RelatedArticle[] = (await getArticlesByCategory(category))
     .filter((a) => a.slug !== articleSlug)
     .slice(0, 3)
     .map((a) => ({

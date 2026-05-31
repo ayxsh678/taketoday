@@ -13,11 +13,11 @@ import { SITE, abs } from "@/lib/site";
  * process, so the cost is effectively zero.
  */
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 export const revalidate = 3600; // 1h
 
-export function GET() {
-  const articles = getAllArticles();
+export async function GET() {
+  const articles = await getAllArticles();
   const newest =
     articles[0]?.publishedAt ?? new Date().toISOString();
 

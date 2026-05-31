@@ -22,7 +22,7 @@ export function generateMetadata(): Metadata {
   };
 }
 
-function SearchResults({ q }: { q: string }) {
+async function SearchResults({ q }: { q: string }) {
   if (!q || q.trim().length < 2) {
     return (
       <div className="py-16 text-center">
@@ -33,7 +33,7 @@ function SearchResults({ q }: { q: string }) {
     );
   }
 
-  const results = searchArticles(q.trim(), 20);
+  const results = await searchArticles(q.trim(), 20);
 
   if (results.length === 0) {
     return (

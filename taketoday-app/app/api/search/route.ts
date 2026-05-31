@@ -5,5 +5,5 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";
-  return NextResponse.json(searchArticles(q, 8));
+  return NextResponse.json(await searchArticles(q, 8));
 }

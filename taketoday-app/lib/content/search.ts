@@ -20,11 +20,12 @@ function score(article: ArticleDoc, q: string): number {
   return s;
 }
 
-export function searchArticles(q: string, limit = 8): FeedItem[] {
+export async function searchArticles(q: string, limit = 8): Promise<FeedItem[]> {
   const trimmed = q.trim();
   if (trimmed.length < 2) return [];
 
-  return getAllArticles()
+  const articles = await getAllArticles();
+  return articles
     .map((a) => ({ article: a, s: score(a, trimmed) }))
     .filter(({ s }) => s > 0)
     .sort((a, b) => b.s - a.s)

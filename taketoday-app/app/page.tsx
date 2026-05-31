@@ -45,17 +45,16 @@ const websiteLd = {
   },
 };
 
-function FeaturedLoader() {
-  const featured = getFeaturedArticles(FEATURED_ARTICLE_COUNT);
+async function FeaturedLoader() {
+  const featured = await getFeaturedArticles(FEATURED_ARTICLE_COUNT);
   const lead = featured[0];
   const side = featured.slice(1);
   if (!lead) return null;
   return <FeaturedSection lead={lead} side={side} />;
 }
 
-function FeedLoader({ featuredCount }: { featuredCount: number }) {
-  // Fetch all articles server-side; pass to client for personalized ranking.
-  const all = getAllArticles();
+async function FeedLoader({ featuredCount }: { featuredCount: number }) {
+  const all = await getAllArticles();
   const feed = all.slice(featuredCount);
   return <PersonalizedFeedSection articles={feed} />;
 }

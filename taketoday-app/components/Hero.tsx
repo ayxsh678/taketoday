@@ -1,15 +1,8 @@
 import Link from "next/link";
-import { getAllArticles } from "@/lib/content/queries";
+import { prisma } from "@/lib/db/prisma";
+import { ArticleStatus } from "@prisma/client";
 
-/**
- * TakeToday — Hero
- * A 12-col grid that uses 8 cols for the headline and 4 cols for the meta
- * block on the right. Headline is Inter tight + Instrument Serif italic on
- * the second line. Mono-metadata sits above. CTAs are primary (ink pill)
- * + secondary (ink outline).
- */
-
-export function Hero() {
+export async function Hero() {
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
@@ -17,8 +10,15 @@ export function Hero() {
     year: "numeric",
   });
 
-  // Story count — replaces hardcoded "Issue 001"
-  const articleCount = getAllArticles().length;
+  // Count published articles directly — avoids loading all articles just for a number
+  let articleCount = 0;
+  try {
+    articleCount = await prisma.article.count({
+      where: { status: ArticleStatus.PUBLISHED },
+    });
+  } catch {
+    // DB unavailable during static build — show 0
+  }
 
   return (
     <section

@@ -2,6 +2,9 @@
 
 import { vi } from "vitest";
 
+// server-only throws when imported outside Next.js server context
+vi.mock("server-only", () => ({}));
+
 // Mock Next.js server-only APIs
 vi.mock("next/headers", () => ({
   cookies: vi.fn(() => ({ get: vi.fn(), set: vi.fn() })),
@@ -19,6 +22,7 @@ vi.mock("@/lib/db/prisma", () => ({
     article: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       updateMany: vi.fn(),

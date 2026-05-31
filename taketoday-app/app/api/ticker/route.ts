@@ -9,8 +9,8 @@ import { getAllArticles } from "@/lib/content/queries";
 
 export const revalidate = 3600;
 
-export function GET() {
-  const articles = getAllArticles().slice(0, 8);
+export async function GET() {
+  const articles = (await getAllArticles()).slice(0, 8);
   const items = articles.map((a) => ({
     title: a.title,
     slug: a.slug,
