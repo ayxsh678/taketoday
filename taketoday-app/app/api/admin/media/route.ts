@@ -1,11 +1,10 @@
+import { jsonOk } from "@/lib/admin/api";
 import { NextRequest } from "next/server";
 import { Prisma } from "@prisma/client";
-import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { prisma } from "@/lib/db/prisma";
 
 export async function GET(request: NextRequest) {
-  if (rateLimit(request)) return jsonError("Rate limit exceeded. Please try again later.", 429);
 
   const access = await requireAdmin("media:write");
   if (!access.ok) return access.response;

@@ -20,6 +20,17 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    rules: {
+      // Ignore underscore-prefixed identifiers — standard TypeScript convention
+      // for intentionally unused parameters (e.g. route handlers that no longer
+      // read the request after rate-limiting was moved into requireAdmin).
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

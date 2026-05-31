@@ -28,6 +28,9 @@ export const envSchema = z.object({
   PYTHON_SERVICE_URL: z.string().optional(),
   INTERNAL_SERVICE_TOKEN: z.string().optional(),
   VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
+  // Upstash Redis — required for durable rate limiting across serverless instances
+  UPSTASH_REDIS_REST_URL: z.string().optional(),
+  UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
   // Auth configuration
   AUTH_GOOGLE_ID: z.string().optional(),
   AUTH_GOOGLE_SECRET: z.string().optional(),

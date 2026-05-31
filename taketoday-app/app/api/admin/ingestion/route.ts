@@ -1,7 +1,7 @@
+import { captureApiError, jsonError, jsonOk } from "@/lib/admin/api";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { JobStatus, Prisma } from "@prisma/client";
-import { captureApiError, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { logAuditAction } from "@/lib/admin/audit";
 import { prisma } from "@/lib/db/prisma";
@@ -43,7 +43,6 @@ function mapJob(
 }
 
 export async function GET(request: NextRequest) {
-  if (rateLimit(request)) return jsonError("Rate limit exceeded. Please try again later.", 429);
 
   const access = await requireAdmin("ingestion:write");
   if (!access.ok) return access.response;
@@ -79,7 +78,6 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (rateLimit(req)) return jsonError("Rate limit exceeded. Please try again later.", 429);
 
   const access = await requireAdmin("ingestion:write");
   if (!access.ok) return access.response;

@@ -1,12 +1,15 @@
 import { auth } from "@/auth";
 import { jsonError } from "@/lib/admin/api";
 import { hasPermission } from "@/lib/admin/rbac";
+import { checkRateLimit } from "@/lib/rate-limit";
 import type { AdminPermission } from "@/lib/admin/types";
 import { prisma } from "@/lib/db/prisma";
 
 // ─── lastActiveAt heartbeat ───────────────────────────────────────────────────
 // Fire-and-forget — doesn't block the request. Throttled to once per minute
-// using a module-level Set to avoid hammering the DB on every API call.
+// using a module-level Set. On serverless each cold-start instance gets its
+// own Set, so DB writes may be more frequent than 1/min under multiple
+// instances — cosmetic concern, not a correctness issue.
 
 const recentlyUpdated = new Set<string>();
 
@@ -15,15 +18,12 @@ function touchLastActive(userId: string): void {
   recentlyUpdated.add(userId);
   setTimeout(() => recentlyUpdated.delete(userId), 60_000);
 
-  // Async, not awaited — failure is silent
   void Promise.resolve(
     prisma.adminUser.updateMany({
       where: { id: userId },
       data: { lastActiveAt: new Date() },
     }),
-  ).catch(() => {
-    /* ignore */
-  });
+  ).catch(() => { /* non-fatal */ });
 }
 
 // ─── Permission gate ──────────────────────────────────────────────────────────
@@ -35,14 +35,20 @@ export async function requireAdmin(permission?: AdminPermission) {
     return { ok: false as const, response: jsonError("Unauthorized", 401) };
   }
 
+  // Role-aware rate limiting backed by Upstash Redis (shared across all
+  // serverless instances). Falls back to in-memory when UPSTASH_REDIS_REST_URL
+  // is absent. Using user ID as key avoids shared-IP false positives. [BUG-06 / BUG-20]
+  const identifier = session.user.id ?? session.user.email ?? "unknown";
+  const limited = await checkRateLimit(identifier, session.user.role);
+  if (limited) {
+    return { ok: false as const, response: jsonError("Rate limit exceeded. Please try again later.", 429) };
+  }
+
   if (permission && !hasPermission(session.user.role, permission)) {
     return { ok: false as const, response: jsonError("Forbidden", 403) };
   }
 
-  // Heartbeat — update lastActiveAt at most once per minute per user
-  if (session.user.id) {
-    touchLastActive(session.user.id);
-  }
+  if (session.user.id) touchLastActive(session.user.id);
 
   return { ok: true as const, session };
 }

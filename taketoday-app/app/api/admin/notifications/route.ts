@@ -1,10 +1,9 @@
+import { captureApiError, jsonOk } from "@/lib/admin/api";
 import { NextRequest } from "next/server";
-import { captureApiError, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { prisma } from "@/lib/db/prisma";
 
-export async function GET(request: NextRequest) {
-  if (rateLimit(request)) return jsonError("Rate limit exceeded. Please try again later.", 429);
+export async function GET(_request: NextRequest) {
 
   const access = await requireAdmin("dashboard:read");
   if (!access.ok) return access.response;
@@ -24,8 +23,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Mark all notifications as read
-export async function PATCH(request: NextRequest) {
-  if (rateLimit(request)) return jsonError("Rate limit exceeded. Please try again later.", 429);
+export async function PATCH(_request: NextRequest) {
 
   const access = await requireAdmin("dashboard:read");
   if (!access.ok) return access.response;

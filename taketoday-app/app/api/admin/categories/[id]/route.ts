@@ -1,12 +1,11 @@
+import { captureApiError, jsonError, jsonOk } from "@/lib/admin/api";
 import { NextRequest } from "next/server";
-import { captureApiError, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { prisma } from "@/lib/db/prisma";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
-  if (rateLimit(req)) return jsonError("Rate limit exceeded. Please try again later.", 429);
 
   const access = await requireAdmin("settings:manage");
   if (!access.ok) return access.response;
@@ -73,7 +72,6 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 }
 
 export async function DELETE(req: NextRequest, { params }: RouteContext) {
-  if (rateLimit(req)) return jsonError("Rate limit exceeded. Please try again later.", 429);
 
   const access = await requireAdmin("settings:manage");
   if (!access.ok) return access.response;

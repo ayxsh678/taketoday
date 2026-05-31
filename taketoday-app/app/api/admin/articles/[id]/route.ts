@@ -1,6 +1,6 @@
+import { articlePatchSchema, captureApiError, jsonError, jsonOk } from "@/lib/admin/api";
 import { NextRequest } from "next/server";
 import { ArticleStatus, Prisma } from "@prisma/client";
-import { articlePatchSchema, captureApiError, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { logAuditAction } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/authz";
 import { prisma } from "@/lib/db/prisma";
@@ -51,7 +51,6 @@ const articleInclude = {
 } satisfies Prisma.ArticleInclude;
 
 export async function GET(req: NextRequest, { params }: RouteContext) {
-  if (rateLimit(req)) return jsonError("Rate limit exceeded. Please try again later.", 429);
 
   const access = await requireAdmin("content:read");
   if (!access.ok) return access.response;
@@ -67,7 +66,6 @@ export async function GET(req: NextRequest, { params }: RouteContext) {
 }
 
 export async function PUT(req: NextRequest, { params }: RouteContext) {
-  if (rateLimit(req)) return jsonError("Rate limit exceeded. Please try again later.", 429);
 
   const access = await requireAdmin("content:write");
   if (!access.ok) return access.response;
@@ -125,7 +123,6 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
 }
 
 export async function DELETE(req: NextRequest, { params }: RouteContext) {
-  if (rateLimit(req)) return jsonError("Rate limit exceeded. Please try again later.", 429);
 
   const access = await requireAdmin("content:write");
   if (!access.ok) return access.response;

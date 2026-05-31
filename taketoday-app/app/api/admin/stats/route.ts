@@ -1,6 +1,6 @@
+import { captureApiError, jsonOk } from "@/lib/admin/api";
 import { NextRequest } from "next/server";
 import { ArticleStatus, JobStatus } from "@prisma/client";
-import { captureApiError, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { prisma } from "@/lib/db/prisma";
 
@@ -12,11 +12,7 @@ function computeDelta(current: number, prev: number): string {
   return `${sign}${pct.toFixed(1)}%`;
 }
 
-export async function GET(request: NextRequest) {
-  if (rateLimit(request)) {
-    return jsonError("Rate limit exceeded. Please try again later.", 429);
-  }
-
+export async function GET(_request: NextRequest) {
   const access = await requireAdmin("dashboard:read");
   if (!access.ok) return access.response;
 

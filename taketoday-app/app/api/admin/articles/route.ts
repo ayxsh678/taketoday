@@ -1,6 +1,6 @@
+import { articleCreateSchema, captureApiError, jsonError, jsonOk } from "@/lib/admin/api";
 import { NextRequest } from "next/server";
 import { ArticleStatus, Prisma } from "@prisma/client";
-import { articleCreateSchema, captureApiError, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { logAuditAction } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/authz";
 import { getOrCreateAdminUser } from "@/lib/admin/current-user";
@@ -24,7 +24,6 @@ function slugifyTag(name: string): string {
 }
 
 export async function GET(req: NextRequest) {
-  if (rateLimit(req)) return jsonError("Rate limit exceeded. Please try again later.", 429);
 
   const access = await requireAdmin("content:read");
   if (!access.ok) return access.response;
@@ -104,7 +103,6 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (rateLimit(req)) return jsonError("Rate limit exceeded. Please try again later.", 429);
 
   const access = await requireAdmin("content:write");
   if (!access.ok) return access.response;
@@ -210,15 +208,13 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function PUT(req: NextRequest) {
-  if (rateLimit(req)) return jsonError("Rate limit exceeded. Please try again later.", 429);
+export async function PUT(_req: NextRequest) {
   const access = await requireAdmin("content:write");
   if (!access.ok) return access.response;
   return jsonError("PUT requires article ID. Use /api/admin/articles/[id]", 405);
 }
 
-export async function DELETE(req: NextRequest) {
-  if (rateLimit(req)) return jsonError("Rate limit exceeded. Please try again later.", 429);
+export async function DELETE(_req: NextRequest) {
   const access = await requireAdmin("content:write");
   if (!access.ok) return access.response;
   return jsonError("DELETE requires article ID. Use /api/admin/articles/[id]", 405);

@@ -1,50 +1,10 @@
-import { NextResponse, NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import * as Sentry from "@sentry/nextjs";
-// ─── Rate limiting ────────────────────────────────────────────────────────────
-// Role-based tiers: higher-trust roles get higher limits.
 
-const requestCounts = new Map<string, number[]>();
-const WINDOW_MS = 60 * 1000; // 1 minute
-
-const RATE_LIMIT_BY_ROLE: Record<string, number> = {
-  // Display name keys (matches session.user.role from auth.ts)
-  "Super Admin": 600,
-  Editor: 300,
-  "Content Manager": 200,
-  "Social Media Manager": 120,
-  Analyst: 60,
-  // Prisma enum keys (matches x-admin-role header set by middleware)
-  SUPER_ADMIN: 600,
-  EDITOR: 300,
-  CONTENT_MANAGER: 200,
-  SOCIAL_MEDIA_MANAGER: 120,
-};
-
-const DEFAULT_RATE_LIMIT = 60;
-
-export function rateLimit(request: NextRequest, userId?: string, role?: string) {
-  const ip =
-    request.headers.get("x-forwarded-for") ??
-    request.headers.get("x-real-ip") ??
-    "anonymous";
-  const key = userId ?? ip;
-  const maxRequests = role
-    ? (RATE_LIMIT_BY_ROLE[role] ?? DEFAULT_RATE_LIMIT)
-    : DEFAULT_RATE_LIMIT;
-  const now = Date.now();
-
-  const prev = requestCounts.get(key) ?? [];
-  const valid = prev.filter((t) => now - t < WINDOW_MS);
-
-  if (valid.length >= maxRequests) {
-    return true; // rate limited
-  }
-
-  valid.push(now);
-  requestCounts.set(key, valid);
-  return false;
-}
+// Rate limiting moved to lib/rate-limit.ts (Upstash Redis, role-aware).
+// Called inside requireAdmin() in lib/admin/authz.ts — routes no longer
+// need to call rateLimit() directly. [BUG-06 / BUG-20]
 
 export function jsonOk<T>(data: T, init?: ResponseInit) {
   return NextResponse.json({ ok: true, data }, init);

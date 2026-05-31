@@ -1,8 +1,8 @@
+import { captureApiError, jsonError, jsonOk } from "@/lib/admin/api";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { AdminRole } from "@prisma/client";
 import { ADMIN_ROLES } from "@/lib/admin/types";
-import { captureApiError, jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { prisma } from "@/lib/db/prisma";
 
@@ -56,8 +56,7 @@ const inviteSchema = z.object({
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function GET(request: NextRequest) {
-  if (rateLimit(request)) return jsonError("Rate limit exceeded. Please try again later.", 429);
+export async function GET(_request: NextRequest) {
 
   const access = await requireAdmin("users:manage");
   if (!access.ok) return access.response;
@@ -68,7 +67,6 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (rateLimit(req)) return jsonError("Rate limit exceeded. Please try again later.", 429);
 
   const access = await requireAdmin("users:manage");
   if (!access.ok) return access.response;

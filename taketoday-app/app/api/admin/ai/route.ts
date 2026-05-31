@@ -1,6 +1,6 @@
+import { jsonError, jsonOk } from "@/lib/admin/api";
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { jsonError, jsonOk, rateLimit } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { appConfig } from "@/lib/config/app";
 import { getAIProvider } from "@/lib/ai";
@@ -64,7 +64,6 @@ function mockOutput(mode: Mode, input: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  if (rateLimit(req)) return jsonError("Rate limit exceeded. Please try again later.", 429);
 
   const access = await requireAdmin("ai:run");
   if (!access.ok) return access.response;
