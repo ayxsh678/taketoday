@@ -31,14 +31,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Attach role to request headers so downstream handlers can read without re-fetching session
-  const response = NextResponse.next();
-  if (session.user.role) {
-    response.headers.set("x-admin-role", session.user.role);
-    response.headers.set("x-admin-id", session.user.id ?? "");
-  }
-
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {
