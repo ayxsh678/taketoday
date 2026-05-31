@@ -63,7 +63,8 @@ export function roleFromEmail(email?: string | null): AdminRole {
 
 export function isAdminEmail(email?: string | null) {
   const allowlist = parseEmailList(appConfig.adminEmails.join(','));
-  if (allowlist.size === 0) return Boolean(email);
+  // Fail-closed: no explicit allowlist = no admin access (prevents fail-open on misconfigured env)
+  if (allowlist.size === 0) return false;
   return email ? allowlist.has(email.toLowerCase()) : false;
 }
 
