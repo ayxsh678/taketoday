@@ -13,7 +13,6 @@ model AdminUser {
   email              String              @unique
   role               AdminRole           @default(ANALYST)
   image              String?
-  twoFactorReady     Boolean             @default(false)
   revokedAt          DateTime?
   lastActiveAt       DateTime?
   createdAt          DateTime            @default(now())
@@ -365,8 +364,6 @@ model PublicUser {
   linkedinUrl          String?
   emailVerified        DateTime?
   passwordHash         String?
-  twoFactorEnabled     Boolean                   @default(false)
-  twoFactorSecret      String?
   role                 ContributorRole           @default(CONTRIBUTOR)
   isVerifiedJournalist Boolean                   @default(false)
   verifiedExpertise    String[]                  @default([])

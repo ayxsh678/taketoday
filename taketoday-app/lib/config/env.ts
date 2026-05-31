@@ -27,7 +27,6 @@ export const envSchema = z.object({
   NEXT_PUBLIC_PYTHON_SERVICE_URL: z.string().optional(),
   PYTHON_SERVICE_URL: z.string().optional(),
   INTERNAL_SERVICE_TOKEN: z.string().optional(),
-  NEXT_PUBLIC_REQUIRE_2FA: z.string().optional(),
   VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
   // Auth configuration
   AUTH_GOOGLE_ID: z.string().optional(),

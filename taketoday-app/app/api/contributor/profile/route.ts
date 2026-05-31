@@ -39,9 +39,8 @@ export async function GET() {
 
   if (!user) return jsonError("User not found", 404);
 
-  const { passwordHash, twoFactorSecret, ...safeUser } = user;
+  const { passwordHash, ...safeUser } = user;
   void passwordHash;
-  void twoFactorSecret;
 
   return jsonOk({ user: safeUser });
 }

@@ -29,7 +29,6 @@ interface Integration {
 }
 
 interface SecurityInfo {
-  require2Fa: boolean;
   hasSecretKey: boolean;
 }
 
@@ -240,12 +239,6 @@ export default function SettingsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-                <span className="text-sm text-zinc-300">Two-factor auth</span>
-                <Badge tone={data.security.require2Fa ? "green" : "neutral"}>
-                  {data.security.require2Fa ? "Required" : "Optional"}
-                </Badge>
-              </div>
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-sm text-zinc-300">Secret key</span>
                 <Badge tone={data.security.hasSecretKey ? "green" : "red"}>

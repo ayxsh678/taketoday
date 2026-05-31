@@ -24,7 +24,7 @@ export default function AdminLoginPage() {
             </Button>
           </form>
           <p className="mt-4 text-xs leading-5 text-zinc-500">
-            Access is restricted by the admin allowlist. The auth model is role-based and ready for 2FA/session policy upgrades.
+            Access is restricted by the admin allowlist.
           </p>
         </CardContent>
       </Card>

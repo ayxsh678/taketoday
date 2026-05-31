@@ -10,7 +10,6 @@ async function main() {
       name: "Ayush Verma",
       email: "ayush@taketoday.com",
       role: AdminRole.SUPER_ADMIN,
-      twoFactorReady: true,
     },
   });
 

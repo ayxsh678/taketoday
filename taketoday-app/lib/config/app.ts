@@ -23,7 +23,6 @@ export const appConfig = {
     getEnv('NEXT_PUBLIC_PYTHON_SERVICE_URL', '') ??
     '',
   pythonServiceTimeout: 30000,
-  require2Fa: (getEnv('NEXT_PUBLIC_REQUIRE_2FA', '') as string) === "true",
   vercelProjectProductionUrl: getEnv('VERCEL_PROJECT_PRODUCTION_URL', '') ?? '',
   // Auth configuration
   authGoogleId: getEnv('AUTH_GOOGLE_ID', '') ?? '',

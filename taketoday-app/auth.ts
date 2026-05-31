@@ -10,7 +10,6 @@ declare module "next-auth" {
       id?: string;
       role: AdminRole;
       isAdmin: boolean;
-      twoFaVerified?: boolean;
     } & DefaultSession["user"];
   }
 }
@@ -29,19 +28,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     async jwt({ token }) {
-      const email = token.email;
-      const adminToken = token as typeof token & { role?: AdminRole; isAdmin?: boolean; twoFaVerified?: boolean };
-      adminToken.role = roleFromEmail(email);
-      adminToken.isAdmin = isAdminEmail(email);
-      adminToken.twoFaVerified = adminToken.twoFaVerified ?? false;
+      const adminToken = token as typeof token & { role?: AdminRole; isAdmin?: boolean };
+      adminToken.role = roleFromEmail(token.email);
+      adminToken.isAdmin = isAdminEmail(token.email);
       return adminToken;
     },
     async session({ session, token }) {
-      const adminToken = token as typeof token & { role?: AdminRole; isAdmin?: boolean; twoFaVerified?: boolean };
+      const adminToken = token as typeof token & { role?: AdminRole; isAdmin?: boolean };
       session.user.id = token.sub ?? "";
       session.user.role = adminToken.role ?? "Analyst";
       session.user.isAdmin = Boolean(adminToken.isAdmin);
-      session.user.twoFaVerified = adminToken.twoFaVerified ?? false;
       return session;
     },
   },

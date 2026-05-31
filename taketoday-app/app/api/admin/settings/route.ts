@@ -51,7 +51,6 @@ export async function GET(request: NextRequest) {
     envCapabilities,
     integrations: mappedIntegrations,
     security: {
-      require2Fa: appConfig.require2Fa,
       hasSecretKey: Boolean(appConfig.secretKey),
     },
   });

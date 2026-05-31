@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Routes that don't need auth
-const PUBLIC_ADMIN_PATHS = ["/admin/login", "/admin/verify-2fa", "/api/admin/health"];
+const PUBLIC_ADMIN_PATHS = ["/admin/login", "/api/admin/health"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

@@ -255,13 +255,6 @@ const handleSearchChange = useCallback((value: string) => {
                  Validation via Zod
                </div>
                
-               {/* 2FA-ready sessions */}
-               <div 
-                 className="flex items-center gap-4 rounded-lg border border-white/10 bg-white/[0.02] px-5 py-3 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/[0.03]"
-               >
-                 <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />
-                 2FA-ready sessions
-               </div>
              </div>
            </CardContent>
          </Card>
