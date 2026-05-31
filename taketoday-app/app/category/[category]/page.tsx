@@ -131,7 +131,7 @@ export default async function CategoryPage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd).replace(/</g, "\\u003c") }}
       />
 
       <section className="mx-auto max-w-[1400px] px-6 lg:px-10 pt-16 lg:pt-24 pb-10">

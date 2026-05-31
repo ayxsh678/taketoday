@@ -144,11 +144,11 @@ export default async function ArticlePage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(newsArticleLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(newsArticleLd).replace(/</g, "\\u003c") }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd).replace(/</g, "\\u003c") }}
       />
       <TrackPageView slug={articleSlug} category={category} />
       <ArticleLayout {...layoutProps} />
