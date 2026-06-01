@@ -4,14 +4,14 @@ on:
   push:
     branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  ci:
+  build-and-test:
     name: Typecheck · Lint · Test · Build
     runs-on: ubuntu-latest
     defaults:
@@ -63,11 +63,36 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Unit tests
+      - name: Unit & integration tests
         run: npm test
 
-      - name: Build
+      - name: Coverage report
+        run: npm run test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage/coverage-final.json
+          fail_ci_if_error: false
+        continue-on-error: true
+
+      - name: Build production bundle
         run: npm run build
         env:
-          # Sentry not required in CI — suppress warning
           SENTRY_SUPPRESS_TURBOPACK_WARNING: 1
+
+  lint-python:
+    name: Python lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: cd python-service && pip install -r requirements.txt
+
+      - name: Lint with pylint
+        run: cd python-service && pylint app/ core/ --fail-under=7.0 || true
