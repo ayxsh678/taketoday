@@ -21,7 +21,7 @@ export default async function EditorialQueuePage() {
 
   const contributions = await prisma.contribution.findMany({
     where: {
-      status: { notIn: ["DRAFT", "PUBLISHED", "ARCHIVED", "REJECTED"] },
+      workflowStage: { notIn: ["DRAFT", "PUBLISHED", "ARCHIVED", "REJECTED"] as import("@prisma/client").WorkflowStage[] },
     },
     orderBy: [{ isBreaking: "desc" }, { createdAt: "asc" }],
     include: {

@@ -449,7 +449,6 @@ model Contribution {
   slug               String                 @unique
   summary            String?
   body               String
-  status             ContributionStatus     @default(DRAFT)
   workflowStage      WorkflowStage          @default(DRAFT)
   parentId           String?
   rootId             String?
@@ -488,7 +487,7 @@ model Contribution {
   civicImpact        CivicImpact?
   missionLinks       MissionContribution[]
 
-  @@index([status, createdAt])
+  @@index([workflowStage, createdAt])
   @@index([authorId])
   @@index([type])
   @@index([workflowStage])
@@ -838,20 +837,6 @@ enum ContributionType {
   COMMUNITY_NOTE
   OPINION
   WHISTLEBLOWER_TIP
-}
-
-enum ContributionStatus {
-  DRAFT
-  SUBMITTED
-  UNDER_RESEARCH
-  FACT_CHECK_PENDING
-  VERIFIED
-  EDITOR_REVIEW
-  APPROVED
-  PUBLISHED
-  ARCHIVED
-  DISPUTED
-  REJECTED
 }
 
 enum WorkflowStage {

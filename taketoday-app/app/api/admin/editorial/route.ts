@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   const skip = (page - 1) * limit;
 
   const where = {
-    status: { notIn: ["DRAFT"] as import("@prisma/client").ContributionStatus[] },
+    workflowStage: { notIn: ["DRAFT"] as import("@prisma/client").WorkflowStage[] },
     ...(stage && { workflowStage: stage as import("@prisma/client").WorkflowStage }),
     ...(type && { type: type as import("@prisma/client").ContributionType }),
   };

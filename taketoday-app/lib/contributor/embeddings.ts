@@ -107,7 +107,7 @@ export async function findSimilarContributions(
   const ids = rows.map((r) => r.contribution_id);
   const contributions = await prisma.contribution.findMany({
     where: { id: { in: ids } },
-    select: { id: true, title: true, status: true },
+    select: { id: true, title: true, workflowStage: true },
   });
 
   const contribMap = new Map(contributions.map((c) => [c.id, c]));
@@ -116,7 +116,7 @@ export async function findSimilarContributions(
     contributionId: r.contribution_id,
     similarity: Number(r.similarity),
     title: contribMap.get(r.contribution_id)?.title,
-    status: contribMap.get(r.contribution_id)?.status,
+    workflowStage: contribMap.get(r.contribution_id)?.workflowStage,
   }));
 }
 

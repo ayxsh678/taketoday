@@ -1,6 +1,6 @@
-import type { ContributorRole, ContributionStatus, WorkflowStage, ReputationTier } from "@prisma/client";
+import type { ContributorRole, WorkflowStage, ReputationTier } from "@prisma/client";
 
-export type { ContributorRole, ContributionStatus, WorkflowStage, ReputationTier };
+export type { ContributorRole, WorkflowStage, ReputationTier };
 
 export type ContributorPermission =
   | "contribution:create"

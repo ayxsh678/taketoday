@@ -22,7 +22,7 @@ export async function GET() {
     include: {
       reputation: true,
       contributions: {
-        where: { status: "PUBLISHED" },
+        where: { workflowStage: "PUBLISHED" },
         orderBy: { publishedAt: "desc" },
         take: 10,
         select: {

@@ -31,7 +31,7 @@ export async function recalculateReputation(userId: string): Promise<void> {
     where: { id: userId },
     include: {
       contributions: {
-        where: { status: { in: ["PUBLISHED", "APPROVED"] } },
+        where: { workflowStage: { in: ["PUBLISHED", "APPROVED"] } },
         select: { id: true },
       },
       factChecks: {

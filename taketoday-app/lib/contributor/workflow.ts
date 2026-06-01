@@ -41,7 +41,6 @@ export async function transitionWorkflow({
       where: { id: contributionId },
       data: {
         workflowStage: to,
-        status: to as unknown as import("@prisma/client").ContributionStatus,
         publishedAt: to === "PUBLISHED" ? new Date() : undefined,
       },
     }),

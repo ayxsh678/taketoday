@@ -18,7 +18,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const contribution = await prisma.contribution.findUnique({
     where: { id },
-    select: { id: true, authorId: true, status: true },
+    select: { id: true, authorId: true, workflowStage: true },
   });
   if (!contribution) return jsonError("Not found", 404);
   if (contribution.authorId === access.session.id) {

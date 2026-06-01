@@ -58,7 +58,7 @@ export default async function ProfilePage({ params }: Params) {
         take: 5,
       },
       contributions: {
-        where: { status: "PUBLISHED" },
+        where: { workflowStage: "PUBLISHED" },
         orderBy: { publishedAt: "desc" },
         take: 20,
         include: {

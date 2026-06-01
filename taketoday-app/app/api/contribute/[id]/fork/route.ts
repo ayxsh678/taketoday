@@ -55,7 +55,6 @@ export async function POST(req: NextRequest, { params }: Params) {
       parentId: parent.id,
       rootId,
       branchName: parsed.data.branchName,
-      status: "DRAFT",
       workflowStage: "DRAFT",
     },
   });

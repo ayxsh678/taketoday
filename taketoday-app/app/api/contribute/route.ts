@@ -92,7 +92,6 @@ export async function POST(req: NextRequest) {
       aiUsageDisclosed: data.aiUsageDisclosed,
       parentId: data.parentId,
       rootId,
-      status: "DRAFT",
       workflowStage: "DRAFT",
     },
   });
@@ -137,8 +136,8 @@ export async function GET(req: NextRequest) {
   const where = {
     ...(type && { type: type as import("@prisma/client").ContributionType }),
     ...(status
-      ? { status: status as import("@prisma/client").ContributionStatus }
-      : { status: "PUBLISHED" as const }),
+      ? { workflowStage: status as import("@prisma/client").WorkflowStage }
+      : { workflowStage: "PUBLISHED" as const }),
     ...(authorId && { authorId }),
   };
 
@@ -155,7 +154,6 @@ export async function GET(req: NextRequest) {
         title: true,
         slug: true,
         summary: true,
-        status: true,
         workflowStage: true,
         isBreaking: true,
         language: true,

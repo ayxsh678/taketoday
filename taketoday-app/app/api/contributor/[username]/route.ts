@@ -36,7 +36,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
         },
       },
       contributions: {
-        where: { status: "PUBLISHED" },
+        where: { workflowStage: "PUBLISHED" },
         orderBy: { publishedAt: "desc" },
         take: 12,
         select: {

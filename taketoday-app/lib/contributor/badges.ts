@@ -103,7 +103,7 @@ export async function checkAndAwardBadges(userId: string): Promise<string[]> {
   });
 
   const dataJournalismCount = await prisma.contribution.count({
-    where: { authorId: userId, type: "DATA_JOURNALISM", status: "PUBLISHED" },
+    where: { authorId: userId, type: "DATA_JOURNALISM", workflowStage: "PUBLISHED" },
   });
 
   const existingBadges = await prisma.userBadge.findMany({
