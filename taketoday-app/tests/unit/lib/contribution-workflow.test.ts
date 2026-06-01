@@ -101,7 +101,7 @@ describe("transitionWorkflow", () => {
     });
 
     expect(prisma.$transaction).toHaveBeenCalledOnce();
-    const [ops] = vi.mocked(prisma.$transaction).mock.calls[0] as [unknown[]];
+    const ops = (vi.mocked(prisma.$transaction).mock.calls[0] as unknown as [unknown[]])[0];
     expect(ops).toHaveLength(2);
   });
 
