@@ -66,16 +66,23 @@ function SlideCard({
   index,
   total,
   jobId,
+  bgUrl,
 }: {
   slide: CarouselSlide;
   index: number;
   total: number;
   jobId: string | null;
+  bgUrl: string;
 }) {
   const [copied, setCopied] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
   const slideNum = slide.slideNumber;
-  const renderSrc = jobId ? `/api/admin/carousel/${jobId}/slide/${slideNum}` : null;
+  const base = jobId ? `/api/admin/carousel/${jobId}/slide/${slideNum}` : null;
+  const renderSrc = base
+    ? bgUrl.startsWith("http")
+      ? `${base}?bg=${encodeURIComponent(bgUrl)}`
+      : base
+    : null;
 
   async function copyPrompt() {
     await navigator.clipboard.writeText(slide.imagePrompt);
@@ -345,6 +352,7 @@ export default function CarouselStudioPage() {
   const [ctaText, setCtaText] = useState("");
   const [tone, setTone] = useState("");
   const [audience, setAudience] = useState("");
+  const [bgUrl, setBgUrl] = useState("");
 
   const [carousel, setCarousel] = useState<CarouselOutput | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
@@ -480,6 +488,15 @@ export default function CarouselStudioPage() {
                     {slideCount}
                   </span>
                 </div>
+
+                {/* background image */}
+                <input
+                  type="url"
+                  placeholder="Background image URL — applied to all rendered slides (optional)"
+                  value={bgUrl}
+                  onChange={(e) => setBgUrl(e.target.value)}
+                  className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-white/25 focus:outline-none"
+                />
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <input
@@ -619,7 +636,7 @@ export default function CarouselStudioPage() {
 
                 {/* active slide detail */}
                 {slide && (
-                  <SlideCard slide={slide} index={activeSlide} total={carousel.slideCount} jobId={jobId} />
+                  <SlideCard slide={slide} index={activeSlide} total={carousel.slideCount} jobId={jobId} bgUrl={bgUrl} />
                 )}
 
                 {/* all slides list */}
@@ -629,7 +646,7 @@ export default function CarouselStudioPage() {
                   </summary>
                   <div className="mt-3 space-y-3">
                     {carousel.slides.map((s, i) => (
-                      <SlideCard key={i} slide={s} index={i} total={carousel.slideCount} jobId={jobId} />
+                      <SlideCard key={i} slide={s} index={i} total={carousel.slideCount} jobId={jobId} bgUrl={bgUrl} />
                     ))}
                   </div>
                 </details>
