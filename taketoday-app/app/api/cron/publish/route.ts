@@ -5,7 +5,7 @@ import { appConfig } from "@/lib/config/app";
 import { sendArticleBroadcast } from "@/lib/integrations/buttondown";
 
 // ─── Scheduled article publisher ──────────────────────────────────────────────
-// Triggered by Vercel Cron (vercel.json) every minute in production.
+// Triggered by Vercel Cron (vercel.json) daily at 1 AM UTC in production.
 // Publishes any SCHEDULED articles whose scheduledAt ≤ now.
 //
 // Auth: CRON_SECRET header (set via Vercel env vars). Vercel also sends
