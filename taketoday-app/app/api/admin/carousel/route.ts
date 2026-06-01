@@ -3,10 +3,6 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin/authz";
 import { generateCarousel } from "@/lib/ai/tasks/carousel";
-import type { CarouselFormat } from "@/lib/ai/tasks/carousel";
-
-const FORMATS: CarouselFormat[] = ["instagram", "linkedin", "twitter", "educational", "story"];
-
 const carouselRequestSchema = z.object({
   content: z.string().min(10).max(8000),
   format: z.enum(["instagram", "linkedin", "twitter", "educational", "story"]),
@@ -46,5 +42,3 @@ export async function POST(req: NextRequest) {
     return jsonError(`Carousel generation failed: ${msg}`, 502);
   }
 }
-
-export { FORMATS };
