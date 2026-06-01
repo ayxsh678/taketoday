@@ -20,6 +20,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/taketoday_test
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/taketoday_test
       NEXTAUTH_SECRET: test-secret-for-ci
       NEXTAUTH_URL: http://localhost:3000
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
