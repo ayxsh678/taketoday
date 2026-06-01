@@ -55,7 +55,7 @@ const NAV_GROUPS = [
   {
     label: "STUDIO",
     accentColor: "#a78bfa",
-    hrefs: ["/admin/ai", "/admin/ingestion", "/admin/media", "/admin/video"],
+    hrefs: ["/admin/ai", "/admin/carousel", "/admin/ingestion", "/admin/media", "/admin/video"],
   },
   {
     label: "DISTRIBUTION",
