@@ -5,6 +5,23 @@ import { vi } from "vitest";
 // server-only throws when imported outside Next.js server context
 vi.mock("server-only", () => ({}));
 
+// next-auth can't resolve next/server in the Vitest node env
+vi.mock("next-auth", () => ({
+  default: vi.fn(() => ({
+    handlers: {},
+    auth: vi.fn(),
+    signIn: vi.fn(),
+    signOut: vi.fn(),
+  })),
+}));
+vi.mock("next-auth/providers/google", () => ({ default: vi.fn(() => ({})) }));
+vi.mock("next-auth/providers/credentials", () => ({ default: vi.fn(() => ({})) }));
+
+// Mock contributor authz — GET /api/contribute is public but the module also exports POST which uses requireContributor
+vi.mock("@/lib/contributor/authz", () => ({
+  requireContributor: vi.fn().mockResolvedValue({ ok: false, response: new Response("Unauthorized", { status: 401 }) }),
+}));;
+
 // Mock Next.js server-only APIs
 vi.mock("next/headers", () => ({
   cookies: vi.fn(() => ({ get: vi.fn(), set: vi.fn() })),
@@ -70,6 +87,7 @@ vi.mock("@/lib/db/prisma", () => ({
       findUnique: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      count: vi.fn(),
     },
     publicUser: {
       findUnique: vi.fn(),
@@ -91,6 +109,16 @@ vi.mock("@/lib/db/prisma", () => ({
     },
     contributionEmbedding: {
       upsert: vi.fn(),
+    },
+    transparencyLog: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+    },
+    investigationMember: {
+      count: vi.fn(),
+    },
+    userBadge: {
+      findMany: vi.fn(),
     },
     $transaction: vi.fn(),
     $queryRaw: vi.fn(),
