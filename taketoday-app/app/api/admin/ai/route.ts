@@ -74,13 +74,20 @@ export async function POST(req: NextRequest) {
 
   const { mode, input } = parsed.data;
 
-  if (!appConfig.geminiApiKey) {
+  const hasAnyKey = !!(
+    appConfig.geminiApiKey ||
+    appConfig.openaiApiKey ||
+    appConfig.groqApiKey ||
+    appConfig.openrouterApiKey
+  );
+
+  if (!hasAnyKey) {
     if (appConfig.isDevelopment) {
       return jsonOk({
         mode,
         provider: "mock",
         output: mockOutput(mode, input),
-        warning: "Dev mock: set GEMINI_API_KEY to enable real outputs.",
+        warning: "Dev mock: set an AI provider key (GROQ_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, or OPENROUTER_API_KEY) to enable real outputs.",
       });
     }
     return jsonError("AI provider not configured. Contact your administrator.", 503);
