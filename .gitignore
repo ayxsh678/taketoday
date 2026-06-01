@@ -6,3 +6,5 @@ tsconfig.tsbuildinfo
 .aider*
 .vercel
 .env*
+.DS_Store
+**/.DS_Store
