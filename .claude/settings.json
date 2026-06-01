@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /Users/ayushverma/Documents/Claude/Projects/TakeToday rm --cached python-service/.env)",
+      "Bash(npm run *)",
+      "Bash(git -C /Users/ayushverma/Documents/Claude/Projects/TakeToday add taketoday-app/lib/admin/rbac.ts taketoday-app/tests/unit/lib/rbac.test.ts)",
+      "Bash(git -C /Users/ayushverma/Documents/Claude/Projects/TakeToday commit -m ' *)",
+      "Bash(git -C /Users/ayushverma/Documents/Claude/Projects/TakeToday add taketoday-app/vercel.json)"
+    ]
+  }
+}
