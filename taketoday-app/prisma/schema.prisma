@@ -62,6 +62,7 @@ model Article {
   tags            ArticleTag[]
   reviewComments  ReviewComment[]
   socialPosts     SocialPost[]
+  carouselJobs    CarouselJob[]
 
   @@index([status, publishedAt])
   @@index([priorityScore])
@@ -226,6 +227,23 @@ model SocialPost {
   updatedAt   DateTime       @updatedAt
   article     Article?       @relation(fields: [articleId], references: [id])
 
+  @@index([articleId])
+}
+
+model CarouselJob {
+  id            String    @id @default(cuid())
+  articleId     String?
+  format        String
+  slideCount    Int
+  sourceContent String
+  result        Json
+  status        JobStatus @default(SUCCEEDED)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  article       Article?  @relation(fields: [articleId], references: [id])
+
+  @@index([createdAt])
   @@index([articleId])
 }
 
