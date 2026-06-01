@@ -18,8 +18,13 @@ import { TrackPageView } from "@/components/TrackPageView";
 export const revalidate = 3600;
 
 export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  const articles = await getAllArticles();
-  return articles.map((a) => ({ slug: a.slug }));
+  try {
+    const articles = await getAllArticles();
+    return articles.map((a) => ({ slug: a.slug }));
+  } catch {
+    // DB unavailable at build time — pages generated on-demand via ISR
+    return [];
+  }
 }
 
 export async function generateMetadata({
