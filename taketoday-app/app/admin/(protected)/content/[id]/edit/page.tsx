@@ -22,6 +22,7 @@ import {
   Undo,
   Redo,
   Eye,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
@@ -95,6 +96,7 @@ export default function ArticleEditorPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // sidebar fields
@@ -194,6 +196,54 @@ export default function ArticleEditorPage() {
     }
   }, [id, headline, excerpt, status, breaking, seoTitle, seoDesc, editor]);
 
+  // ─── AI generate ─────────────────────────────────────────────────────────────
+
+  const generateBody = useCallback(async () => {
+    if (!headline.trim()) { setError("Add a headline before generating."); return; }
+    setGenerating(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "body", headline, excerpt: excerpt || undefined }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error((json as { error?: string }).error ?? `HTTP ${res.status}`);
+      const html = (json.data as { html: string }).html;
+      if (editor && !editor.isDestroyed) {
+        editor.commands.setContent(html);
+        editor.commands.focus("end");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Generation failed");
+    } finally {
+      setGenerating(false);
+    }
+  }, [headline, excerpt, editor]);
+
+  const generateExcerptAI = useCallback(async () => {
+    if (!headline.trim()) { setError("Add a headline first."); return; }
+    setGenerating(true);
+    setError(null);
+    try {
+      const body = editor?.getText() ?? "";
+      const res = await fetch("/api/admin/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "excerpt", headline, body }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error((json as { error?: string }).error ?? `HTTP ${res.status}`);
+      const text = (json.data as { text: string }).text;
+      setExcerpt(text);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Generation failed");
+    } finally {
+      setGenerating(false);
+    }
+  }, [headline, editor]);
+
   // Cmd/Ctrl+S shortcut
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -255,6 +305,7 @@ export default function ArticleEditorPage() {
         <div className="flex items-center gap-2">
           {error && <span className="text-xs text-red-400">{error}</span>}
           {saved && <span className="text-xs text-emerald-400">Saved</span>}
+          {generating && <span className="text-xs text-violet-400">Generating…</span>}
           <Button
             variant="ghost"
             className="h-8 gap-1.5 px-3 text-sm"
@@ -262,6 +313,16 @@ export default function ArticleEditorPage() {
           >
             <Eye className="h-3.5 w-3.5" />
             Preview
+          </Button>
+          <Button
+            variant="ghost"
+            className="h-8 gap-1.5 px-3 text-sm"
+            onClick={() => void generateBody()}
+            disabled={generating || saving}
+            title="Generate article body from headline (replaces current body)"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Generate
           </Button>
           {status !== "published" && (
             <Button
@@ -436,9 +497,22 @@ export default function ArticleEditorPage() {
 
             {/* excerpt */}
             <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--adm-text-3)" }}>
-                Excerpt
-              </label>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--adm-text-3)" }}>
+                  Excerpt
+                </label>
+                <button
+                  type="button"
+                  onClick={() => void generateExcerptAI()}
+                  disabled={generating || saving}
+                  title="Auto-generate excerpt from headline + body"
+                  className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors hover:bg-white/8 disabled:pointer-events-none disabled:opacity-40"
+                  style={{ color: "var(--adm-accent-purple)" }}
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Auto
+                </button>
+              </div>
               <Textarea
                 className="min-h-16 text-sm"
                 placeholder="One-line summary for feed"
