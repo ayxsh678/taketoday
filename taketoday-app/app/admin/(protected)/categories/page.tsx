@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Edit3, Plus, Trash2, X, Check } from "lucide-react";
-import { AdminMotion } from "@/components/admin/AdminMotion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -176,8 +175,7 @@ export default function CategoriesPage() {
   // ─── render ───────────────────────────────────────────────────────────────
 
   return (
-    <AdminMotion>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* page header */}
         <section>
           <h1 className="text-3xl font-semibold tracking-tight text-white">Categories</h1>
@@ -339,7 +337,6 @@ export default function CategoriesPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
 
       {/* ── edit modal ── */}
       {editing && (
@@ -420,6 +417,6 @@ export default function CategoriesPage() {
           </div>
         </div>
       )}
-    </AdminMotion>
+    </div>
   );
 }

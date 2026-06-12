@@ -11,12 +11,10 @@ import {
 import { ArticleStatus, JobStatus, type Notification as DbNotification, type AuditLog } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import type { ActivityEvent } from "@/lib/admin/types";
-import { AdminMotion } from "@/components/admin/AdminMotion";
 import { ActivityTimeline } from "@/components/admin/ActivityTimeline";
 import { ArticleTable } from "@/components/admin/ArticleTable";
 import { DashboardQuickActions } from "@/components/admin/DashboardQuickActions";
 import { MetricCard } from "@/components/admin/MetricCard";
-import { MiniChart } from "@/components/admin/MiniChart";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -215,8 +213,7 @@ export default async function AdminDashboardPage() {
   }
 
   return (
-    <AdminMotion>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {dbError && (
           <div
             className="rounded-lg px-4 py-3 text-sm"
@@ -315,21 +312,11 @@ export default async function AdminDashboardPage() {
           />
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-2 xl:grid-cols-[1.4fr_0.6fr]">
+        <section className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Traffic Performance</CardTitle>
-              <CardDescription>Audience trend for the last seven publishing windows.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <MiniChart data={trafficSeriesData} />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Activity Timeline</CardTitle>
-              <CardDescription>Approvals, AI jobs, publishing status, and distribution events.</CardDescription>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>Latest editorial actions.</CardDescription>
             </CardHeader>
             <CardContent>
               {liveActivityEvents.length > 0 ? (
@@ -339,42 +326,17 @@ export default async function AdminDashboardPage() {
               )}
             </CardContent>
           </Card>
-        </section>
 
-        <section className="grid gap-6 lg:grid-cols-2 xl:grid-cols-[1.4fr_0.6fr]">
           <Card>
             <CardHeader>
               <CardTitle>Recent Content</CardTitle>
-              <CardDescription>Content pipeline with workflow status, owner, and priority.</CardDescription>
+              <CardDescription>Content pipeline with workflow status.</CardDescription>
             </CardHeader>
             <CardContent>
               <ArticleTable />
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Notifications</CardTitle>
-              <CardDescription>System alerts and operational events.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {dbNotifications.length > 0 ? (
-                dbNotifications.map((item) => (
-                  <div key={item.id} className="rounded-md border border-white/10 bg-white/4 p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-medium text-white">{item.title}</p>
-                      {!item.read && <Badge tone="amber">new</Badge>}
-                    </div>
-                    <p className="mt-2 text-sm leading-6 text-zinc-400">{item.message}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-zinc-500">No notifications.</p>
-              )}
-            </CardContent>
-          </Card>
         </section>
-      </div>
-    </AdminMotion>
+    </div>
   );
 }

@@ -5,10 +5,7 @@ import {
   FeaturedSection,
   FeaturedSectionSkeleton,
 } from "@/components/FeaturedSection";
-import { FeedSectionSkeleton } from "@/components/FeedSection";
-import { PersonalizedFeedSection } from "@/components/PersonalizedFeedSection";
-import { IntelligenceStrip } from "@/components/IntelligenceStrip";
-import { OpenJournalismStrip } from "@/components/OpenJournalismStrip";
+import { FeedSection, FeedSectionSkeleton } from "@/components/FeedSection";
 import { getAllArticles, getFeaturedArticles } from "@/lib/content/queries";
 import { SITE } from "@/lib/site";
 
@@ -56,7 +53,7 @@ async function FeaturedLoader() {
 async function FeedLoader({ featuredCount }: { featuredCount: number }) {
   const all = await getAllArticles();
   const feed = all.slice(featuredCount);
-  return <PersonalizedFeedSection articles={feed} />;
+  return <FeedSection items={feed} />;
 }
 
 export default function Home() {
@@ -67,14 +64,12 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd).replace(/</g, "\\u003c") }}
       />
       <Hero />
-      <OpenJournalismStrip />
       <Suspense fallback={<FeaturedSectionSkeleton />}>
         <FeaturedLoader />
       </Suspense>
       <Suspense fallback={<FeedSectionSkeleton />}>
         <FeedLoader featuredCount={FEATURED_ARTICLE_COUNT} />
       </Suspense>
-      <IntelligenceStrip />
     </>
   );
 }

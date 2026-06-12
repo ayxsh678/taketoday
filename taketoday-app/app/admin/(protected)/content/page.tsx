@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Plus, Search, X } from "lucide-react";
-import { AdminMotion } from "@/components/admin/AdminMotion";
 import { ArticleTable } from "@/components/admin/ArticleTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -271,8 +270,7 @@ export default function ContentPage() {
   // ─── render ───────────────────────────────────────────────────────────────
 
   return (
-    <AdminMotion>
-      <div className="space-y-6">
+    <div className="space-y-6">
 
         {/* ── page header ── */}
         <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -348,7 +346,6 @@ export default function ContentPage() {
             <ArticleTable key={tableKey} queryParams={queryParams} />
           </CardContent>
         </Card>
-      </div>
 
       {/* ── create article modal ── */}
       {showCreate && (
@@ -568,6 +565,6 @@ export default function ContentPage() {
           </div>
         </div>
       )}
-    </AdminMotion>
+    </div>
   );
 }

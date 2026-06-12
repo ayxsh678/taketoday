@@ -1,7 +1,0 @@
-{{ headline }}
-
-{{ caption }}
-
-{{ source_link }}
-
-#{{ categories|join(' #') }}
