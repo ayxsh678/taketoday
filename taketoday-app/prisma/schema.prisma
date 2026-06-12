@@ -78,6 +78,7 @@ model ArticleTag {
   tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([articleId, tagId])
+  @@index([tagId])
 }
 
 model MediaFolder {
@@ -119,6 +120,7 @@ model AuditLog {
 
   @@index([entity, entityId])
   @@index([createdAt])
+  @@index([actorId])
 }
 
 enum AdminRole {
