@@ -1,21 +1,16 @@
 import {
-  Bot,
   CalendarClock,
-  CheckCircle2,
   FileText,
-  Megaphone,
-  MousePointerClick,
   Newspaper,
-  TrendingUp,
+  Archive,
 } from "lucide-react";
-import { ArticleStatus, JobStatus, type Notification as DbNotification, type AuditLog } from "@prisma/client";
+import { ArticleStatus, type AuditLog } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import type { ActivityEvent } from "@/lib/admin/types";
 import { ActivityTimeline } from "@/components/admin/ActivityTimeline";
 import { ArticleTable } from "@/components/admin/ArticleTable";
 import { DashboardQuickActions } from "@/components/admin/DashboardQuickActions";
 import { MetricCard } from "@/components/admin/MetricCard";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 function formatCount(n: number): string {
@@ -67,43 +62,16 @@ export default async function AdminDashboardPage() {
   let publishedTotal = 0, publishedLast30 = 0, publishedPrev30 = 0;
   let draftsTotal = 0, draftsLast30 = 0, draftsPrev30 = 0;
   let scheduledTotal = 0, scheduledLast30 = 0, scheduledPrev30 = 0;
-  let pendingTotal = 0, pendingLast30 = 0, pendingPrev30 = 0;
-  let socialTotal = 0, socialLast30 = 0, socialPrev30 = 0;
-  let traffic = 0, trafficPrev = 0, ctr = 0;
-  let aiTotal = 0, aiLast30 = 0, aiPrev30 = 0;
-  let dbNotifications: DbNotification[] = [];
-  let trafficSeriesData: { label: string; value: number }[] = [];
+  let archivedTotal = 0;
   let liveActivityEvents: ActivityEvent[] = [];
   let dbError = false;
 
   try {
     const [
-      _publishedTotal,
-      _publishedLast30,
-      _publishedPrev30,
-      _draftsTotal,
-      _draftsLast30,
-      _draftsPrev30,
-      _scheduledTotal,
-      _scheduledLast30,
-      _scheduledPrev30,
-      _pendingTotal,
-      _pendingLast30,
-      _pendingPrev30,
-      _socialTotal,
-      _socialLast30,
-      _socialPrev30,
-      videoJobsTotal,
-      videoJobsLast30,
-      videoJobsPrev30,
-      ingestionSucceeded,
-      ingestionLast30,
-      ingestionPrev30,
-      trafficAgg,
-      trafficPrevAgg,
-      ctrAgg,
-      notifications,
-      recentPageviews,
+      _publishedTotal, _publishedLast30, _publishedPrev30,
+      _draftsTotal, _draftsLast30, _draftsPrev30,
+      _scheduledTotal, _scheduledLast30, _scheduledPrev30,
+      _archivedTotal,
       recentAuditLogs,
     ] = await Promise.all([
       prisma.article.count({ where: { status: ArticleStatus.PUBLISHED } }),
@@ -118,51 +86,8 @@ export default async function AdminDashboardPage() {
       prisma.article.count({ where: { status: ArticleStatus.SCHEDULED, createdAt: { gte: d30 } } }),
       prisma.article.count({ where: { status: ArticleStatus.SCHEDULED, createdAt: { gte: d60, lt: d30 } } }),
 
-      prisma.article.count({ where: { status: ArticleStatus.UNDER_REVIEW } }),
-      prisma.article.count({ where: { status: ArticleStatus.UNDER_REVIEW, createdAt: { gte: d30 } } }),
-      prisma.article.count({ where: { status: ArticleStatus.UNDER_REVIEW, createdAt: { gte: d60, lt: d30 } } }),
+      prisma.article.count({ where: { status: ArticleStatus.ARCHIVED } }),
 
-      prisma.socialPost.count({ where: { status: JobStatus.SUCCEEDED } }),
-      prisma.socialPost.count({ where: { status: JobStatus.SUCCEEDED, publishedAt: { gte: d30 } } }),
-      prisma.socialPost.count({ where: { status: JobStatus.SUCCEEDED, publishedAt: { gte: d60, lt: d30 } } }),
-
-      prisma.shortVideoJob.count(),
-      prisma.shortVideoJob.count({ where: { createdAt: { gte: d30 } } }),
-      prisma.shortVideoJob.count({ where: { createdAt: { gte: d60, lt: d30 } } }),
-
-      prisma.ingestionJob.count({ where: { status: JobStatus.SUCCEEDED } }),
-      prisma.ingestionJob.count({ where: { status: JobStatus.SUCCEEDED, createdAt: { gte: d30 } } }),
-      prisma.ingestionJob.count({ where: { status: JobStatus.SUCCEEDED, createdAt: { gte: d60, lt: d30 } } }),
-
-      prisma.analyticsEvent.aggregate({
-        where: { type: "pageview", createdAt: { gte: d30 } },
-        _sum: { value: true },
-      }),
-      prisma.analyticsEvent.aggregate({
-        where: { type: "pageview", createdAt: { gte: d60, lt: d30 } },
-        _sum: { value: true },
-      }),
-      prisma.analyticsEvent.aggregate({
-        where: { type: "ctr", createdAt: { gte: d30 } },
-        _avg: { value: true },
-      }),
-
-      prisma.notification.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 5,
-      }),
-
-      // 7-day daily traffic series for the mini chart
-      prisma.analyticsEvent.findMany({
-        where: {
-          type: "pageview",
-          createdAt: { gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) },
-        },
-        select: { createdAt: true, value: true },
-        orderBy: { createdAt: "asc" },
-      }),
-
-      // Recent audit log for the activity timeline
       prisma.auditLog.findMany({
         include: { actor: { select: { name: true } } },
         orderBy: { createdAt: "desc" },
@@ -179,34 +104,7 @@ export default async function AdminDashboardPage() {
     scheduledTotal = _scheduledTotal;
     scheduledLast30 = _scheduledLast30;
     scheduledPrev30 = _scheduledPrev30;
-    pendingTotal = _pendingTotal;
-    pendingLast30 = _pendingLast30;
-    pendingPrev30 = _pendingPrev30;
-    socialTotal = _socialTotal;
-    socialLast30 = _socialLast30;
-    socialPrev30 = _socialPrev30;
-    traffic = trafficAgg._sum.value ?? 0;
-    trafficPrev = trafficPrevAgg._sum.value ?? 0;
-    ctr = ctrAgg._avg.value ?? 0;
-    aiTotal = videoJobsTotal + ingestionSucceeded;
-    aiLast30 = videoJobsLast30 + ingestionLast30;
-    aiPrev30 = videoJobsPrev30 + ingestionPrev30;
-    dbNotifications = notifications;
-
-    // Build 7-day daily traffic series from AnalyticsEvent rows
-    const byDay: Record<string, number> = {};
-    for (const ev of recentPageviews) {
-      const key = ev.createdAt.toISOString().slice(0, 10);
-      byDay[key] = (byDay[key] ?? 0) + ev.value;
-    }
-    trafficSeriesData = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(now.getTime() - (6 - i) * 24 * 60 * 60 * 1000);
-      return {
-        label: d.toLocaleDateString("en-US", { weekday: "short" }),
-        value: Math.round(byDay[d.toISOString().slice(0, 10)] ?? 0),
-      };
-    });
-
+    archivedTotal = _archivedTotal;
     liveActivityEvents = recentAuditLogs.map(auditToActivity);
   } catch {
     dbError = true;
@@ -214,129 +112,101 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-        {dbError && (
-          <div
-            className="rounded-lg px-4 py-3 text-sm"
+      {dbError && (
+        <div
+          className="rounded-lg px-4 py-3 text-sm"
+          style={{
+            background: "rgba(248,113,113,0.08)",
+            border: "1px solid rgba(248,113,113,0.2)",
+            color: "var(--adm-accent-red)",
+          }}
+        >
+          ⚠ Database connection error — displayed values may not reflect live data.
+        </div>
+      )}
+
+      <section className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
+        <div>
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider"
             style={{
-              background: "rgba(248,113,113,0.08)",
-              border: "1px solid rgba(248,113,113,0.2)",
-              color: "var(--adm-accent-red)",
+              background: "rgba(52,211,153,0.10)",
+              border: "1px solid rgba(52,211,153,0.22)",
+              color: "var(--adm-accent-green)",
             }}
           >
-            ⚠ Database connection error — displayed values may not reflect live data.
-          </div>
-        )}
+            <span className="live-dot" />
+            Live newsroom
+          </span>
+          <h1
+            className="mt-3 text-3xl font-semibold tracking-tight"
+            style={{ color: "var(--adm-text-1)" }}
+          >
+            Dashboard
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6" style={{ color: "var(--adm-text-2)" }}>
+            Content pipeline, editorial velocity, and publish status.
+          </p>
+        </div>
+        <DashboardQuickActions />
+      </section>
 
-        <section className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
-          <div>
-            <span
-              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider"
-              style={{
-                background: "rgba(52,211,153,0.10)",
-                border: "1px solid rgba(52,211,153,0.22)",
-                color: "var(--adm-accent-green)",
-              }}
-            >
-              <span className="live-dot" />
-              Live newsroom
-            </span>
-            <h1
-              className="mt-3 text-3xl font-semibold tracking-tight"
-              style={{ color: "var(--adm-text-1)" }}
-            >
-              Dashboard
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6" style={{ color: "var(--adm-text-2)" }}>
-              Editorial velocity, approvals, distribution health, and audience performance — all in one place.
-            </p>
-          </div>
-          <DashboardQuickActions />
-        </section>
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricCard
+          label="Published"
+          value={formatCount(publishedTotal)}
+          delta={computeDelta(publishedLast30, publishedPrev30)}
+          icon={Newspaper}
+          accent="blue"
+        />
+        <MetricCard
+          label="Drafts"
+          value={formatCount(draftsTotal)}
+          delta={computeDelta(draftsLast30, draftsPrev30)}
+          icon={FileText}
+          accent="purple"
+        />
+        <MetricCard
+          label="Scheduled"
+          value={formatCount(scheduledTotal)}
+          delta={computeDelta(scheduledLast30, scheduledPrev30)}
+          icon={CalendarClock}
+          accent="amber"
+        />
+        <MetricCard
+          label="Archived"
+          value={formatCount(archivedTotal)}
+          delta="—"
+          icon={Archive}
+          accent="red"
+        />
+      </section>
 
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <MetricCard
-            label="Published news"
-            value={formatCount(publishedTotal)}
-            delta={computeDelta(publishedLast30, publishedPrev30)}
-            icon={Newspaper}
-            accent="blue"
-          />
-          <MetricCard
-            label="Drafts"
-            value={formatCount(draftsTotal)}
-            delta={computeDelta(draftsLast30, draftsPrev30)}
-            icon={FileText}
-            accent="purple"
-          />
-          <MetricCard
-            label="Scheduled posts"
-            value={formatCount(scheduledTotal)}
-            delta={computeDelta(scheduledLast30, scheduledPrev30)}
-            icon={CalendarClock}
-            accent="amber"
-          />
-          <MetricCard
-            label="Pending approvals"
-            value={formatCount(pendingTotal)}
-            delta={computeDelta(pendingLast30, pendingPrev30)}
-            icon={CheckCircle2}
-            accent="red"
-          />
-          <MetricCard
-            label="Social posts published"
-            value={formatCount(socialTotal)}
-            delta={computeDelta(socialLast30, socialPrev30)}
-            icon={Megaphone}
-            accent="green"
-          />
-          <MetricCard
-            label="Website traffic"
-            value={traffic === 0 ? "—" : formatCount(Math.round(traffic))}
-            delta={computeDelta(Math.round(traffic), Math.round(trafficPrev))}
-            icon={TrendingUp}
-            accent="blue"
-          />
-          <MetricCard
-            label="Engagement CTR"
-            value={ctr === 0 ? "—" : `${ctr.toFixed(1)}%`}
-            delta="—"
-            icon={MousePointerClick}
-            accent="purple"
-          />
-          <MetricCard
-            label="AI-generated assets"
-            value={formatCount(aiTotal)}
-            delta={computeDelta(aiLast30, aiPrev30)}
-            icon={Bot}
-            accent="ai"
-          />
-        </section>
+      <section className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>Latest editorial actions.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {liveActivityEvents.length > 0 ? (
+              <ActivityTimeline events={liveActivityEvents} />
+            ) : (
+              <p className="text-sm text-zinc-500">No activity recorded yet.</p>
+            )}
+          </CardContent>
+        </Card>
 
-        <section className="grid gap-6 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Latest editorial actions.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {liveActivityEvents.length > 0 ? (
-                <ActivityTimeline events={liveActivityEvents} />
-              ) : (
-                <p className="text-sm text-zinc-500">No activity recorded yet.</p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Content</CardTitle>
-              <CardDescription>Content pipeline with workflow status.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ArticleTable />
-            </CardContent>
-          </Card>
-        </section>
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Content</CardTitle>
+            <CardDescription>Content pipeline with workflow status.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ArticleTable />
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }

@@ -5,7 +5,6 @@ import { requireAdmin } from "@/lib/admin/authz";
 import { prisma } from "@/lib/db/prisma";
 
 export async function GET(request: NextRequest) {
-
   const access = await requireAdmin("media:write");
   if (!access.ok) return access.response;
 
@@ -18,7 +17,6 @@ export async function GET(request: NextRequest) {
     where.OR = [
       { publicId: { contains: q, mode: "insensitive" } },
       { altText: { contains: q, mode: "insensitive" } },
-      { tags: { some: { tag: { name: { contains: q, mode: "insensitive" } } } } },
     ];
   }
 
@@ -27,7 +25,6 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         folder: { select: { name: true } },
-        tags: { include: { tag: true } },
       },
       orderBy: { createdAt: "desc" },
       take: 100,
@@ -44,16 +41,12 @@ export async function GET(request: NextRequest) {
     id: a.id,
     publicId: a.publicId,
     url: a.url,
-    secureUrl: a.secureUrl,
-    resourceType: a.resourceType,
-    format: a.format,
     width: a.width,
     height: a.height,
     bytes: a.bytes,
     altText: a.altText,
     folder: a.folder?.name ?? null,
     folderId: a.folderId,
-    tags: a.tags.map((t) => t.tag.name),
     createdAt: a.createdAt.toISOString(),
   }));
 

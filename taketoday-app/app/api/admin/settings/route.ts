@@ -2,30 +2,12 @@ import { jsonOk } from "@/lib/admin/api";
 import { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/admin/authz";
 import { appConfig } from "@/lib/config/app";
-import { prisma } from "@/lib/db/prisma";
 import { SITE } from "@/lib/site";
 
 export async function GET(_request: NextRequest) {
-
   const access = await requireAdmin("settings:manage");
   if (!access.ok) return access.response;
 
-  const integrations = await prisma.integration.findMany({
-    orderBy: { provider: "asc" },
-  });
-
-  const mappedIntegrations = integrations.map((i) => ({
-    id: i.id,
-    provider: i.provider,
-    name: i.name,
-    enabled: i.enabled,
-    hasConfig: i.config !== null,
-    hasSecret: Boolean(i.secretRef),
-    createdAt: i.createdAt.toISOString(),
-    updatedAt: i.updatedAt.toISOString(),
-  }));
-
-  // Environment-detected capabilities (no DB needed)
   const envCapabilities = {
     gemini: Boolean(appConfig.geminiApiKey),
     openai: Boolean(appConfig.openaiApiKey),
@@ -48,7 +30,7 @@ export async function GET(_request: NextRequest) {
       canonicalBase: appConfig.siteUrl,
     },
     envCapabilities,
-    integrations: mappedIntegrations,
+    integrations: [],
     security: {
       hasSecretKey: Boolean(appConfig.secretKey),
     },

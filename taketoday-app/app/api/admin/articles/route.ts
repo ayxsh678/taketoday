@@ -8,8 +8,6 @@ import { prisma } from "@/lib/db/prisma";
 
 const statusMap: Record<string, ArticleStatus> = {
   draft: ArticleStatus.DRAFT,
-  under_review: ArticleStatus.UNDER_REVIEW,
-  approved: ArticleStatus.APPROVED,
   scheduled: ArticleStatus.SCHEDULED,
   published: ArticleStatus.PUBLISHED,
   archived: ArticleStatus.ARCHIVED,
@@ -23,8 +21,36 @@ function slugifyTag(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export async function GET(req: NextRequest) {
+const articleInclude = {
+  author: true,
+  category: true,
+  tags: { include: { tag: true } },
+} satisfies Prisma.ArticleInclude;
 
+type ArticleWithRelations = Prisma.ArticleGetPayload<{ include: typeof articleInclude }>;
+
+function mapArticle(article: ArticleWithRelations) {
+  return {
+    id: article.id,
+    headline: article.headline,
+    slug: article.slug,
+    excerpt: article.excerpt ?? "",
+    status: article.status.toLowerCase(),
+    category: article.category?.name ?? "Uncategorized",
+    categoryId: article.categoryId ?? null,
+    author: article.author.name,
+    breaking: article.breaking,
+    views: article.views,
+    tags: article.tags.map((t) => t.tag.name),
+    seoTitle: article.seoTitle ?? "",
+    seoDescription: article.seoDescription ?? "",
+    scheduledAt: article.scheduledAt?.toISOString(),
+    publishedAt: article.publishedAt?.toISOString(),
+    updatedAt: article.updatedAt.toISOString(),
+  };
+}
+
+export async function GET(req: NextRequest) {
   const access = await requireAdmin("content:read");
   if (!access.ok) return access.response;
 
@@ -38,7 +64,6 @@ export async function GET(req: NextRequest) {
   if (q) {
     where.OR = [
       { headline: { contains: q, mode: "insensitive" } },
-      { subheadline: { contains: q, mode: "insensitive" } },
       { slug: { contains: q, mode: "insensitive" } },
       { tags: { some: { tag: { name: { contains: q, mode: "insensitive" } } } } },
     ];
@@ -54,11 +79,7 @@ export async function GET(req: NextRequest) {
     const [articles, total] = await Promise.all([
       prisma.article.findMany({
         where,
-        include: {
-          author: true,
-          categories: { include: { category: true } },
-          tags: { include: { tag: true } },
-        },
+        include: articleInclude,
         orderBy: { updatedAt: "desc" },
         skip,
         take: limit,
@@ -66,30 +87,8 @@ export async function GET(req: NextRequest) {
       prisma.article.count({ where }),
     ]);
 
-    const mappedArticles = articles.map((article) => ({
-      id: article.id,
-      headline: article.headline,
-      subheadline: article.subheadline,
-      slug: article.slug,
-      status: article.status.toLowerCase(),
-      category: article.categories[0]?.category.name ?? "Uncategorized",
-      author: article.author.name,
-      priorityScore: article.priorityScore,
-      language: article.language,
-      location: article.location ?? "",
-      breaking: article.breaking,
-      tags: article.tags.map((t) => t.tag.name),
-      seoTitle: article.seoTitle ?? "",
-      seoDescription: article.seoDescription ?? "",
-      sourceLink: article.sourceLink ?? undefined,
-      canonicalUrl: article.canonicalUrl ?? undefined,
-      scheduledAt: article.scheduledAt?.toISOString(),
-      publishedAt: article.publishedAt?.toISOString(),
-      updatedAt: article.updatedAt.toISOString(),
-    }));
-
     return jsonOk({
-      articles: mappedArticles,
+      articles: articles.map(mapArticle),
       total,
       page,
       limit,
@@ -103,7 +102,6 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-
   const access = await requireAdmin("content:write");
   if (!access.ok) return access.response;
 
@@ -116,18 +114,15 @@ export async function POST(req: NextRequest) {
     const newStatus = statusMap[parsed.data.status] ?? ArticleStatus.DRAFT;
 
     const article = await prisma.$transaction(async (tx) => {
-      // 1. Create article
       const created = await tx.article.create({
         data: {
           headline: parsed.data.headline,
-          subheadline: parsed.data.subheadline,
           slug: parsed.data.slug,
           body: parsed.data.body,
-          priorityScore: parsed.data.priorityScore,
+          excerpt: parsed.data.excerpt ?? null,
           breaking: parsed.data.breaking,
           status: newStatus,
-          language: parsed.data.language,
-          location: parsed.data.location ?? null,
+          categoryId: parsed.data.categoryId ?? null,
           seoTitle: parsed.data.seoTitle ?? null,
           seoDescription: parsed.data.seoDescription ?? null,
           scheduledAt: parsed.data.scheduledAt ? new Date(parsed.data.scheduledAt) : null,
@@ -136,14 +131,6 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // 2. Link category if provided
-      if (parsed.data.categoryId) {
-        await tx.articleCategory.create({
-          data: { articleId: created.id, categoryId: parsed.data.categoryId },
-        });
-      }
-
-      // 3. Upsert and link tags
       for (const tagName of parsed.data.tags) {
         const slug = slugifyTag(tagName);
         if (!slug) continue;
@@ -160,14 +147,9 @@ export async function POST(req: NextRequest) {
       return created;
     });
 
-    // Reload with relations for the response
     const full = await prisma.article.findUniqueOrThrow({
       where: { id: article.id },
-      include: {
-        author: true,
-        categories: { include: { category: true } },
-        tags: { include: { tag: true } },
-      },
+      include: articleInclude,
     });
 
     await logAuditAction({
@@ -177,29 +159,7 @@ export async function POST(req: NextRequest) {
       after: full,
     });
 
-    return jsonOk(
-      {
-        article: {
-          id: full.id,
-          headline: full.headline,
-          subheadline: full.subheadline,
-          slug: full.slug,
-          status: full.status.toLowerCase(),
-          category: full.categories[0]?.category.name ?? "Uncategorized",
-          author: full.author.name,
-          priorityScore: full.priorityScore,
-          language: full.language,
-          location: full.location ?? "",
-          breaking: full.breaking,
-          tags: full.tags.map((t) => t.tag.name),
-          seoTitle: full.seoTitle ?? "",
-          seoDescription: full.seoDescription ?? "",
-          publishedAt: full.publishedAt?.toISOString(),
-          updatedAt: full.updatedAt.toISOString(),
-        },
-      },
-      { status: 201 },
-    );
+    return jsonOk({ article: mapArticle(full) }, { status: 201 });
   } catch (error) {
     const prismaError = error as { code?: string };
     if (prismaError.code === "P2002") return jsonError("An article with this slug already exists.", 409);

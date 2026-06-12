@@ -32,7 +32,6 @@ export async function logAuditAction({
          entityId,
          before: before != null ? JSON.stringify(before) : Prisma.JsonNull,
          after: after != null ? JSON.stringify(after) : Prisma.JsonNull,
-         ipAddress: "", // In a real app, you'd extract this from request headers
        },
      });
   } catch (error) {
