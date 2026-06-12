@@ -21,40 +21,23 @@ export type AdminPermission =
   | "users:manage"
   | "settings:manage";
 
-export type WorkflowStatus =
-  | "draft"
-  | "under_review"
-  | "approved"
-  | "scheduled"
-  | "published"
-  | "archived";
-
-export type Platform =
-  | "X"
-  | "Instagram"
-  | "WhatsApp"
-  | "Telegram"
-  | "Facebook"
-  | "LinkedIn"
-  | "YouTube";
+export type WorkflowStatus = "draft" | "scheduled" | "published" | "archived";
 
 export type AdminArticle = Readonly<{
   id: string;
   headline: string;
-  subheadline: string;
   slug: string;
+  body?: string;
+  excerpt: string;
   status: WorkflowStatus;
   category: string;
+  categoryId: string | null;
   author: string;
-  priorityScore: number;
-  language: string;
-  location: string;
   breaking: boolean;
+  views: number;
   tags: string[];
   seoTitle: string;
   seoDescription: string;
-  sourceLink?: string;
-  canonicalUrl?: string;
   scheduledAt?: string;
   publishedAt?: string;
   updatedAt: string;
