@@ -18,14 +18,12 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       name,
       slug: explicitSlug,
       description,
-      icon,
       displayOrder,
       isActive,
     } = body as {
       name?: string;
       slug?: string;
       description?: string | null;
-      icon?: string | null;
       displayOrder?: number;
       isActive?: boolean;
     };
@@ -34,7 +32,6 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
       name?: string;
       slug?: string;
       description?: string | null;
-      icon?: string | null;
       displayOrder?: number;
       isActive?: boolean;
     } = {};
@@ -47,7 +44,6 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
         name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
     }
     if (description !== undefined) updateData.description = description;
-    if (icon !== undefined) updateData.icon = icon;
     if (displayOrder !== undefined) updateData.displayOrder = displayOrder;
     if (isActive !== undefined) updateData.isActive = isActive;
 

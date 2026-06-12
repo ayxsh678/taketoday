@@ -63,13 +63,18 @@ function getUpstashLimiter(maxReqs: number): Ratelimit | null {
 // ─── In-memory fallback (dev / no Redis) ─────────────────────────────────────
 
 const memoryBuckets = new Map<string, number[]>();
+let warnedNoRedis = false;
 
 function inMemoryCheck(key: string, maxReqs: number): boolean {
   const now = Date.now();
   const window = 60_000;
   const prev = (memoryBuckets.get(key) ?? []).filter((t) => now - t < window);
-  if (prev.length >= maxReqs) return true; // rate limited
+  if (prev.length >= maxReqs) return true;
   prev.push(now);
+  if (prev.length === 1) {
+    // First hit for this key in this window — schedule eviction after window expires
+    setTimeout(() => memoryBuckets.delete(key), window).unref?.();
+  }
   memoryBuckets.set(key, prev);
   return false;
 }
@@ -92,8 +97,8 @@ export async function checkRateLimit(
     return !success;
   }
 
-  // No Redis — warn once in production, fall back to in-memory
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV === "production" && !warnedNoRedis) {
+    warnedNoRedis = true;
     console.warn(
       "[rate-limit] UPSTASH_REDIS_REST_URL not configured — rate limiting is in-memory only (not shared across instances). Set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN to enforce limits.",
     );

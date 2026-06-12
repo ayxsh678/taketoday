@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/admin/authz";
 import { prisma } from "@/lib/db/prisma";
 
 export async function GET(request: NextRequest) {
-  const access = await requireAdmin("media:write");
+  const access = await requireAdmin("content:read");
   if (!access.ok) return access.response;
 
   const folderId = request.nextUrl.searchParams.get("folderId");
