@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { captureApiError, jsonError, jsonOk } from "@/lib/admin/api";
 import { requireAdmin } from "@/lib/admin/authz";
 import { appConfig } from "@/lib/config/app";
 import { prisma } from "@/lib/db/prisma";
+import { generateJSON } from "@/lib/ai/studio-generate";
 
 const schema = z.object({
   topic: z.string().min(3),
@@ -13,13 +13,13 @@ const schema = z.object({
   slideCount: z.number().int().min(3).max(10),
 });
 
-const SYSTEM = `You are a social media content strategist. Return ONLY valid JSON with no markdown, no code fences.`;
-
 export async function POST(req: NextRequest) {
   const access = await requireAdmin("ai:run");
   if (!access.ok) return access.response;
 
-  if (!appConfig.geminiApiKey) return jsonError("GEMINI_API_KEY not configured", 503);
+  if (!appConfig.geminiApiKey && !appConfig.openaiApiKey) {
+    return jsonError("No AI provider configured. Set GEMINI_API_KEY or OPENAI_API_KEY.", 503);
+  }
 
   const raw: unknown = await req.json().catch(() => null);
   const parsed = schema.safeParse(raw);
@@ -51,15 +51,11 @@ Return exactly this JSON structure (${slideCount} slides):
 }`;
 
   try {
-    const genAI = new GoogleGenerativeAI(appConfig.geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const result = await model.generateContent([SYSTEM, prompt]);
-    const text = result.response.text().trim();
+    const { text } = await generateJSON(prompt);
 
     let payload: unknown;
     try {
-      const jsonStr = text.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
-      payload = JSON.parse(jsonStr);
+      payload = JSON.parse(text);
     } catch {
       return jsonError("AI returned malformed JSON", 502);
     }
@@ -81,6 +77,9 @@ Return exactly this JSON structure (${slideCount} slides):
     return jsonOk({ draftId: draft.id, ...payloadObj });
   } catch (error) {
     const msg = error instanceof Error ? error.message : "AI generation failed";
-    return captureApiError(error, { topic, tone, slideCount, detail: msg });
+    if (msg.includes("quota") || msg.includes("429")) {
+      return jsonError("AI quota exceeded. Add billing at ai.google.dev or set OPENAI_API_KEY as fallback.", 429);
+    }
+    return captureApiError(error, { topic, tone, slideCount });
   }
 }
