@@ -39,86 +39,54 @@ describe("GET /api/cron/publish [BUG-12]", () => {
     expect(body.published).toBe(0);
   });
 
-  it("publishLogs appends new entry to existing array (not overwrite) [BUG-12]", async () => {
-    const existingLog = { published: "2024-01-01T00:00:00.000Z", trigger: "scheduled_cron" };
+  it("publishes due articles via updateMany with PUBLISHED status", async () => {
     vi.mocked(prisma.article.findMany).mockResolvedValue([
       {
         id: "art-1",
         headline: "Test Article",
         slug: "test-article",
         scheduledAt: new Date("2024-01-02T00:00:00Z"),
-        publishLogs: [existingLog],
       },
     ] as never);
     vi.mocked(prisma.article.updateMany).mockResolvedValue({ count: 1 });
-    vi.mocked(prisma.article.update).mockResolvedValue({} as never);
 
     await GET(makeRequest());
 
-    expect(prisma.article.update).toHaveBeenCalledWith(
+    expect(prisma.article.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: "art-1" },
+        where: expect.objectContaining({ id: { in: ["art-1"] } }),
         data: expect.objectContaining({
-          publishLogs: expect.arrayContaining([
-            existingLog,
-            expect.objectContaining({ trigger: "scheduled_cron" }),
-          ]),
+          status: "PUBLISHED",
+          publishedAt: expect.any(Date),
         }),
       }),
     );
-
-    const updateCall = vi.mocked(prisma.article.update).mock.calls[0][0];
-    const logs = (updateCall.data as { publishLogs: unknown[] }).publishLogs;
-    expect(logs).toHaveLength(2);
   });
 
-  it("publishLogs coerces legacy single-object format to array before appending", async () => {
-    const legacyEntry = { published: "2024-01-01T00:00:00.000Z", trigger: "scheduled_cron" };
+  it("includes published article ids and slugs in response", async () => {
     vi.mocked(prisma.article.findMany).mockResolvedValue([
       {
         id: "art-2",
-        headline: "Legacy Article",
-        slug: "legacy-article",
-        scheduledAt: new Date("2024-01-02T00:00:00Z"),
-        publishLogs: legacyEntry, // single object, not array
+        headline: "Article Two",
+        slug: "article-two",
+        scheduledAt: new Date(),
       },
     ] as never);
     vi.mocked(prisma.article.updateMany).mockResolvedValue({ count: 1 });
-    vi.mocked(prisma.article.update).mockResolvedValue({} as never);
 
-    await GET(makeRequest());
+    const res = await GET(makeRequest());
+    const body = await res.json();
 
-    const updateCall = vi.mocked(prisma.article.update).mock.calls[0][0];
-    const logs = (updateCall.data as { publishLogs: unknown[] }).publishLogs;
-    expect(Array.isArray(logs)).toBe(true);
-    expect(logs).toHaveLength(2);
-    expect(logs[0]).toEqual(legacyEntry);
-  });
-
-  it("publishLogs starts as single-entry array when previously empty/null", async () => {
-    vi.mocked(prisma.article.findMany).mockResolvedValue([
-      {
-        id: "art-3",
-        headline: "New Article",
-        slug: "new-article",
-        scheduledAt: new Date("2024-01-02T00:00:00Z"),
-        publishLogs: null,
-      },
-    ] as never);
-    vi.mocked(prisma.article.updateMany).mockResolvedValue({ count: 1 });
-    vi.mocked(prisma.article.update).mockResolvedValue({} as never);
-
-    await GET(makeRequest());
-
-    const updateCall = vi.mocked(prisma.article.update).mock.calls[0][0];
-    const logs = (updateCall.data as { publishLogs: unknown[] }).publishLogs;
-    expect(Array.isArray(logs)).toBe(true);
-    expect(logs).toHaveLength(1);
-    expect(logs[0]).toMatchObject({ trigger: "scheduled_cron" });
+    expect(body.ok).toBe(true);
+    expect(body.published).toBe(1);
+    expect(body.articles).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "art-2", slug: "article-two" }),
+      ]),
+    );
   });
 
   it("skips articles with future scheduledAt (not returned by query)", async () => {
-    // Prisma query filters scheduledAt ≤ now — this tests that route trusts the query
     vi.mocked(prisma.article.findMany).mockResolvedValue([]);
 
     const res = await GET(makeRequest());
@@ -135,11 +103,9 @@ describe("GET /api/cron/publish [BUG-12]", () => {
         headline: "Scheduled Article",
         slug: "scheduled-article",
         scheduledAt: new Date(),
-        publishLogs: [],
       },
     ] as never);
     vi.mocked(prisma.article.updateMany).mockResolvedValue({ count: 1 });
-    vi.mocked(prisma.article.update).mockResolvedValue({} as never);
 
     await GET(makeRequest());
 

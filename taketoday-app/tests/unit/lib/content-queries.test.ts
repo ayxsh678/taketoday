@@ -8,36 +8,29 @@ import {
   getFeaturedArticles,
 } from "@/lib/content/queries";
 
-// Minimal DB row that satisfies the mapper
+// Minimal DB row matching the current simplified CMS schema.
+// Fields removed in 20260613000000_simplify_to_cms_schema (subheadline,
+// categories many-to-many, quickTake, whyItMatters, takeaways, format,
+// region, priorityScore) are not present — toArticleDoc fills defaults.
 function makeRow(overrides: Partial<{
   slug: string;
   headline: string;
-  subheadline: string;
+  excerpt: string | null;
   body: string;
   publishedAt: Date | null;
   updatedAt: Date;
-  quickTake: string | null;
-  whyItMatters: string | null;
-  takeaways: string[];
-  format: string;
-  region: string;
+  category: { name: string } | null;
   author: { name: string };
-  categories: Array<{ category: { name: string } }>;
 }> = {}) {
   return {
     slug: "test-slug",
     headline: "Test Headline",
-    subheadline: "Test deck",
+    excerpt: "Test deck",
     body: "Body text with some words here.",
     publishedAt: new Date("2026-01-01T00:00:00Z"),
     updatedAt: new Date("2026-01-02T00:00:00Z"),
-    quickTake: "Quick take text",
-    whyItMatters: "Why it matters text",
-    takeaways: ["Takeaway 1", "Takeaway 2", "Takeaway 3"],
-    format: "DeepDive",
-    region: "GLOBAL",
+    category: { name: "AI" },
     author: { name: "TakeToday Newsroom" },
-    categories: [{ category: { name: "AI" } }],
     ...overrides,
   };
 }
@@ -68,35 +61,34 @@ describe("getAllArticles [BUG-01 regression]", () => {
     expect(articles).toHaveLength(1);
     const a = articles[0];
     expect(a.slug).toBe("test-slug");
-    expect(a.title).toBe("Test Headline");        // headline → title
-    expect(a.deck).toBe("Test deck");              // subheadline → deck
-    expect(a.category).toBe("AI");                 // from categories relation
-    expect(a.format).toBe("DeepDive");
-    expect(a.region).toBe("GLOBAL");
+    expect(a.title).toBe("Test Headline");         // headline → title
+    expect(a.deck).toBe("Test deck");               // excerpt → deck
+    expect(a.category).toBe("AI");                  // category.name
+    expect(a.format).toBe("article");               // hardcoded default
+    expect(a.region).toBe("GLOBAL");                // hardcoded default
     expect(a.author).toEqual({ name: "TakeToday Newsroom", type: "Organization" });
-    expect(a.quickTake).toBe("Quick take text");
-    expect(a.whyItMatters).toBe("Why it matters text");
-    expect(a.takeaways).toEqual(["Takeaway 1", "Takeaway 2", "Takeaway 3"]);
+    expect(a.quickTake).toBe("");                   // not in schema — default ""
+    expect(a.whyItMatters).toBe("");                // not in schema — default ""
+    expect(a.takeaways).toEqual([]);                // not in schema — default []
     expect(a.body).toEqual({ raw: "Body text with some words here." });
     expect(a.publishedAt).toBe("2026-01-01T00:00:00.000Z");
     expect(a.readTime).toMatch(/\d+ min read/);
   });
 
-  it("defaults category to AI when no categories linked", async () => {
-    const row = makeRow({ categories: [] });
+  it("defaults category to AI when no category linked", async () => {
+    const row = makeRow({ category: null });
     vi.mocked(prisma.article.findMany).mockResolvedValueOnce([row] as never);
 
     const articles = await getAllArticles();
     expect(articles[0].category).toBe("AI");
   });
 
-  it("defaults quickTake and whyItMatters to empty string when null", async () => {
-    const row = makeRow({ quickTake: null, whyItMatters: null });
+  it("defaults deck to empty string when excerpt is null", async () => {
+    const row = makeRow({ excerpt: null });
     vi.mocked(prisma.article.findMany).mockResolvedValueOnce([row] as never);
 
     const articles = await getAllArticles();
-    expect(articles[0].quickTake).toBe("");
-    expect(articles[0].whyItMatters).toBe("");
+    expect(articles[0].deck).toBe("");
   });
 });
 
@@ -118,7 +110,6 @@ describe("getArticleBySlug [BUG-01 regression]", () => {
   });
 
   it("returns undefined for ARCHIVED/DRAFT (not PUBLISHED) — 404 path", async () => {
-    // findFirst returns null because the WHERE clause filters by PUBLISHED
     vi.mocked(prisma.article.findFirst).mockResolvedValueOnce(null);
 
     const result = await getArticleBySlug("archived-slug");
@@ -139,7 +130,6 @@ describe("getArticleBySlug [BUG-01 regression]", () => {
 
 describe("readTime computation", () => {
   it("computes readTime from word count (200 wpm)", async () => {
-    // 400 words → 2 min
     const body = Array.from({ length: 400 }, (_, i) => `word${i}`).join(" ");
     const row = makeRow({ body });
     vi.mocked(prisma.article.findMany).mockResolvedValueOnce([row] as never);
@@ -158,14 +148,14 @@ describe("readTime computation", () => {
 });
 
 describe("getFeaturedArticles", () => {
-  it("orders by priorityScore desc then publishedAt desc", async () => {
+  it("orders by publishedAt desc and respects take limit", async () => {
     vi.mocked(prisma.article.findMany).mockResolvedValueOnce([]);
 
     await getFeaturedArticles(4);
 
     expect(prisma.article.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        orderBy: [{ priorityScore: "desc" }, { publishedAt: "desc" }],
+        orderBy: { publishedAt: "desc" },
         take: 4,
       })
     );
@@ -173,7 +163,7 @@ describe("getFeaturedArticles", () => {
 });
 
 describe("getArticlesByCategory", () => {
-  it("filters by category name case-insensitively", async () => {
+  it("filters by category name case-insensitively via direct relation", async () => {
     vi.mocked(prisma.article.findMany).mockResolvedValueOnce([]);
 
     await getArticlesByCategory("AI");
@@ -181,12 +171,9 @@ describe("getArticlesByCategory", () => {
     expect(prisma.article.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          categories: {
-            some: {
-              category: {
-                name: { equals: "AI", mode: "insensitive" },
-              },
-            },
+          status: ArticleStatus.PUBLISHED,
+          category: {
+            name: { equals: "AI", mode: "insensitive" },
           },
         }),
       })
