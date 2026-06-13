@@ -2,16 +2,88 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
-import { ChevronLeft, ChevronRight, Download, Image, RefreshCw, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, ImageIcon, RefreshCw, Search, Send, X } from "lucide-react";
 
 type Slide = { headline: string; body: string; cta: string };
 type Draft = { draftId: string; slides: Slide[]; hashtags: string[]; caption: string };
 type Article = { id: string; headline: string; featuredImage?: { url: string } | null };
+type MediaAsset = { id: string; url: string; altText: string | null; width: number | null; height: number | null; publicId: string };
 
 const TONES = ["Breaking", "Explainer", "Opinion", "Listicle"] as const;
 
+// ─── Media picker modal ────────────────────────────────────────────────────
+function MediaPickerModal({ onSelect, onClose }: { onSelect: (url: string) => void; onClose: () => void }) {
+  const [assets, setAssets] = useState<MediaAsset[]>([]);
+  const [q, setQ] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    const url = `/api/admin/media${q ? `?q=${encodeURIComponent(q)}` : ""}`;
+    fetch(url)
+      .then((r) => r.json())
+      .then((d: { data?: { assets: MediaAsset[] } }) => setAssets(d.data?.assets ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [q]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="bg-card border rounded-xl shadow-2xl w-full max-w-3xl flex flex-col" style={{ maxHeight: "80vh" }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
+          <h2 className="font-semibold">Media Library</h2>
+          <button onClick={onClose} className="rounded-md p-1 hover:bg-muted">
+            <X className="size-4" />
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="px-5 py-3 border-b shrink-0">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search by filename or alt text…"
+              className="w-full rounded-md border bg-background pl-9 pr-3 py-2 text-sm"
+            />
+          </div>
+        </div>
+
+        {/* Grid */}
+        <div className="overflow-y-auto p-4 flex-1">
+          {loading ? (
+            <p className="text-sm text-muted-foreground text-center py-8">Loading…</p>
+          ) : assets.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No assets found.</p>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+              {assets.map((asset) => (
+                <button
+                  key={asset.id}
+                  onClick={() => { onSelect(asset.url); onClose(); }}
+                  className="group relative aspect-square rounded-lg overflow-hidden border hover:border-primary transition-colors bg-muted"
+                  title={asset.altText ?? asset.publicId}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={asset.url}
+                    alt={asset.altText ?? ""}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Editorial slide template ──────────────────────────────────────────────
-// Matches the @taketoday.co design: dark bg, full-bleed photo, serif headline
 type SlideTemplateProps = {
   slide: Slide;
   index: number;
@@ -34,7 +106,6 @@ function SlideTemplate({ slide, index, total, imageUrl, innerRef }: SlideTemplat
         flexShrink: 0,
       }}
     >
-      {/* Full-bleed background photo */}
       {imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -52,7 +123,6 @@ function SlideTemplate({ slide, index, total, imageUrl, innerRef }: SlideTemplat
         />
       ) : null}
 
-      {/* Dark gradient: opaque at top, transparent toward bottom */}
       <div
         style={{
           position: "absolute",
@@ -64,16 +134,7 @@ function SlideTemplate({ slide, index, total, imageUrl, innerRef }: SlideTemplat
       />
 
       {/* Left accent bar */}
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 5,
-          backgroundColor: "#ffffff",
-        }}
-      />
+      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 5, backgroundColor: "#ffffff" }} />
 
       {/* Content */}
       <div
@@ -86,7 +147,6 @@ function SlideTemplate({ slide, index, total, imageUrl, innerRef }: SlideTemplat
           justifyContent: "flex-start",
         }}
       >
-        {/* Headline */}
         <h2
           style={{
             margin: 0,
@@ -103,17 +163,8 @@ function SlideTemplate({ slide, index, total, imageUrl, innerRef }: SlideTemplat
           {slide.headline}
         </h2>
 
-        {/* Divider */}
-        <div
-          style={{
-            height: 1,
-            backgroundColor: "rgba(255,255,255,0.35)",
-            margin: "14px 0",
-            flexShrink: 0,
-          }}
-        />
+        <div style={{ height: 1, backgroundColor: "rgba(255,255,255,0.35)", margin: "14px 0", flexShrink: 0 }} />
 
-        {/* Body */}
         <p
           style={{
             margin: 0,
@@ -128,7 +179,6 @@ function SlideTemplate({ slide, index, total, imageUrl, innerRef }: SlideTemplat
         </p>
       </div>
 
-      {/* Slide counter */}
       <div
         style={{
           position: "absolute",
@@ -143,7 +193,6 @@ function SlideTemplate({ slide, index, total, imageUrl, innerRef }: SlideTemplat
         {index + 1} / {total}
       </div>
 
-      {/* Watermark */}
       <div
         style={{
           position: "absolute",
@@ -163,12 +212,7 @@ function SlideTemplate({ slide, index, total, imageUrl, innerRef }: SlideTemplat
 }
 
 // ─── Channel selector modal ────────────────────────────────────────────────
-type ChannelModalProps = {
-  draft: Draft;
-  onClose: () => void;
-};
-
-function ChannelModal({ draft, onClose }: ChannelModalProps) {
+function ChannelModal({ draft, onClose }: { draft: Draft; onClose: () => void }) {
   const [platforms, setPlatforms] = useState<Set<string>>(new Set(["INSTAGRAM"]));
   const [scheduledAt, setScheduledAt] = useState("");
   const [loading, setLoading] = useState(false);
@@ -183,17 +227,16 @@ function ChannelModal({ draft, onClose }: ChannelModalProps) {
 
   const handleSubmit = async () => {
     setLoading(true);
-    const body = {
-      draftId: draft.draftId,
-      platforms: [...platforms],
-      content: `${draft.caption}\n\n${draft.hashtags.join(" ")}`,
-      mediaUrls: [],
-      ...(scheduledAt ? { scheduledAt: new Date(scheduledAt).toISOString() } : {}),
-    };
     const resp = await fetch("/api/studio/post", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        draftId: draft.draftId,
+        platforms: [...platforms],
+        content: `${draft.caption}\n\n${draft.hashtags.join(" ")}`,
+        mediaUrls: [],
+        ...(scheduledAt ? { scheduledAt: new Date(scheduledAt).toISOString() } : {}),
+      }),
     });
     const json = (await resp.json()) as { ok: boolean };
     setResult(json.ok ? "Posted successfully!" : "Something went wrong.");
@@ -245,6 +288,9 @@ function ChannelModal({ draft, onClose }: ChannelModalProps) {
 }
 
 // ─── Main page ─────────────────────────────────────────────────────────────
+// pickerTarget: null = closed, "shared" = shared image, number = slide index override
+type PickerTarget = null | "shared" | number;
+
 export default function CarouselPage() {
   const [topic, setTopic] = useState("");
   const [articleId, setArticleId] = useState("");
@@ -257,7 +303,8 @@ export default function CarouselPage() {
   const [error, setError] = useState("");
   const [draft, setDraft] = useState<Draft | null>(null);
   const [editedSlides, setEditedSlides] = useState<Slide[]>([]);
-  const [showModal, setShowModal] = useState(false);
+  const [showChannelModal, setShowChannelModal] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
   const [articles, setArticles] = useState<Article[]>([]);
 
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, align: "start" });
@@ -270,12 +317,23 @@ export default function CarouselPage() {
       .catch(() => {});
   }, []);
 
-  // Auto-fill shared image from selected article
   useEffect(() => {
     if (!articleId) return;
     const a = articles.find((x) => x.id === articleId);
     if (a?.featuredImage?.url) setSharedImageUrl(a.featuredImage.url);
   }, [articleId, articles]);
+
+  const handlePickerSelect = (url: string) => {
+    if (pickerTarget === "shared") {
+      setSharedImageUrl(url);
+    } else if (typeof pickerTarget === "number") {
+      setSlideImages((prev) => {
+        const next = [...prev];
+        next[pickerTarget] = url;
+        return next;
+      });
+    }
+  };
 
   const handleGenerate = async () => {
     if (!topic.trim()) return;
@@ -315,14 +373,13 @@ export default function CarouselPage() {
       const html2canvas = (await import("html2canvas")).default;
       const JSZip = (await import("jszip")).default;
       const zip = new JSZip();
-
       for (let i = 0; i < slideRefs.current.length; i++) {
         const el = slideRefs.current[i];
         if (!el) continue;
         const canvas = await html2canvas(el, {
           useCORS: true,
           allowTaint: true,
-          scale: 3, // renders at 3× → 1080×1080
+          scale: 3,
           backgroundColor: "#0d0d0d",
           logging: false,
         });
@@ -331,7 +388,6 @@ export default function CarouselPage() {
         );
         zip.file(`slide-${String(i + 1).padStart(2, "0")}.png`, blob);
       }
-
       const content = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(content);
       const a = document.createElement("a");
@@ -373,9 +429,7 @@ export default function CarouselPage() {
               className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
             >
               <option value="">None</option>
-              {articles.map((a) => (
-                <option key={a.id} value={a.id}>{a.headline}</option>
-              ))}
+              {articles.map((a) => <option key={a.id} value={a.id}>{a.headline}</option>)}
             </select>
           </div>
           <div>
@@ -388,17 +442,42 @@ export default function CarouselPage() {
               {TONES.map((t) => <option key={t}>{t}</option>)}
             </select>
           </div>
-          <div>
+
+          {/* Shared background image picker */}
+          <div className="sm:col-span-2">
             <label className="text-xs font-medium text-muted-foreground">
-              Background Photo URL <span className="text-muted-foreground/60">(applies to all slides)</span>
+              Background Photo <span className="text-muted-foreground/60">(applies to all slides)</span>
             </label>
-            <input
-              value={sharedImageUrl}
-              onChange={(e) => setSharedImageUrl(e.target.value)}
-              placeholder="https://res.cloudinary.com/..."
-              className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
-            />
+            <div className="mt-1 flex gap-2">
+              {sharedImageUrl ? (
+                <div className="relative size-10 rounded-md overflow-hidden border shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={sharedImageUrl} alt="" className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => setSharedImageUrl("")}
+                    className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity"
+                  >
+                    <X className="size-3 text-white" />
+                  </button>
+                </div>
+              ) : null}
+              <button
+                onClick={() => setPickerTarget("shared")}
+                className="flex items-center gap-2 flex-1 rounded-md border bg-background px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors text-left"
+              >
+                <ImageIcon className="size-4 shrink-0" />
+                {sharedImageUrl ? "Change photo…" : "Pick from media library…"}
+              </button>
+              {sharedImageUrl ? null : (
+                <input
+                  placeholder="or paste URL"
+                  onChange={(e) => setSharedImageUrl(e.target.value)}
+                  className="rounded-md border bg-background px-3 py-2 text-sm w-48 shrink-0"
+                />
+              )}
+            </div>
           </div>
+
           <div>
             <label className="text-xs font-medium text-muted-foreground">Slide Count ({slideCount})</label>
             <input
@@ -439,7 +518,7 @@ export default function CarouselPage() {
                 {exporting ? "Exporting…" : "Download ZIP (1080px)"}
               </button>
               <button
-                onClick={() => setShowModal(true)}
+                onClick={() => setShowChannelModal(true)}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm"
               >
                 <Send className="size-4" />
@@ -448,13 +527,11 @@ export default function CarouselPage() {
             </div>
           </div>
 
-          {/* Embla carousel */}
           <div className="relative">
             <div className="overflow-hidden rounded-xl" ref={emblaRef}>
               <div className="flex gap-4 p-1">
                 {editedSlides.map((slide, i) => (
                   <div key={i} className="flex-none">
-                    {/* The actual template — this is what html2canvas captures */}
                     <SlideTemplate
                       slide={slide}
                       index={i}
@@ -463,8 +540,8 @@ export default function CarouselPage() {
                       innerRef={(el) => { slideRefs.current[i] = el; }}
                     />
 
-                    {/* Editors below each slide */}
-                    <div className="mt-3 space-y-2 w-[360px]">
+                    {/* Per-slide editors */}
+                    <div className="mt-3 space-y-2 w-90">
                       <input
                         value={slide.headline}
                         onChange={(e) => updateSlide(i, "headline", e.target.value)}
@@ -478,20 +555,28 @@ export default function CarouselPage() {
                         className="w-full text-xs rounded-md border bg-background px-2 py-1.5 resize-none"
                         placeholder="Body copy"
                       />
+
+                      {/* Per-slide image picker */}
                       <div className="flex gap-2 items-center">
-                        <Image className="size-3 text-muted-foreground shrink-0" />
-                        <input
-                          value={slideImages[i] ?? ""}
-                          onChange={(e) => {
-                            setSlideImages((prev) => {
-                              const next = [...prev];
-                              next[i] = e.target.value;
-                              return next;
-                            });
-                          }}
-                          placeholder="Override image URL for this slide…"
-                          className="flex-1 text-xs rounded-md border bg-background px-2 py-1.5"
-                        />
+                        {slideImages[i] ? (
+                          <div className="relative size-8 rounded overflow-hidden border shrink-0">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={slideImages[i]} alt="" className="w-full h-full object-cover" />
+                            <button
+                              onClick={() => setSlideImages((prev) => { const n = [...prev]; n[i] = ""; return n; })}
+                              className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity"
+                            >
+                              <X className="size-2.5 text-white" />
+                            </button>
+                          </div>
+                        ) : null}
+                        <button
+                          onClick={() => setPickerTarget(i)}
+                          className="flex items-center gap-1.5 flex-1 text-xs text-muted-foreground border rounded-md px-2 py-1.5 hover:bg-muted/50 transition-colors text-left"
+                        >
+                          <ImageIcon className="size-3 shrink-0" />
+                          {slideImages[i] ? "Change slide photo…" : "Override slide photo…"}
+                        </button>
                         <button
                           onClick={async () => {
                             setLoading(true);
@@ -510,7 +595,7 @@ export default function CarouselPage() {
                               setLoading(false);
                             }
                           }}
-                          className="flex items-center gap-1 text-xs text-muted-foreground border rounded px-1.5 py-1 whitespace-nowrap"
+                          className="flex items-center gap-1 text-xs text-muted-foreground border rounded-md px-2 py-1.5 whitespace-nowrap hover:bg-muted/50 transition-colors"
                           title="Regenerate this slide"
                         >
                           <RefreshCw className="size-3" /> Regen
@@ -523,13 +608,13 @@ export default function CarouselPage() {
             </div>
             <button
               onClick={() => emblaApi?.scrollPrev()}
-              className="absolute left-0 top-[180px] -translate-x-3 rounded-full border bg-card p-1 shadow z-10"
+              className="absolute left-0 top-45 -translate-x-3 rounded-full border bg-card p-1 shadow z-10"
             >
               <ChevronLeft className="size-4" />
             </button>
             <button
               onClick={() => emblaApi?.scrollNext()}
-              className="absolute right-0 top-[180px] translate-x-3 rounded-full border bg-card p-1 shadow z-10"
+              className="absolute right-0 top-45 translate-x-3 rounded-full border bg-card p-1 shadow z-10"
             >
               <ChevronRight className="size-4" />
             </button>
@@ -553,8 +638,15 @@ export default function CarouselPage() {
         </div>
       )}
 
-      {showModal && draft && (
-        <ChannelModal draft={draft} onClose={() => setShowModal(false)} />
+      {/* Modals */}
+      {pickerTarget !== null && (
+        <MediaPickerModal
+          onSelect={handlePickerSelect}
+          onClose={() => setPickerTarget(null)}
+        />
+      )}
+      {showChannelModal && draft && (
+        <ChannelModal draft={draft} onClose={() => setShowChannelModal(false)} />
       )}
     </div>
   );
