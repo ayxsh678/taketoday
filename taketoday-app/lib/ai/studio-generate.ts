@@ -44,10 +44,20 @@ export async function generateJSON(prompt: string): Promise<{ text: string; prov
       return { text, provider: "gemini" };
     } catch (err) {
       if (!isQuotaError(err)) throw err;
-      // quota hit — fall through to OpenAI
+      console.error("[studio] Gemini quota hit, falling back to OpenAI");
     }
   }
 
-  const text = await generateWithOpenAI(prompt);
-  return { text, provider: "openai" };
+  if (!appConfig.openaiApiKey) {
+    throw new Error("QUOTA_GEMINI: Gemini quota exceeded and no OPENAI_API_KEY configured");
+  }
+
+  try {
+    const text = await generateWithOpenAI(prompt);
+    return { text, provider: "openai" };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[studio] OpenAI fallback failed:", msg);
+    throw new Error(`OPENAI_FAIL: ${msg}`);
+  }
 }

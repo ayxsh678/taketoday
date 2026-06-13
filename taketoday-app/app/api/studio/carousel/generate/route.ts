@@ -77,6 +77,12 @@ Return exactly this JSON structure (${slideCount} slides):
     return jsonOk({ draftId: draft.id, ...payloadObj });
   } catch (error) {
     const msg = error instanceof Error ? error.message : "AI generation failed";
+    if (msg.startsWith("QUOTA_GEMINI:")) {
+      return jsonError("Gemini quota exceeded and OPENAI_API_KEY not set. Add one to .env.local.", 429);
+    }
+    if (msg.startsWith("OPENAI_FAIL:")) {
+      return jsonError(`OpenAI error: ${msg.replace("OPENAI_FAIL: ", "")}`, 502);
+    }
     if (msg.includes("quota") || msg.includes("429")) {
       return jsonError("AI quota exceeded. Add billing at ai.google.dev or set OPENAI_API_KEY as fallback.", 429);
     }
