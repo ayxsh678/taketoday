@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { FileImage, Folder, HardDrive, RefreshCw, Search } from "lucide-react";
+import { FileImage, Folder, HardDrive, RefreshCw, Search, Upload } from "lucide-react";
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -48,9 +48,12 @@ export default function MediaPage() {
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [searchQ, setSearchQ] = useState("");
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function fetchMedia(folderId: string | null, q: string) {
     setLoading(true);
@@ -85,6 +88,27 @@ export default function MediaPage() {
     void fetchMedia(currentFolderId, searchQ);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentFolderId]);
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const resp = await fetch("/api/admin/media", { method: "POST", body: fd });
+      const json = (await resp.json()) as { ok: boolean; error?: string; data: MediaAsset };
+      if (!json.ok) throw new Error(json.error ?? "Upload failed");
+      setAssets((prev) => [json.data, ...prev]);
+      setTotalBytes((prev) => prev + (json.data.bytes ?? 0));
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
 
   // Debounced search
   useEffect(() => {
@@ -142,8 +166,8 @@ export default function MediaPage() {
         </Card>
       </div>
 
-      {/* ── search + refresh ── */}
-      <div className="flex items-center gap-3">
+      {/* ── search + upload + refresh ── */}
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500 pointer-events-none" />
           <Input
@@ -153,6 +177,22 @@ export default function MediaPage() {
             onChange={(e) => setSearchQ(e.target.value)}
           />
         </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,video/*"
+          multiple
+          className="hidden"
+          onChange={handleUpload}
+        />
+        <Button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="shrink-0"
+        >
+          <Upload className="h-4 w-4" />
+          {uploading ? "Uploading…" : "Upload"}
+        </Button>
         <Button
           variant="secondary"
           onClick={() => void fetchMedia(currentFolderId, searchQ)}
@@ -162,6 +202,9 @@ export default function MediaPage() {
           Refresh
         </Button>
       </div>
+      {uploadError && (
+        <p className="text-sm text-red-400">{uploadError}</p>
+      )}
 
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

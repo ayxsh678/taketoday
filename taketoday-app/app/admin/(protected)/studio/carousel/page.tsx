@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
-import { ChevronLeft, ChevronRight, Download, ImageIcon, RefreshCw, Search, Send, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, ImageIcon, RefreshCw, Search, Send, Upload, X } from "lucide-react";
 
 type Slide = { headline: string; body: string; cta: string };
 type Draft = { draftId: string; slides: Slide[]; hashtags: string[]; caption: string };
@@ -16,16 +16,40 @@ function MediaPickerModal({ onSelect, onClose }: { onSelect: (url: string) => vo
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  const fetchAssets = useCallback((query: string) => {
     setLoading(true);
-    const url = `/api/admin/media${q ? `?q=${encodeURIComponent(q)}` : ""}`;
+    const url = `/api/admin/media${query ? `?q=${encodeURIComponent(query)}` : ""}`;
     fetch(url)
       .then((r) => r.json())
       .then((d: { data?: { assets: MediaAsset[] } }) => setAssets(d.data?.assets ?? []))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [q]);
+  }, []);
+
+  useEffect(() => { fetchAssets(q); }, [q, fetchAssets]);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const resp = await fetch("/api/admin/media", { method: "POST", body: fd });
+      const json = (await resp.json()) as { ok: boolean; data: MediaAsset };
+      if (json.ok) {
+        setAssets((prev) => [json.data, ...prev]);
+        onSelect(json.data.url);
+        onClose();
+      }
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
@@ -33,9 +57,20 @@ function MediaPickerModal({ onSelect, onClose }: { onSelect: (url: string) => vo
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
           <h2 className="font-semibold">Media Library</h2>
-          <button onClick={onClose} className="rounded-md p-1 hover:bg-muted">
-            <X className="size-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleUpload} />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-medium disabled:opacity-50"
+            >
+              <Upload className="size-3" />
+              {uploading ? "Uploading…" : "Upload"}
+            </button>
+            <button onClick={onClose} className="rounded-md p-1 hover:bg-muted">
+              <X className="size-4" />
+            </button>
+          </div>
         </div>
 
         {/* Search */}
