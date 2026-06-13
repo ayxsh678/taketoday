@@ -9,15 +9,16 @@ datasource db {
 }
 
 model AdminUser {
-  id        String     @id @default(cuid())
-  name      String
-  email     String     @unique
-  role      AdminRole  @default(EDITOR)
-  image     String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  articles  Article[]
-  auditLogs AuditLog[]
+  id             String          @id @default(cuid())
+  name           String
+  email          String          @unique
+  role           AdminRole       @default(EDITOR)
+  image          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  articles       Article[]
+  auditLogs      AuditLog[]
+  contentDrafts  ContentDraft[]
 }
 
 model Article {
@@ -123,6 +124,37 @@ model AuditLog {
   @@index([actorId])
 }
 
+model ContentDraft {
+  id          String          @id @default(cuid())
+  type        DraftType
+  topic       String
+  payload     Json
+  createdById String?
+  createdAt   DateTime        @default(now())
+  createdBy   AdminUser?      @relation(fields: [createdById], references: [id])
+  posts       ScheduledPost[]
+
+  @@map("content_drafts")
+}
+
+model ScheduledPost {
+  id             String        @id @default(cuid())
+  draftId        String?
+  platform       PostPlatform
+  content        String
+  mediaUrls      String[]      @default([])
+  scheduledAt    DateTime?
+  status         PostStatus    @default(PENDING)
+  platformPostId String?
+  errorMessage   String?
+  postedAt       DateTime?
+  createdAt      DateTime      @default(now())
+  draft          ContentDraft? @relation(fields: [draftId], references: [id])
+
+  @@index([status, scheduledAt])
+  @@map("scheduled_posts")
+}
+
 enum AdminRole {
   ADMIN
   EDITOR
@@ -133,4 +165,22 @@ enum ArticleStatus {
   SCHEDULED
   PUBLISHED
   ARCHIVED
+}
+
+enum DraftType {
+  CAROUSEL
+  REEL_SCRIPT
+}
+
+enum PostPlatform {
+  INSTAGRAM
+  TWITTER
+  LINKEDIN
+  WHATSAPP
+}
+
+enum PostStatus {
+  PENDING
+  POSTED
+  FAILED
 }
