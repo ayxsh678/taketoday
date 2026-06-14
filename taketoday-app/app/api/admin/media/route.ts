@@ -38,18 +38,26 @@ export async function GET(request: NextRequest) {
     prisma.mediaAsset.aggregate({ _sum: { bytes: true } }),
   ]);
 
-  const mappedAssets = assets.map((a) => ({
-    id: a.id,
-    publicId: a.publicId,
-    url: a.url,
-    width: a.width,
-    height: a.height,
-    bytes: a.bytes,
-    altText: a.altText,
-    folder: a.folder?.name ?? null,
-    folderId: a.folderId,
-    createdAt: a.createdAt.toISOString(),
-  }));
+  const mappedAssets = assets.map((a) => {
+    const format = a.publicId.split(".").pop() ?? "";
+    const resourceType = ["mp4", "mov", "webm", "avi"].includes(format) ? "video" : "image";
+    return {
+      id: a.id,
+      publicId: a.publicId,
+      url: a.url,
+      secureUrl: a.url,
+      resourceType,
+      format,
+      width: a.width,
+      height: a.height,
+      bytes: a.bytes,
+      altText: a.altText,
+      folder: a.folder?.name ?? null,
+      folderId: a.folderId,
+      tags: [] as string[],
+      createdAt: a.createdAt.toISOString(),
+    };
+  });
 
   const mappedFolders = folders.map((f) => ({
     id: f.id,
@@ -106,14 +114,20 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    const format = asset.publicId.split(".").pop() ?? "";
+    const resourceType = ["mp4", "mov", "webm", "avi"].includes(format) ? "video" : "image";
     return jsonOk({
       id: asset.id,
-      url: asset.url,
       publicId: asset.publicId,
+      url: asset.url,
+      secureUrl: asset.url,
+      resourceType,
+      format,
       width: asset.width,
       height: asset.height,
       bytes: asset.bytes,
       altText: asset.altText,
+      tags: [],
       createdAt: asset.createdAt.toISOString(),
     }, { status: 201 });
   } catch (error) {
