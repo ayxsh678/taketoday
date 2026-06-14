@@ -21,7 +21,14 @@ export type AdminPermission =
   | "users:manage"
   | "settings:manage";
 
-export type WorkflowStatus = "draft" | "scheduled" | "published" | "archived";
+export type WorkflowStatus =
+  | "draft"
+  | "fact_checking"
+  | "editorial_review"
+  | "ready_to_publish"
+  | "scheduled"
+  | "published"
+  | "archived";
 
 export type AdminArticle = Readonly<{
   id: string;

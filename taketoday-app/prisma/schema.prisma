@@ -41,16 +41,58 @@ model Article {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  author        AdminUser    @relation(fields: [authorId], references: [id])
-  featuredImage MediaAsset?  @relation(fields: [featuredImageId], references: [id])
-  category      Category?    @relation(fields: [categoryId], references: [id])
+  author        AdminUser           @relation(fields: [authorId], references: [id])
+  featuredImage MediaAsset?         @relation(fields: [featuredImageId], references: [id])
+  category      Category?           @relation(fields: [categoryId], references: [id])
   tags          ArticleTag[]
+  verification  ArticleVerification?
+  sources       ArticleSource[]
 
   @@index([status, publishedAt])
   @@index([scheduledAt])
   @@index([categoryId])
   @@index([authorId])
   @@index([createdAt])
+}
+
+model ArticleVerification {
+  id               String    @id @default(cuid())
+  articleId        String    @unique
+
+  // AI-generated fields
+  aiBrief          String?
+  aiClaims         Json?     // [{ text: string, status: "verified"|"unverified"|"disputed"|"needs_review", notes: string }]
+  aiScore          Int?      // 0–100
+  aiGeneratedAt    DateTime?
+  aiModel          String?
+
+  // Editorial decision
+  reviewerId       String?
+  reviewerNotes    String?
+  checklist        Json?     // { sourcesVerified: bool, claimsChecked: bool, legalCleared: bool }
+  decision         String?   // "APPROVED" | "NEEDS_REVISION"
+  decidedAt        DateTime?
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  article          Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+}
+
+model ArticleSource {
+  id          String    @id @default(cuid())
+  articleId   String
+  url         String?
+  title       String?
+  domain      String?
+  note        String?
+  addedById   String?
+
+  createdAt   DateTime  @default(now())
+
+  article     Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
 }
 
 model Category {
@@ -162,6 +204,9 @@ enum AdminRole {
 
 enum ArticleStatus {
   DRAFT
+  FACT_CHECKING
+  EDITORIAL_REVIEW
+  READY_TO_PUBLISH
   SCHEDULED
   PUBLISHED
   ARCHIVED

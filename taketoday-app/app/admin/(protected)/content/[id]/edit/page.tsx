@@ -27,6 +27,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { VerificationPanel } from "@/components/admin/VerificationPanel";
+import { SourcesPanel } from "@/components/admin/SourcesPanel";
 import type { AdminArticle, WorkflowStatus } from "@/lib/admin/types";
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -75,6 +77,9 @@ function ToolbarBtn({
 
 const STATUS_OPTIONS: { value: WorkflowStatus; label: string }[] = [
   { value: "draft", label: "Draft" },
+  { value: "fact_checking", label: "Fact Checking" },
+  { value: "editorial_review", label: "Editorial Review" },
+  { value: "ready_to_publish", label: "Ready to Publish" },
   { value: "scheduled", label: "Scheduled" },
   { value: "published", label: "Published" },
   { value: "archived", label: "Archived" },
@@ -82,6 +87,9 @@ const STATUS_OPTIONS: { value: WorkflowStatus; label: string }[] = [
 
 const statusTone = {
   draft: "neutral",
+  fact_checking: "amber",
+  editorial_review: "blue",
+  ready_to_publish: "violet",
   scheduled: "violet",
   published: "green",
   archived: "red",
@@ -324,16 +332,58 @@ export default function ArticleEditorPage() {
             <Sparkles className="h-3.5 w-3.5" />
             Generate
           </Button>
-          {status !== "published" && (
+          {/* Workflow action — changes based on current status */}
+          {status === "draft" && (
+            <Button
+              variant="secondary"
+              className="h-8 px-3 text-sm"
+              onClick={() => void save("fact_checking")}
+              disabled={saving}
+              title="Send article for AI fact checking"
+            >
+              {saving ? "…" : "Send for Fact Check"}
+            </Button>
+          )}
+          {status === "fact_checking" && (
+            <Button
+              variant="secondary"
+              className="h-8 px-3 text-sm"
+              onClick={() => void save("editorial_review")}
+              disabled={saving}
+            >
+              {saving ? "…" : "Submit for Review"}
+            </Button>
+          )}
+          {status === "editorial_review" && (
+            <>
+              <Button
+                variant="secondary"
+                className="h-8 px-3 text-sm"
+                onClick={() => void save("draft")}
+                disabled={saving}
+                title="Send back to editor for revision"
+              >
+                {saving ? "…" : "Send Back"}
+              </Button>
+              <Button
+                className="h-8 px-3 text-sm"
+                onClick={() => void save("ready_to_publish")}
+                disabled={saving}
+              >
+                {saving ? "…" : "Approve"}
+              </Button>
+            </>
+          )}
+          {status === "ready_to_publish" && (
             <Button
               className="h-8 px-3 text-sm"
-              variant="secondary"
               onClick={() => void save("published")}
               disabled={saving}
             >
               {saving ? "…" : "Publish"}
             </Button>
           )}
+          {(status === "scheduled" || status === "published") && null}
           <Button
             className="h-8 px-3 text-sm"
             onClick={() => void save()}
@@ -565,6 +615,31 @@ export default function ArticleEditorPage() {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* sources */}
+            <div
+              className="border-t pt-5"
+              style={{ borderColor: "var(--adm-border-dim)" }}
+            >
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--adm-text-3)" }}>
+                Sources
+              </p>
+              <SourcesPanel articleId={id} />
+            </div>
+
+            {/* verification */}
+            <div
+              className="border-t pt-5"
+              style={{ borderColor: "var(--adm-border-dim)" }}
+            >
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--adm-text-3)" }}>
+                Fact Check
+              </p>
+              <VerificationPanel
+                articleId={id}
+                onStatusChange={(newStatus) => setStatus(newStatus as WorkflowStatus)}
+              />
             </div>
 
             {/* meta */}

@@ -8,6 +8,9 @@ import { prisma } from "@/lib/db/prisma";
 
 const statusMap: Record<string, ArticleStatus> = {
   draft: ArticleStatus.DRAFT,
+  fact_checking: ArticleStatus.FACT_CHECKING,
+  editorial_review: ArticleStatus.EDITORIAL_REVIEW,
+  ready_to_publish: ArticleStatus.READY_TO_PUBLISH,
   scheduled: ArticleStatus.SCHEDULED,
   published: ArticleStatus.PUBLISHED,
   archived: ArticleStatus.ARCHIVED,

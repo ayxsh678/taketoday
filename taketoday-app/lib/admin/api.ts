@@ -34,10 +34,20 @@ export function captureApiError(
   return jsonError(message, 500);
 }
 
+const articleStatusEnum = z.enum([
+  "draft",
+  "fact_checking",
+  "editorial_review",
+  "ready_to_publish",
+  "scheduled",
+  "published",
+  "archived",
+]);
+
 export const articleMutationSchema = z.object({
   headline: z.string().min(8),
   slug: z.string().min(3).regex(/^[a-z0-9-]+$/),
-  status: z.enum(["draft", "scheduled", "published", "archived"]),
+  status: articleStatusEnum,
   tags: z.array(z.string()).default([]),
   body: z.string().optional(),
 });
@@ -47,7 +57,7 @@ export const articleCreateSchema = z.object({
   slug: z.string().min(3).regex(/^[a-z0-9-]+$/),
   body: z.string().default(""),
   excerpt: z.string().optional(),
-  status: z.enum(["draft", "scheduled", "published", "archived"]).default("draft"),
+  status: articleStatusEnum.default("draft"),
   categoryId: z.string().optional(),
   breaking: z.boolean().default(false),
   seoTitle: z.string().max(70).optional(),
@@ -60,7 +70,7 @@ export const articlePatchSchema = z.object({
   headline: z.string().min(8).optional(),
   body: z.string().optional(),
   excerpt: z.string().optional(),
-  status: z.enum(["draft", "scheduled", "published", "archived"]).optional(),
+  status: articleStatusEnum.optional(),
   breaking: z.boolean().optional(),
   seoTitle: z.string().max(70).optional(),
   seoDescription: z.string().max(160).optional(),
