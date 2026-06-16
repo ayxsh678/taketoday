@@ -560,6 +560,23 @@ model ArticleEmbedding {
   @@map("article_embeddings")
 }
 
+model AIUsage {
+  id            String   @id @default(cuid())
+  provider      String
+  model         String
+  task          String
+  inputTokens   Int
+  outputTokens  Int
+  estimatedCost Float
+  articleId     String?
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([provider, model])
+  @@index([task])
+  @@map("ai_usage")
+}
+
 // pgvector embeddings for questions — enables semantic deduplication
 model QuestionEmbedding {
   id         String   @id @default(cuid())

@@ -1,18 +1,8 @@
 import 'server-only';
-import OpenAI from 'openai';
-import { appConfig } from '@/lib/config/app';
+import { callWithRouter } from './router';
+import type { AITask, RiskLevel } from './providers/types';
 
-// Singleton client — avoid re-instantiation per call
-let _client: OpenAI | null = null;
-
-function getClient(): OpenAI {
-  if (!appConfig.openaiApiKey) throw new Error('OPENAI_API_KEY not configured');
-  if (!_client) _client = new OpenAI({ apiKey: appConfig.openaiApiKey });
-  return _client;
-}
-
-// Call LLM with a single tool → guaranteed structured JSON output
-export async function callLLMWithTool<T>(opts: {
+export interface LLMToolOpts {
   system: string;
   user: string;
   toolName: string;
@@ -21,57 +11,66 @@ export async function callLLMWithTool<T>(opts: {
   model?: string;
   maxTokens?: number;
   temperature?: number;
-}): Promise<T> {
-  const client = getClient();
-
-  const response = await client.chat.completions.create({
-    model: opts.model ?? 'gpt-4o-mini',
-    max_tokens: opts.maxTokens ?? 2000,
-    temperature: opts.temperature ?? 0.3,
-    tools: [
-      {
-        type: 'function',
-        function: {
-          name: opts.toolName,
-          description: opts.toolDescription,
-          parameters: opts.schema,
-        },
-      },
-    ],
-    tool_choice: { type: 'function', function: { name: opts.toolName } },
-    messages: [
-      { role: 'system', content: opts.system },
-      { role: 'user', content: opts.user },
-    ],
-  });
-
-  const toolCall = response.choices[0]?.message.tool_calls?.[0];
-  if (!toolCall || toolCall.type !== 'function') {
-    throw new Error(`LLM returned no tool call for ${opts.toolName}`);
-  }
-
-  return JSON.parse(toolCall.function.arguments) as T;
+  // Routing metadata — optional, defaults to safe Tier 2 selection
+  task?: AITask;
+  category?: string;
+  risk?: RiskLevel;
+  articleId?: string;
 }
 
-// Simple completion returning plain text
-export async function callLLM(opts: {
+// Call LLM with structured output — routes to cheapest capable model
+export async function callLLMWithTool<T>(opts: LLMToolOpts): Promise<T> {
+  const result = await callWithRouter({
+    task: opts.task ?? 'claim_extraction',
+    category: opts.category,
+    risk: opts.risk,
+    articleId: opts.articleId,
+    input: {
+      system: opts.system,
+      user: opts.user,
+      schema: opts.schema,
+      toolName: opts.toolName,
+      toolDescription: opts.toolDescription,
+      maxTokens: opts.maxTokens,
+      temperature: opts.temperature,
+    },
+  });
+
+  if (result.parsed !== undefined) return result.parsed as T;
+
+  try {
+    return JSON.parse(result.text) as T;
+  } catch {
+    throw new Error(`[llm] Failed to parse structured response from ${result.provider}`);
+  }
+}
+
+export interface LLMOpts {
   system: string;
   user: string;
   model?: string;
   maxTokens?: number;
   temperature?: number;
-}): Promise<string> {
-  const client = getClient();
+  task?: AITask;
+  category?: string;
+  risk?: RiskLevel;
+  articleId?: string;
+}
 
-  const response = await client.chat.completions.create({
-    model: opts.model ?? 'gpt-4o-mini',
-    max_tokens: opts.maxTokens ?? 1000,
-    temperature: opts.temperature ?? 0.5,
-    messages: [
-      { role: 'system', content: opts.system },
-      { role: 'user', content: opts.user },
-    ],
+// Call LLM for plain text output
+export async function callLLM(opts: LLMOpts): Promise<string> {
+  const result = await callWithRouter({
+    task: opts.task ?? 'article_generation',
+    category: opts.category,
+    risk: opts.risk,
+    articleId: opts.articleId,
+    input: {
+      system: opts.system,
+      user: opts.user,
+      maxTokens: opts.maxTokens,
+      temperature: opts.temperature,
+    },
   });
 
-  return response.choices[0]?.message.content?.trim() ?? '';
+  return result.text;
 }

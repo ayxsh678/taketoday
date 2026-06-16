@@ -1,7 +1,8 @@
-import OpenAI from "openai";
-import { appConfig } from "@/lib/config/app";
+import { callWithRouter } from './router';
+import { inferRiskFromText } from './riskScorer';
+import type { RiskLevel } from './providers/types';
 
-export type ClaimStatus = "verified" | "unverified" | "disputed" | "needs_review";
+export type ClaimStatus = 'verified' | 'unverified' | 'disputed' | 'needs_review';
 
 export interface VerifiedClaim {
   text: string;
@@ -40,43 +41,34 @@ Score guide: 85-100 publish-ready, 65-84 minor checks needed, 40-64 significant 
 export async function verifyArticle(
   headline: string,
   body: string,
+  opts?: { category?: string; risk?: RiskLevel; articleId?: string },
 ): Promise<VerificationResult> {
-  if (!appConfig.openaiApiKey) {
-    throw new Error("OPENAI_API_KEY not configured");
-  }
+  const plainBody = body.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const risk = opts?.risk ?? inferRiskFromText(`${headline} ${plainBody}`, opts?.category);
 
-  const client = new OpenAI({ apiKey: appConfig.openaiApiKey });
-
-  // Strip HTML tags for cleaner analysis
-  const plainBody = body.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-
-  const res = await client.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      {
-        role: "user",
-        content: `Headline: ${headline}\n\nArticle body:\n${plainBody.slice(0, 4000)}`,
-      },
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.2,
-    max_tokens: 1200,
+  const result = await callWithRouter({
+    task: 'verification',
+    category: opts?.category,
+    risk,
+    articleId: opts?.articleId,
+    input: {
+      system: SYSTEM_PROMPT,
+      user: `Headline: ${headline}\n\nArticle body:\n${plainBody.slice(0, 4000)}`,
+      temperature: 0.2,
+      maxTokens: 1200,
+    },
   });
-
-  const raw = res.choices[0]?.message.content ?? "{}";
 
   let parsed: VerificationResult;
   try {
-    parsed = JSON.parse(raw) as VerificationResult;
+    parsed = (result.parsed ?? JSON.parse(result.text)) as VerificationResult;
   } catch {
-    throw new Error("AI returned malformed JSON");
+    throw new Error('AI returned malformed JSON');
   }
 
-  // Validate shape
   if (!Array.isArray(parsed.claims)) parsed.claims = [];
-  if (typeof parsed.score !== "number") parsed.score = 0;
-  if (typeof parsed.brief !== "string") parsed.brief = "";
+  if (typeof parsed.score !== 'number') parsed.score = 0;
+  if (typeof parsed.brief !== 'string') parsed.brief = '';
   if (!Array.isArray(parsed.missingInfo)) parsed.missingInfo = [];
 
   parsed.score = Math.max(0, Math.min(100, Math.round(parsed.score)));

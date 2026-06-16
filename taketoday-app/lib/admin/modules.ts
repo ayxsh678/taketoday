@@ -6,6 +6,7 @@ import {
   Settings,
   Clapperboard,
   Brain,
+  Bot,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -23,6 +24,7 @@ export const adminNav: AdminNavItem[] = [
   { href: "/admin/media", label: "Media", description: "Images and files", icon: Image },
   { href: "/admin/studio", label: "Studio", description: "Social content creator", icon: Clapperboard },
   { href: "/admin/intelligence", label: "Intelligence", description: "Stories, questions, predictions", icon: Brain },
+  { href: "/admin/ai", label: "AI Usage", description: "Cost tracking, routing analytics", icon: Bot },
   { href: "/admin/settings", label: "Settings", description: "Workspace config", icon: Settings },
 ];
 

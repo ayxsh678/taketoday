@@ -42,4 +42,8 @@ export const appConfig = {
   // Intelligence pipeline
   serperApiKey: getEnv('SERPER_API_KEY', '') ?? '',
   polygonApiKey: getEnv('POLYGON_API_KEY', '') ?? '',
+  // Multi-model AI routing
+  geminiFlashModel: getEnv('GEMINI_FLASH_MODEL', 'gemini-2.0-flash') ?? 'gemini-2.0-flash',
+  geminiProModel: getEnv('GEMINI_PRO_MODEL', 'gemini-1.5-pro') ?? 'gemini-1.5-pro',
+  gpt55Model: getEnv('GPT55_MODEL', 'gpt-4o') ?? 'gpt-4o',
 };
