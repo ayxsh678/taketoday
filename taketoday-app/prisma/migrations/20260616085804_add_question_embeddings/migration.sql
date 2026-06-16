@@ -25,3 +25,12 @@ CREATE UNIQUE INDEX "question_embeddings_questionId_key" ON "question_embeddings
 
 -- AddForeignKey
 ALTER TABLE "question_embeddings" ADD CONSTRAINT "question_embeddings_questionId_fkey" FOREIGN KEY ("questionId") REFERENCES "questions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- Add vector embedding column and HNSW index
+ALTER TABLE "question_embeddings"
+  ADD COLUMN IF NOT EXISTS embedding vector(1536);
+
+CREATE INDEX IF NOT EXISTS question_embeddings_hnsw_idx
+  ON "question_embeddings"
+  USING hnsw (embedding vector_cosine_ops)
+  WITH (m = 16, ef_construction = 64);
