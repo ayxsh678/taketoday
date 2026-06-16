@@ -1,10 +1,11 @@
 import { articleCreateSchema, captureApiError, jsonError, jsonOk } from "@/lib/admin/api";
-import { NextRequest } from "next/server";
+import { NextRequest, after } from "next/server";
 import { ArticleStatus, Prisma } from "@prisma/client";
 import { logAuditAction } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/authz";
 import { getOrCreateAdminUser } from "@/lib/admin/current-user";
 import { prisma } from "@/lib/db/prisma";
+import { runIntelligencePipeline } from "@/lib/intelligence/pipeline";
 
 const statusMap: Record<string, ArticleStatus> = {
   draft: ArticleStatus.DRAFT,
@@ -161,6 +162,14 @@ export async function POST(req: NextRequest) {
       entityId: full.id,
       after: full,
     });
+
+    // Run intelligence pipeline after response — non-blocking
+    const { id: articleId, headline, excerpt, body, createdAt } = full;
+    const publishedAt = full.publishedAt ?? createdAt;
+
+    after(() =>
+      runIntelligencePipeline({ articleId, headline, excerpt, body, publishedAt }),
+    );
 
     return jsonOk({ article: mapArticle(full) }, { status: 201 });
   } catch (error) {

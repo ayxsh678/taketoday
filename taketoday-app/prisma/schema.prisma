@@ -41,18 +41,35 @@ model Article {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  author        AdminUser           @relation(fields: [authorId], references: [id])
-  featuredImage MediaAsset?         @relation(fields: [featuredImageId], references: [id])
-  category      Category?           @relation(fields: [categoryId], references: [id])
-  tags          ArticleTag[]
-  verification  ArticleVerification?
-  sources       ArticleSource[]
+  // Intelligence layer fields (nullable — CMS articles populate these after pipeline runs)
+  importanceScore  Int     @default(50)
+  contentHash      String?
+  newsSourceId     String?
+  storyChainId     String?
+
+  author           AdminUser            @relation(fields: [authorId], references: [id])
+  featuredImage    MediaAsset?          @relation(fields: [featuredImageId], references: [id])
+  category         Category?            @relation(fields: [categoryId], references: [id])
+  newsSource       NewsSource?          @relation(fields: [newsSourceId], references: [id])
+  storyChain       StoryChain?          @relation(fields: [storyChainId], references: [id])
+  tags             ArticleTag[]
+  verification     ArticleVerification?
+  sources          ArticleSource[]
+  entityMentions   EntityMention[]
+  storyLinksFrom   StoryLink[]          @relation("StoryLinkSource")
+  storyLinksTo     StoryLink[]          @relation("StoryLinkTarget")
+  claims           Claim[]
+  articleQuestions ArticleQuestion[]
+  embedding        ArticleEmbedding?
+  questionsAnswered Question[]          @relation("QuestionAnswer")
 
   @@index([status, publishedAt])
   @@index([scheduledAt])
   @@index([categoryId])
   @@index([authorId])
   @@index([createdAt])
+  @@index([storyChainId])
+  @@index([importanceScore])
 }
 
 model ArticleVerification {
@@ -228,4 +245,328 @@ enum PostStatus {
   PENDING
   POSTED
   FAILED
+}
+
+// ─── Intelligence Layer Enums ──────────────────────────────────────────────────
+
+enum EntityType {
+  PERSON
+  ORGANIZATION
+  COMPANY
+  COUNTRY
+  CITY
+  PRODUCT
+  TECHNOLOGY
+  EVENT
+  LEGISLATION
+  FINANCIAL_INSTRUMENT
+  CONCEPT
+}
+
+enum StoryRelationshipType {
+  CAUSED_BY
+  FOLLOW_UP
+  CONTRADICTION
+  CONFIRMATION
+  ESCALATION
+  BACKGROUND
+  EFFECT_OF
+  PARALLEL
+  REFUTATION
+}
+
+enum QuestionType {
+  ANSWERED
+  OPEN
+  HISTORICAL
+  FUTURE
+}
+
+enum QuestionPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum QuestionStatus {
+  OPEN
+  ANSWERED
+  PARTIALLY_ANSWERED
+  UNANSWERABLE
+}
+
+enum ClaimType {
+  QUANTITATIVE
+  CAUSAL
+  ATTRIBUTIONAL
+  PREDICTIVE
+  HISTORICAL
+  COMPARATIVE
+}
+
+enum VerificationStatus {
+  VERIFIED
+  PARTIALLY_VERIFIED
+  DISPUTED
+  UNVERIFIED
+  FALSE_CLAIM
+  MISLEADING
+}
+
+enum PredictionType {
+  NEXT_EVENT
+  EMERGING_RISK
+  ENTITY_ACTION
+  MARKET_MOVE
+  REGULATORY_ACTION
+  ESCALATION
+}
+
+enum PredictionStatus {
+  ACTIVE
+  RESOLVED
+  EXPIRED
+  CANCELLED
+}
+
+// ─── Intelligence Layer Models ─────────────────────────────────────────────────
+
+// Publisher credibility profiles (Reuters, BBC, etc.) — distinct from ArticleSource (editor-added citations)
+model NewsSource {
+  id               String    @id @default(cuid())
+  name             String
+  domain           String    @unique
+  credibilityScore Int       @default(50)
+  biasRating       String?
+  sourceType       String    @default("unknown")
+  country          String?
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  articles         Article[]
+
+  @@map("news_sources")
+}
+
+// Canonical entities extracted from articles (persons, orgs, places, products)
+model Entity {
+  id              String          @id @default(cuid())
+  canonicalName   String
+  entityType      EntityType
+  wikidataId      String?
+  aliases         String[]        @default([])
+  description     String?
+  importanceScore Int             @default(50)
+  mentionCount    Int             @default(0)
+  lastMentioned   DateTime?
+  attributes      Json            @default("{}")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  mentions        EntityMention[]
+
+  @@unique([canonicalName, entityType])
+  @@index([entityType])
+  @@map("entities")
+}
+
+// Article ↔ Entity join with confidence and focal flag
+model EntityMention {
+  id          String   @id @default(cuid())
+  articleId   String
+  entityId    String
+  surfaceForm String
+  confidence  Float    @default(1.0)
+  isFocal     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  article     Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  entity      Entity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+  @@index([entityId])
+  @@map("entity_mentions")
+}
+
+// Living narrative containers — group articles into an evolving story
+model StoryChain {
+  id                String            @id @default(cuid())
+  title             String
+  slug              String            @unique
+  description       String?
+  livingNarrative   String?
+  startDate         DateTime
+  lastUpdated       DateTime          @default(now()) @updatedAt
+  isActive          Boolean           @default(true)
+  importanceScore   Int               @default(50)
+  totalArticles     Int               @default(0)
+  totalQuestions    Int               @default(0)
+  unresolvedThreads String[]          @default([])
+  centralEntityIds  String[]          @default([])
+  tags              String[]          @default([])
+  metadata          Json              @default("{}")
+  createdAt         DateTime          @default(now())
+  articles          Article[]
+  questions         Question[]
+  predictions       Prediction[]
+  dossiers          ResearchDossier[]
+
+  @@index([isActive, importanceScore])
+  @@map("story_chains")
+}
+
+// Article ↔ Article causal relationships with type + confidence
+model StoryLink {
+  id                   String                @id @default(cuid())
+  sourceArticleId      String
+  targetArticleId      String
+  relationshipType     StoryRelationshipType
+  confidence           Float
+  sharedEntityIds      String[]              @default([])
+  sharedTopics         String[]              @default([])
+  temporalDistanceDays Int?
+  causalExplanation    String?
+  evidenceSnippets     Json                  @default("[]")
+  createdAt            DateTime              @default(now())
+  sourceArticle        Article               @relation("StoryLinkSource", fields: [sourceArticleId], references: [id], onDelete: Cascade)
+  targetArticle        Article               @relation("StoryLinkTarget", fields: [targetArticleId], references: [id], onDelete: Cascade)
+
+  @@index([sourceArticleId])
+  @@index([targetArticleId])
+  @@map("story_links")
+}
+
+// Investigative questions generated per article with 4-type lifecycle
+model Question {
+  id                   String           @id @default(cuid())
+  text                 String
+  questionType         QuestionType
+  priority             QuestionPriority @default(MEDIUM)
+  status               QuestionStatus   @default(OPEN)
+  answer               String?
+  answerArticleId      String?
+  importanceScore      Int              @default(50)
+  raisedCount          Int              @default(1)
+  verificationRequired Boolean          @default(false)
+  relatedEntityIds     String[]         @default([])
+  storyChainId         String?
+  investigationNotes   String?
+  createdAt            DateTime         @default(now())
+  resolvedAt           DateTime?
+  updatedAt            DateTime         @updatedAt
+  storyChain           StoryChain?       @relation(fields: [storyChainId], references: [id])
+  answerArticle        Article?          @relation("QuestionAnswer", fields: [answerArticleId], references: [id])
+  articleQuestions     ArticleQuestion[]
+  embedding            QuestionEmbedding?
+
+  @@index([questionType, status])
+  @@index([storyChainId])
+  @@map("questions")
+}
+
+// Article ↔ Question many-to-many (article raises question)
+model ArticleQuestion {
+  articleId  String
+  questionId String
+  article    Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, questionId])
+  @@index([questionId])
+  @@map("article_questions")
+}
+
+// Structured factual claims extracted from articles
+model Claim {
+  id                 String             @id @default(cuid())
+  articleId          String
+  text               String
+  claimType          ClaimType
+  subject            String?
+  predicate          String?
+  object             String?
+  confidence         Int                @default(0)
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  primarySourceUrl   String?
+  primarySourceQuote String?
+  evidence           Json               @default("[]")
+  contradictions     Json               @default("[]")
+  flags              String[]           @default([])
+  verifiedAt         DateTime?
+  verifiedBy         String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  article            Article            @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+  @@index([verificationStatus])
+  @@map("claims")
+}
+
+// Forward-looking predictions with outcome tracking
+model Prediction {
+  id                 String           @id @default(cuid())
+  storyChainId       String
+  text               String
+  predictionType     PredictionType
+  confidence         Int              @default(50)
+  timeframe          String?
+  targetDate         DateTime?
+  entityIds          String[]         @default([])
+  signals            Json             @default("[]")
+  basis              String?
+  historicalPatterns String[]         @default([])
+  status             PredictionStatus @default(ACTIVE)
+  resolvedAt         DateTime?
+  outcome            String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  storyChain         StoryChain       @relation(fields: [storyChainId], references: [id])
+
+  @@index([storyChainId])
+  @@index([status])
+  @@map("predictions")
+}
+
+// Aggregated deep-research output per story chain
+model ResearchDossier {
+  id               String     @id @default(cuid())
+  storyChainId     String
+  title            String
+  executiveSummary String?
+  keyFindings      String[]   @default([])
+  timeline         Json       @default("[]")
+  openQuestions    Json       @default("[]")
+  sourcesConsulted Json       @default("[]")
+  watchList        Json       @default("[]")
+  riskFactors      Json       @default("[]")
+  importanceScore  Int        @default(50)
+  confidenceScore  Int        @default(50)
+  generatedAt      DateTime   @default(now())
+  lastUpdatedAt    DateTime   @updatedAt
+  storyChain       StoryChain @relation(fields: [storyChainId], references: [id])
+
+  @@index([storyChainId])
+  @@map("research_dossiers")
+}
+
+// pgvector embeddings for articles — vector column managed via raw SQL
+model ArticleEmbedding {
+  id        String   @id @default(cuid())
+  articleId String   @unique
+  model     String   @default("text-embedding-3-small")
+  createdAt DateTime @default(now())
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@map("article_embeddings")
+}
+
+// pgvector embeddings for questions — enables semantic deduplication
+model QuestionEmbedding {
+  id         String   @id @default(cuid())
+  questionId String   @unique
+  model      String   @default("text-embedding-3-small")
+  createdAt  DateTime @default(now())
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("question_embeddings")
 }

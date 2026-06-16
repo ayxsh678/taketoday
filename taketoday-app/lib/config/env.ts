@@ -48,6 +48,9 @@ export const envSchema = z.object({
   GROQ_API_KEY: z.string().optional(),
   OPENROUTER_API_KEY: z.string().optional(),
   MISTRAL_API_KEY: z.string().optional(),
+  // Intelligence pipeline
+  SERPER_API_KEY: z.string().optional(),      // Web search for verification + research agent
+  POLYGON_API_KEY: z.string().optional(),     // Financial data for research agent
 });
 
 // Parse with loose validation in build context, strict in runtime

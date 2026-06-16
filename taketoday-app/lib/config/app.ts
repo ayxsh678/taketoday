@@ -39,4 +39,7 @@ export const appConfig = {
   groqApiKey: getEnv('GROQ_API_KEY', '') ?? '',
   openrouterApiKey: getEnv('OPENROUTER_API_KEY', '') ?? '',
   mistralApiKey: getEnv('MISTRAL_API_KEY', '') ?? '',
+  // Intelligence pipeline
+  serperApiKey: getEnv('SERPER_API_KEY', '') ?? '',
+  polygonApiKey: getEnv('POLYGON_API_KEY', '') ?? '',
 };
