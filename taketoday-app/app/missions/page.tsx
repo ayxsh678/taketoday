@@ -35,16 +35,24 @@ export default async function MissionsPage({
     ...(difficulty ? { difficulty: difficulty as never } : {}),
   };
 
-  const [missions, totalOpen, totalCompleted] = await Promise.all([
-    prisma.mission.findMany({
-      where,
-      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-      take: 24,
-      include: { _count: { select: { submissions: true } } },
-    }),
-    prisma.mission.count({ where: { status: MissionStatus.OPEN } }),
-    prisma.mission.count({ where: { status: MissionStatus.COMPLETED } }),
-  ]);
+  let missions: Awaited<ReturnType<typeof prisma.mission.findMany<{ include: { _count: { select: { submissions: true } } } }>>> = [];
+  let totalOpen = 0;
+  let totalCompleted = 0;
+
+  try {
+    [missions, totalOpen, totalCompleted] = await Promise.all([
+      prisma.mission.findMany({
+        where,
+        orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+        take: 24,
+        include: { _count: { select: { submissions: true } } },
+      }),
+      prisma.mission.count({ where: { status: MissionStatus.OPEN } }),
+      prisma.mission.count({ where: { status: MissionStatus.COMPLETED } }),
+    ]);
+  } catch {
+    // DB not yet migrated — render empty state
+  }
 
   return (
     <div className="mx-auto max-w-site px-6 lg:px-10 pt-16 lg:pt-24 pb-24">

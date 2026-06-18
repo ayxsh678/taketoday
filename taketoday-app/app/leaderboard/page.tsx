@@ -3,7 +3,6 @@ import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
 import { SITE } from "@/lib/site";
 import { ContributorBadge } from "@/components/missions/ContributorBadge";
-import { getContributorLevel } from "@/lib/missions";
 
 export const metadata: Metadata = {
   title: `Leaderboard — ${SITE.name}`,
@@ -13,15 +12,23 @@ export const metadata: Metadata = {
 export const revalidate = 300;
 
 export default async function LeaderboardPage() {
-  const [contributors, totalContributors, totalMissions] = await Promise.all([
-    prisma.contributorPoints.findMany({
-      where: { totalPoints: { gt: 0 } },
-      orderBy: { totalPoints: "desc" },
-      take: 25,
-    }),
-    prisma.contributorPoints.count({ where: { totalPoints: { gt: 0 } } }),
-    prisma.missionSubmission.count({ where: { status: "APPROVED" } }),
-  ]);
+  let contributors: Awaited<ReturnType<typeof prisma.contributorPoints.findMany>> = [];
+  let totalContributors = 0;
+  let totalMissions = 0;
+
+  try {
+    [contributors, totalContributors, totalMissions] = await Promise.all([
+      prisma.contributorPoints.findMany({
+        where: { totalPoints: { gt: 0 } },
+        orderBy: { totalPoints: "desc" },
+        take: 25,
+      }),
+      prisma.contributorPoints.count({ where: { totalPoints: { gt: 0 } } }),
+      prisma.missionSubmission.count({ where: { status: "APPROVED" } }),
+    ]);
+  } catch {
+    // DB not yet migrated — render empty state
+  }
 
   return (
     <div className="mx-auto max-w-site px-6 lg:px-10 pt-16 lg:pt-24 pb-24">
@@ -92,7 +99,6 @@ export default async function LeaderboardPage() {
               <div className="divide-y divide-ink-200/50">
                 {contributors.map((c, i) => {
                   const rank = i + 1;
-                  const level = getContributorLevel(c.totalPoints);
                   const displayName = c.name ?? c.email.split("@")[0];
 
                   return (
