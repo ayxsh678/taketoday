@@ -9,16 +9,20 @@ datasource db {
 }
 
 model AdminUser {
-  id             String          @id @default(cuid())
-  name           String
-  email          String          @unique
-  role           AdminRole       @default(EDITOR)
-  image          String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  articles       Article[]
-  auditLogs      AuditLog[]
-  contentDrafts  ContentDraft[]
+  id                  String              @id @default(cuid())
+  name                String
+  email               String              @unique
+  role                AdminRole           @default(EDITOR)
+  image               String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  articles            Article[]
+  auditLogs           AuditLog[]
+  contentDrafts       ContentDraft[]
+  missions            Mission[]
+  submissionReviews   MissionSubmission[] @relation("SubmissionReviewer")
+  tipComments         TipComment[]
+  investigations      Investigation[]
 }
 
 model Article {
@@ -586,4 +590,163 @@ model QuestionEmbedding {
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@map("question_embeddings")
+}
+
+// ─── Community Features ────────────────────────────────────────────────────────
+
+enum MissionDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum MissionStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  ARCHIVED
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TipCategory {
+  AI
+  FINANCE
+  TECHNOLOGY
+  STARTUPS
+  CORPORATE_WRONGDOING
+  POLICY_REGULATION
+  OTHER
+}
+
+enum TipStatus {
+  NEW
+  UNDER_REVIEW
+  INVESTIGATING
+  PUBLISHED
+  REJECTED
+}
+
+enum InvestigationStatus {
+  OPEN
+  RESEARCHING
+  VERIFYING
+  WRITING
+  PUBLISHED
+}
+
+model Mission {
+  id           String            @id @default(cuid())
+  title        String
+  description  String
+  category     String
+  difficulty   MissionDifficulty
+  pointsReward Int
+  status       MissionStatus     @default(OPEN)
+  deadline     DateTime?
+  createdById  String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  createdBy    AdminUser?        @relation(fields: [createdById], references: [id])
+  submissions  MissionSubmission[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("missions")
+}
+
+model MissionSubmission {
+  id             String           @id @default(cuid())
+  missionId      String
+  submitterEmail String
+  submitterName  String?
+  submissionText String
+  attachments    String[]         @default([])
+  status         SubmissionStatus @default(PENDING)
+  reviewNotes    String?
+  bonusPoints    Int              @default(0)
+  submittedAt    DateTime         @default(now())
+  reviewedAt     DateTime?
+  reviewedById   String?
+
+  mission        Mission          @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  reviewedBy     AdminUser?       @relation("SubmissionReviewer", fields: [reviewedById], references: [id])
+
+  @@index([missionId])
+  @@index([submitterEmail])
+  @@index([status])
+  @@map("mission_submissions")
+}
+
+model ContributorPoints {
+  id                  String   @id @default(cuid())
+  email               String   @unique
+  name                String?
+  totalPoints         Int      @default(0)
+  missionsCompleted   Int      @default(0)
+  articlesContributed Int      @default(0)
+  lastUpdated         DateTime @default(now()) @updatedAt
+
+  @@index([totalPoints])
+  @@map("contributor_points")
+}
+
+model StoryTip {
+  id             String      @id @default(cuid())
+  title          String
+  summary        String
+  category       TipCategory
+  sourceType     String?
+  anonymous      Boolean     @default(false)
+  contactEmail   String?
+  attachments    String[]    @default([])
+  evidenceLinks  String[]    @default([])
+  status         TipStatus   @default(NEW)
+  assignedEditor String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  comments       TipComment[]
+  investigation  Investigation?
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("story_tips")
+}
+
+model TipComment {
+  id        String    @id @default(cuid())
+  tipId     String
+  editorId  String
+  comment   String
+  createdAt DateTime  @default(now())
+
+  tip       StoryTip  @relation(fields: [tipId], references: [id], onDelete: Cascade)
+  editor    AdminUser @relation(fields: [editorId], references: [id])
+
+  @@index([tipId])
+  @@map("tip_comments")
+}
+
+model Investigation {
+  id                String              @id @default(cuid())
+  tipId             String              @unique
+  title             String
+  status            InvestigationStatus @default(OPEN)
+  leadEditorId      String?
+  assignedReporters String[]            @default([])
+  timeline          Json                @default("[]")
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  tip               StoryTip            @relation(fields: [tipId], references: [id])
+  leadEditor        AdminUser?          @relation(fields: [leadEditorId], references: [id])
+
+  @@index([status])
+  @@map("investigations")
 }
