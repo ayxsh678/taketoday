@@ -6,25 +6,13 @@ import {
   type RelatedArticle,
 } from "@/components/ArticleLayout";
 import {
-  getAllArticles,
   getArticleBySlug,
   getArticlesByCategory,
 } from "@/lib/content/queries";
 import { SITE, abs } from "@/lib/site";
 import { TrackPageView } from "@/components/TrackPageView";
 
-// ISR: revalidate article pages every hour
-export const revalidate = 3600;
-
-export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  try {
-    const articles = await getAllArticles();
-    return articles.map((a) => ({ slug: a.slug }));
-  } catch {
-    // DB unavailable at build time — pages generated on-demand via ISR
-    return [];
-  }
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,

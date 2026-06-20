@@ -46,7 +46,7 @@ function toArticleDoc(row: ArticleRow): ArticleDoc {
     publishedAt: pub,
     updatedAt: row.updatedAt.toISOString(),
     author: { name: row.author.name, type: "Organization" },
-    quickTake: "",
+    quickTake: row.excerpt ?? "",
     whyItMatters: "",
     takeaways: [],
     body: { raw: row.body },

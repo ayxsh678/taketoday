@@ -4,6 +4,7 @@ import { ArticleStatus, Prisma } from "@prisma/client";
 import { logAuditAction } from "@/lib/admin/audit";
 import { requireAdmin } from "@/lib/admin/authz";
 import { prisma } from "@/lib/db/prisma";
+import { revalidatePath } from "next/cache";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -106,6 +107,10 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
       entityId: article.id,
       after: article,
     });
+
+    revalidatePath("/");
+    revalidatePath(`/article/${article.slug}`);
+    revalidatePath(`/category/${article.category?.name?.toLowerCase() ?? ""}`);
 
     return jsonOk({ article: mapArticle(article) });
   } catch (error) {

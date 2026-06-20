@@ -58,6 +58,8 @@ function slugToCategory(slug: string): Category | null {
   return match ?? null;
 }
 
+export const dynamic = "force-dynamic";
+
 export function generateStaticParams(): { category: string }[] {
   return CATEGORIES.map((c) => ({ category: c.toLowerCase() }));
 }

@@ -167,20 +167,22 @@ export function ArticleLayout(props: ArticleLayoutProps) {
       </div>
 
       {/* ── Quick Take ──────────────────────────────────────────────────── */}
-      <section
-        aria-labelledby="quick-take-heading"
-        className="mx-auto max-w-215 px-6 lg:px-10 py-8 border-y border-ink-200/70 mt-8"
-      >
-        <h2
-          id="quick-take-heading"
-          className="font-mono text-[10px] tracking-[0.22em] uppercase text-accent"
+      {quickTake && (
+        <section
+          aria-labelledby="quick-take-heading"
+          className="mx-auto max-w-215 px-6 lg:px-10 py-8 border-y border-ink-200/70 mt-8"
         >
-          Quick Take
-        </h2>
-        <p className="mt-4 font-serif italic text-[24px] lg:text-[28px] leading-tight tracking-tight text-ink text-balance">
-          {quickTake}
-        </p>
-      </section>
+          <h2
+            id="quick-take-heading"
+            className="font-mono text-[10px] tracking-[0.22em] uppercase text-accent"
+          >
+            Quick Take
+          </h2>
+          <p className="mt-4 font-serif italic text-[24px] lg:text-[28px] leading-tight tracking-tight text-ink text-balance">
+            {quickTake}
+          </p>
+        </section>
+      )}
 
       {/* ── Body ────────────────────────────────────────────────────────── */}
       <section aria-label="Article body" className="article mx-auto max-w-[68ch] px-6 lg:px-10 py-14">
@@ -188,45 +190,49 @@ export function ArticleLayout(props: ArticleLayoutProps) {
       </section>
 
       {/* ── Why It Matters ──────────────────────────────────────────────── */}
-      <section aria-labelledby="why-heading" className="bg-ink text-paper">
-        <div className="mx-auto max-w-215 px-6 lg:px-10 py-16 lg:py-20">
-          <h2
-            id="why-heading"
-            className="font-mono text-[10px] tracking-[0.22em] uppercase text-accent"
-          >
-            Why It Matters
-          </h2>
-          <p className="mt-5 font-serif text-[26px] lg:text-[32px] leading-tight tracking-tight text-paper text-balance">
-            {whyItMatters}
-          </p>
-        </div>
-      </section>
+      {whyItMatters && (
+        <section aria-labelledby="why-heading" className="bg-ink text-paper">
+          <div className="mx-auto max-w-215 px-6 lg:px-10 py-16 lg:py-20">
+            <h2
+              id="why-heading"
+              className="font-mono text-[10px] tracking-[0.22em] uppercase text-accent"
+            >
+              Why It Matters
+            </h2>
+            <p className="mt-5 font-serif text-[26px] lg:text-[32px] leading-tight tracking-tight text-paper text-balance">
+              {whyItMatters}
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* ── Takeaways ───────────────────────────────────────────────────── */}
-      <section
-        aria-labelledby="takeaways-heading"
-        className="mx-auto max-w-215 px-6 lg:px-10 py-16 lg:py-20"
-      >
-        <h2
-          id="takeaways-heading"
-          className="font-mono text-[10px] tracking-[0.22em] uppercase text-ink-500"
+      {takeaways.length > 0 && (
+        <section
+          aria-labelledby="takeaways-heading"
+          className="mx-auto max-w-215 px-6 lg:px-10 py-16 lg:py-20"
         >
-          Takeaways
-        </h2>
-        <ol className="mt-8 space-y-6">
-          {takeaways.map((t, i) => (
-            <li key={i} className="grid grid-cols-[auto_1fr] gap-5 items-start">
-              <span
-                aria-hidden
-                className="font-mono text-[11px] tracking-[0.18em] text-ink-400 pt-1.5"
-              >
-                0{i + 1}
-              </span>
-              <p className="text-[18px] leading-relaxed text-ink-700 text-pretty">{t}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
+          <h2
+            id="takeaways-heading"
+            className="font-mono text-[10px] tracking-[0.22em] uppercase text-ink-500"
+          >
+            Takeaways
+          </h2>
+          <ol className="mt-8 space-y-6">
+            {takeaways.map((t, i) => (
+              <li key={i} className="grid grid-cols-[auto_1fr] gap-5 items-start">
+                <span
+                  aria-hidden
+                  className="font-mono text-[11px] tracking-[0.18em] text-ink-400 pt-1.5"
+                >
+                  0{i + 1}
+                </span>
+                <p className="text-[18px] leading-relaxed text-ink-700 text-pretty">{t}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {/* ── Author block ────────────────────────────────────────────────── */}
       <section
