@@ -67,7 +67,7 @@ describe("getAllArticles [BUG-01 regression]", () => {
     expect(a.format).toBe("article");               // hardcoded default
     expect(a.region).toBe("GLOBAL");                // hardcoded default
     expect(a.author).toEqual({ name: "TakeToday Newsroom", type: "Organization" });
-    expect(a.quickTake).toBe("");                   // not in schema — default ""
+    expect(a.quickTake).toBe("Test deck");            // maps to excerpt
     expect(a.whyItMatters).toBe("");                // not in schema — default ""
     expect(a.takeaways).toEqual([]);                // not in schema — default []
     expect(a.body).toEqual({ raw: "Body text with some words here." });
@@ -89,6 +89,7 @@ describe("getAllArticles [BUG-01 regression]", () => {
 
     const articles = await getAllArticles();
     expect(articles[0].deck).toBe("");
+    expect(articles[0].quickTake).toBe("");
   });
 });
 
