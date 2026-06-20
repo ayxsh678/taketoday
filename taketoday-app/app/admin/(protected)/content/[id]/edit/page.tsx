@@ -22,24 +22,18 @@ import {
   Undo,
   Redo,
   Eye,
-  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { VerificationPanel } from "@/components/admin/VerificationPanel";
 import { SourcesPanel } from "@/components/admin/SourcesPanel";
 import type { AdminArticle, WorkflowStatus } from "@/lib/admin/types";
-
-// ─── types ────────────────────────────────────────────────────────────────────
 
 interface Category {
   id: string;
   name: string;
   slug: string;
 }
-
-// ─── toolbar button ───────────────────────────────────────────────────────────
 
 function ToolbarBtn({
   onClick,
@@ -73,13 +67,8 @@ function ToolbarBtn({
   );
 }
 
-// ─── component ────────────────────────────────────────────────────────────────
-
 const STATUS_OPTIONS: { value: WorkflowStatus; label: string }[] = [
   { value: "draft", label: "Draft" },
-  { value: "fact_checking", label: "Fact Checking" },
-  { value: "editorial_review", label: "Editorial Review" },
-  { value: "ready_to_publish", label: "Ready to Publish" },
   { value: "scheduled", label: "Scheduled" },
   { value: "published", label: "Published" },
   { value: "archived", label: "Archived" },
@@ -104,10 +93,8 @@ export default function ArticleEditorPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // sidebar fields
   const [headline, setHeadline] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [status, setStatus] = useState<WorkflowStatus>("draft");
@@ -115,8 +102,6 @@ export default function ArticleEditorPage() {
   const [breaking, setBreaking] = useState(false);
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDesc, setSeoDesc] = useState("");
-
-  // ─── TipTap ─────────────────────────────────────────────────────────────────
 
   const editor = useEditor({
     extensions: [
@@ -131,8 +116,6 @@ export default function ArticleEditorPage() {
       },
     },
   });
-
-  // ─── load article ────────────────────────────────────────────────────────────
 
   useEffect(() => {
     void (async () => {
@@ -165,14 +148,11 @@ export default function ArticleEditorPage() {
     })();
   }, [id]);
 
-  // Set editor content once article + editor are both ready
   useEffect(() => {
     if (editor && article?.body !== undefined && !editor.isDestroyed) {
       editor.commands.setContent(article.body ?? "");
     }
   }, [editor, article]);
-
-  // ─── save ────────────────────────────────────────────────────────────────────
 
   const save = useCallback(async (overrideStatus?: WorkflowStatus) => {
     setSaving(true);
@@ -204,55 +184,17 @@ export default function ArticleEditorPage() {
     }
   }, [id, headline, excerpt, status, breaking, seoTitle, seoDesc, editor]);
 
-  // ─── AI generate ─────────────────────────────────────────────────────────────
-
-  const generateBody = useCallback(async () => {
-    if (!headline.trim()) { setError("Add a headline before generating."); return; }
-    setGenerating(true);
-    setError(null);
+  const handleDelete = useCallback(async () => {
+    if (!confirm("Delete this article? This cannot be undone.")) return;
     try {
-      const res = await fetch("/api/admin/ai/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "body", headline, excerpt: excerpt || undefined }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error((json as { error?: string }).error ?? `HTTP ${res.status}`);
-      const html = (json.data as { html: string }).html;
-      if (editor && !editor.isDestroyed) {
-        editor.commands.setContent(html);
-        editor.commands.focus("end");
-      }
+      const res = await fetch(`/api/admin/articles/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+      router.push("/admin/content");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Generation failed");
-    } finally {
-      setGenerating(false);
+      setError(err instanceof Error ? err.message : "Delete failed");
     }
-  }, [headline, excerpt, editor]);
+  }, [id, router]);
 
-  const generateExcerptAI = useCallback(async () => {
-    if (!headline.trim()) { setError("Add a headline first."); return; }
-    setGenerating(true);
-    setError(null);
-    try {
-      const body = editor?.getText() ?? "";
-      const res = await fetch("/api/admin/ai/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "excerpt", headline, body }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error((json as { error?: string }).error ?? `HTTP ${res.status}`);
-      const text = (json.data as { text: string }).text;
-      setExcerpt(text);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Generation failed");
-    } finally {
-      setGenerating(false);
-    }
-  }, [headline, editor]);
-
-  // Cmd/Ctrl+S shortcut
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
@@ -263,8 +205,6 @@ export default function ArticleEditorPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [save]);
-
-  // ─── render: loading / error ─────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -285,11 +225,11 @@ export default function ArticleEditorPage() {
     );
   }
 
-  // ─── render: editor ──────────────────────────────────────────────────────────
+  const isPublished = status === "published";
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* ── top bar ── */}
+      {/* top bar */}
       <div
         className="sticky top-14 z-10 flex items-center justify-between gap-4 px-4 py-2.5 sm:px-6"
         style={{
@@ -313,7 +253,7 @@ export default function ArticleEditorPage() {
         <div className="flex items-center gap-2">
           {error && <span className="text-xs text-red-400">{error}</span>}
           {saved && <span className="text-xs text-emerald-400">Saved</span>}
-          {generating && <span className="text-xs text-violet-400">Generating…</span>}
+
           <Button
             variant="ghost"
             className="h-8 gap-1.5 px-3 text-sm"
@@ -322,68 +262,26 @@ export default function ArticleEditorPage() {
             <Eye className="h-3.5 w-3.5" />
             Preview
           </Button>
-          <Button
-            variant="ghost"
-            className="h-8 gap-1.5 px-3 text-sm"
-            onClick={() => void generateBody()}
-            disabled={generating || saving}
-            title="Generate article body from headline (replaces current body)"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            Generate
-          </Button>
-          {/* Workflow action — changes based on current status */}
-          {status === "draft" && (
+
+          {isPublished ? (
             <Button
               variant="secondary"
               className="h-8 px-3 text-sm"
-              onClick={() => void save("fact_checking")}
-              disabled={saving}
-              title="Send article for AI fact checking"
-            >
-              {saving ? "…" : "Send for Fact Check"}
-            </Button>
-          )}
-          {status === "fact_checking" && (
-            <Button
-              variant="secondary"
-              className="h-8 px-3 text-sm"
-              onClick={() => void save("editorial_review")}
+              onClick={() => void save("draft")}
               disabled={saving}
             >
-              {saving ? "…" : "Submit for Review"}
+              {saving ? "…" : "Unpublish"}
             </Button>
-          )}
-          {status === "editorial_review" && (
-            <>
-              <Button
-                variant="secondary"
-                className="h-8 px-3 text-sm"
-                onClick={() => void save("draft")}
-                disabled={saving}
-                title="Send back to editor for revision"
-              >
-                {saving ? "…" : "Send Back"}
-              </Button>
-              <Button
-                className="h-8 px-3 text-sm"
-                onClick={() => void save("ready_to_publish")}
-                disabled={saving}
-              >
-                {saving ? "…" : "Approve"}
-              </Button>
-            </>
-          )}
-          {status === "ready_to_publish" && (
+          ) : (
             <Button
-              className="h-8 px-3 text-sm"
+              className="h-8 px-3 text-sm bg-emerald-600 hover:bg-emerald-700 text-white border-0"
               onClick={() => void save("published")}
               disabled={saving}
             >
-              {saving ? "…" : "Publish"}
+              {saving ? "Publishing…" : "Publish"}
             </Button>
           )}
-          {(status === "scheduled" || status === "published") && null}
+
           <Button
             className="h-8 px-3 text-sm"
             onClick={() => void save()}
@@ -394,11 +292,10 @@ export default function ArticleEditorPage() {
         </div>
       </div>
 
-      {/* ── layout ── */}
+      {/* layout */}
       <div className="flex flex-1 gap-0">
-        {/* ── editor area ── */}
+        {/* editor area */}
         <div className="flex-1 overflow-y-auto px-4 py-8 sm:px-8 lg:px-16">
-          {/* headline */}
           <input
             value={headline}
             onChange={(e) => setHeadline(e.target.value)}
@@ -499,11 +396,10 @@ export default function ArticleEditorPage() {
             </ToolbarBtn>
           </div>
 
-          {/* editor */}
           <EditorContent editor={editor} />
         </div>
 
-        {/* ── sidebar ── */}
+        {/* sidebar */}
         <aside
           className="hidden w-72 shrink-0 overflow-y-auto p-5 xl:block"
           style={{
@@ -547,22 +443,9 @@ export default function ArticleEditorPage() {
 
             {/* excerpt */}
             <div>
-              <div className="mb-1.5 flex items-center justify-between">
-                <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--adm-text-3)" }}>
-                  Excerpt
-                </label>
-                <button
-                  type="button"
-                  onClick={() => void generateExcerptAI()}
-                  disabled={generating || saving}
-                  title="Auto-generate excerpt from headline + body"
-                  className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors hover:bg-white/8 disabled:pointer-events-none disabled:opacity-40"
-                  style={{ color: "var(--adm-accent-purple)" }}
-                >
-                  <Sparkles className="h-3 w-3" />
-                  Auto
-                </button>
-              </div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--adm-text-3)" }}>
+                Excerpt
+              </label>
               <Textarea
                 className="min-h-16 text-sm"
                 placeholder="One-line summary for feed"
@@ -628,20 +511,6 @@ export default function ArticleEditorPage() {
               <SourcesPanel articleId={id} />
             </div>
 
-            {/* verification */}
-            <div
-              className="border-t pt-5"
-              style={{ borderColor: "var(--adm-border-dim)" }}
-            >
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--adm-text-3)" }}>
-                Fact Check
-              </p>
-              <VerificationPanel
-                articleId={id}
-                onStatusChange={(newStatus) => setStatus(newStatus as WorkflowStatus)}
-              />
-            </div>
-
             {/* meta */}
             {article && (
               <div
@@ -655,6 +524,20 @@ export default function ArticleEditorPage() {
                 <p>Views: <span style={{ color: "var(--adm-text-2)" }}>{article.views.toLocaleString()}</span></p>
               </div>
             )}
+
+            {/* danger zone */}
+            <div
+              className="border-t pt-5"
+              style={{ borderColor: "var(--adm-border-dim)" }}
+            >
+              <button
+                type="button"
+                onClick={() => void handleDelete()}
+                className="w-full rounded-md border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-400 transition hover:bg-red-500/20"
+              >
+                Delete article
+              </button>
+            </div>
           </div>
         </aside>
       </div>

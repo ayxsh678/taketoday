@@ -9,9 +9,6 @@ import type { AdminArticle } from "@/lib/admin/types";
 
 const statusTone = {
   draft: "neutral",
-  fact_checking: "amber",
-  editorial_review: "blue",
-  ready_to_publish: "violet",
   scheduled: "violet",
   published: "green",
   archived: "red",

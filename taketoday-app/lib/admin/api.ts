@@ -36,9 +36,6 @@ export function captureApiError(
 
 const articleStatusEnum = z.enum([
   "draft",
-  "fact_checking",
-  "editorial_review",
-  "ready_to_publish",
   "scheduled",
   "published",
   "archived",

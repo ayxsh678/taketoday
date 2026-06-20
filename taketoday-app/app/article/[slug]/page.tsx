@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { MDXRemote } from "next-mdx-remote/rsc";
 import {
   ArticleLayout,
   articleToLayoutProps,
@@ -143,7 +142,7 @@ export default async function ArticlePage({
     ],
   };
 
-  const body = <MDXRemote source={article.body.raw} />;
+  const body = <div dangerouslySetInnerHTML={{ __html: article.body.raw }} />;
   const layoutProps = articleToLayoutProps(article, body, relatedArticles);
 
   return (

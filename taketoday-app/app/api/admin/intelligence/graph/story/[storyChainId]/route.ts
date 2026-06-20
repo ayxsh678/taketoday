@@ -1,26 +1,5 @@
-import { captureApiError, jsonOk } from '@/lib/admin/api';
-import { requireAdmin } from '@/lib/admin/authz';
-import { getStoryGraph, getStoryEntityGraph } from '@/lib/intelligence/knowledge-graph';
-import { NextRequest } from 'next/server';
-
-// GET /api/admin/intelligence/graph/story/[storyChainId]?view=articles|entities
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ storyChainId: string }> },
-) {
-  const access = await requireAdmin('content:read');
-  if (!access.ok) return access.response;
-
-  const { storyChainId } = await params;
-  const view = req.nextUrl.searchParams.get('view') ?? 'articles';
-
-  try {
-    const graph =
-      view === 'entities'
-        ? await getStoryEntityGraph(storyChainId)
-        : await getStoryGraph(storyChainId);
-    return jsonOk(graph);
-  } catch (err) {
-    return captureApiError(err);
-  }
-}
+import { jsonError } from "@/lib/admin/api";
+export async function GET() { return jsonError("Intelligence features are disabled.", 503); }
+export async function POST() { return jsonError("Intelligence features are disabled.", 503); }
+export async function PUT() { return jsonError("Intelligence features are disabled.", 503); }
+export async function DELETE() { return jsonError("Intelligence features are disabled.", 503); }

@@ -23,9 +23,6 @@ export type AdminPermission =
 
 export type WorkflowStatus =
   | "draft"
-  | "fact_checking"
-  | "editorial_review"
-  | "ready_to_publish"
   | "scheduled"
   | "published"
   | "archived";

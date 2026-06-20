@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import { withContentlayer } from "next-contentlayer2";
 import { withSentryConfig } from "@sentry/nextjs";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,18 +7,15 @@ const projectRoot = dirname(fileURLToPath(import.meta.url));
 
 const CSP = [
   "default-src 'self'",
-  // 'unsafe-inline' required: Next.js App Router inline hydration scripts + JSON-LD dangerouslySetInnerHTML
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://res.cloudinary.com https://lh3.googleusercontent.com",
   "font-src 'self' data:",
-  // Sentry errors go to /monitoring tunnel (same origin); SDK may also connect to ingest directly
   "connect-src 'self' https://*.sentry.io https://o*.ingest.sentry.io",
   "media-src 'self' https://res.cloudinary.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  // frame-ancestors supersedes X-Frame-Options in modern browsers; both set for compatibility
   "frame-ancestors 'none'",
   "upgrade-insecure-requests",
 ].join("; ");
@@ -46,15 +42,11 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(withContentlayer(nextConfig), {
-  // Sentry org + project set via SENTRY_ORG and SENTRY_PROJECT env vars
+export default withSentryConfig(nextConfig, {
   silent: true,
-  // Upload source maps only in CI/production
   disableLogger: true,
-  // Automatically instrument Next.js server components and API routes
   autoInstrumentServerFunctions: true,
   autoInstrumentMiddleware: true,
   autoInstrumentAppDirectory: true,
-  // Avoid bundling Sentry into Edge Runtime unnecessarily
   tunnelRoute: "/monitoring",
 });

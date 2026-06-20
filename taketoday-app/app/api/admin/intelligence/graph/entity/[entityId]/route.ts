@@ -1,20 +1,5 @@
-import { captureApiError, jsonOk } from '@/lib/admin/api';
-import { requireAdmin } from '@/lib/admin/authz';
-import { getEntityGraph } from '@/lib/intelligence/knowledge-graph';
-import { NextRequest } from 'next/server';
-
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ entityId: string }> },
-) {
-  const access = await requireAdmin('content:read');
-  if (!access.ok) return access.response;
-
-  const { entityId } = await params;
-  try {
-    const graph = await getEntityGraph(entityId);
-    return jsonOk(graph);
-  } catch (err) {
-    return captureApiError(err);
-  }
-}
+import { jsonError } from "@/lib/admin/api";
+export async function GET() { return jsonError("Intelligence features are disabled.", 503); }
+export async function POST() { return jsonError("Intelligence features are disabled.", 503); }
+export async function PUT() { return jsonError("Intelligence features are disabled.", 503); }
+export async function DELETE() { return jsonError("Intelligence features are disabled.", 503); }

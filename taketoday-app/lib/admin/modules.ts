@@ -4,11 +4,6 @@ import {
   Image,
   Boxes,
   Settings,
-  Clapperboard,
-  Brain,
-  Bot,
-  Target,
-  Lightbulb,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -24,18 +19,12 @@ export const adminNav: AdminNavItem[] = [
   { href: "/admin/content", label: "Articles", description: "Manage stories", icon: FileText },
   { href: "/admin/categories", label: "Categories", description: "Editorial taxonomy", icon: Boxes },
   { href: "/admin/media", label: "Media", description: "Images and files", icon: Image },
-  { href: "/admin/missions", label: "Missions", description: "Reader research tasks", icon: Target },
-  { href: "/admin/tips", label: "Tips", description: "Reader story submissions", icon: Lightbulb },
-  { href: "/admin/studio", label: "Studio", description: "Social content creator", icon: Clapperboard },
-  { href: "/admin/intelligence", label: "Intelligence", description: "Stories, questions, predictions", icon: Brain },
-  { href: "/admin/ai", label: "AI Usage", description: "Cost tracking, routing analytics", icon: Bot },
   { href: "/admin/settings", label: "Settings", description: "Workspace config", icon: Settings },
 ];
 
 export const quickActions = [
   "Create article",
   "Upload media",
-  "Create mission",
 ] as const;
 
 export type QuickAction = (typeof quickActions)[number];
@@ -43,5 +32,4 @@ export type QuickAction = (typeof quickActions)[number];
 export const quickActionRoutes: Record<QuickAction, string> = {
   "Create article": "/admin/content",
   "Upload media": "/admin/media",
-  "Create mission": "/admin/missions/create",
 };
