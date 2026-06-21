@@ -90,20 +90,28 @@ export default function MediaPage() {
   }, [currentFolderId]);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
     setUploading(true);
     setUploadError(null);
+    const errors: string[] = [];
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const resp = await fetch("/api/admin/media", { method: "POST", body: fd });
-      const json = (await resp.json()) as { ok: boolean; error?: string; data: MediaAsset };
-      if (!json.ok) throw new Error(json.error ?? "Upload failed");
-      setAssets((prev) => [json.data, ...prev]);
-      setTotalBytes((prev) => prev + (json.data.bytes ?? 0));
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : "Upload failed");
+      await Promise.all(
+        files.map(async (file) => {
+          try {
+            const fd = new FormData();
+            fd.append("file", file);
+            const resp = await fetch("/api/admin/media", { method: "POST", body: fd });
+            const json = (await resp.json()) as { ok: boolean; error?: string; data: MediaAsset };
+            if (!json.ok) throw new Error(json.error ?? "Upload failed");
+            setAssets((prev) => [json.data, ...prev]);
+            setTotalBytes((prev) => prev + (json.data.bytes ?? 0));
+          } catch (err) {
+            errors.push(`${file.name}: ${err instanceof Error ? err.message : "failed"}`);
+          }
+        })
+      );
+      if (errors.length) setUploadError(errors.join(" · "));
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

@@ -131,7 +131,7 @@ export default async function ArticlePage({
   };
 
   const body = <div dangerouslySetInnerHTML={{ __html: article.body.raw }} />;
-  const layoutProps = articleToLayoutProps(article, body, relatedArticles);
+  const layoutProps = articleToLayoutProps(article, body, relatedArticles, article.image);
 
   return (
     <>

@@ -18,11 +18,13 @@ export interface ArticleDoc {
   whyItMatters: string;
   takeaways: string[];
   body: { raw: string };
+  image?: string;
 }
 
 const ARTICLE_INCLUDE = {
   author: { select: { name: true } },
   category: { select: { name: true } },
+  featuredImage: { select: { url: true } },
 } as const;
 
 type ArticleRow = Prisma.ArticleGetPayload<{ include: typeof ARTICLE_INCLUDE }>;
@@ -50,6 +52,7 @@ function toArticleDoc(row: ArticleRow): ArticleDoc {
     whyItMatters: "",
     takeaways: [],
     body: { raw: row.body },
+    image: row.featuredImage?.url ?? undefined,
   };
 }
 

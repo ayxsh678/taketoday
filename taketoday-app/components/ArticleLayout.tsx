@@ -88,6 +88,7 @@ export function ArticleLayout(props: ArticleLayoutProps) {
     whyItMatters,
     takeaways,
     body,
+    image,
     relatedArticles,
   } = props;
 
@@ -160,6 +161,18 @@ export function ArticleLayout(props: ArticleLayoutProps) {
           </div>
         </div>
       </div>
+
+      {/* ── Cover image ─────────────────────────────────────────────────── */}
+      {image && (
+        <div className="mx-auto max-w-215 px-6 lg:px-10 mt-8">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={image}
+            alt={title}
+            className="w-full rounded-lg object-cover max-h-130"
+          />
+        </div>
+      )}
 
       {/* ── Share bar ───────────────────────────────────────────────────── */}
       <div className="mx-auto max-w-215 px-6 lg:px-10">
