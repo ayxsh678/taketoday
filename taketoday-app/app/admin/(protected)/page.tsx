@@ -8,6 +8,7 @@ import { ArticleStatus, type AuditLog } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import type { ActivityEvent } from "@/lib/admin/types";
 import { ActivityTimeline } from "@/components/admin/ActivityTimeline";
+import { AnalyticsWidget } from "@/components/admin/AnalyticsWidget";
 import { ArticleTable } from "@/components/admin/ArticleTable";
 import { DashboardQuickActions } from "@/components/admin/DashboardQuickActions";
 import { MetricCard } from "@/components/admin/MetricCard";
@@ -207,6 +208,8 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
       </section>
+
+      <AnalyticsWidget />
     </div>
   );
 }
