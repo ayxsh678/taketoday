@@ -72,4 +72,5 @@ export const articlePatchSchema = z.object({
   seoTitle: z.string().max(70).optional(),
   seoDescription: z.string().max(160).optional(),
   scheduledAt: z.string().datetime().optional(),
+  featuredImageId: z.string().nullable().optional(),
 });

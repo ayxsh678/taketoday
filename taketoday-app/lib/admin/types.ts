@@ -45,6 +45,8 @@ export type AdminArticle = Readonly<{
   scheduledAt?: string;
   publishedAt?: string;
   updatedAt: string;
+  featuredImageId: string | null;
+  featuredImageUrl: string | null;
 }>;
 
 export type ActivityEvent = Readonly<{

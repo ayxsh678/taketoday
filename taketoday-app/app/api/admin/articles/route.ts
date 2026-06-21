@@ -47,6 +47,8 @@ function mapArticle(article: ArticleWithRelations) {
     scheduledAt: article.scheduledAt?.toISOString(),
     publishedAt: article.publishedAt?.toISOString(),
     updatedAt: article.updatedAt.toISOString(),
+    featuredImageId: null,
+    featuredImageUrl: null,
   };
 }
 

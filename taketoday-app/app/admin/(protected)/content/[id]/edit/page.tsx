@@ -22,6 +22,8 @@ import {
   Undo,
   Redo,
   Eye,
+  ImageIcon,
+  X as XIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
@@ -102,6 +104,11 @@ export default function ArticleEditorPage() {
   const [breaking, setBreaking] = useState(false);
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDesc, setSeoDesc] = useState("");
+  const [featuredImageId, setFeaturedImageId] = useState<string | null>(null);
+  const [featuredImageUrl, setFeaturedImageUrl] = useState<string | null>(null);
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
+  const [mediaAssets, setMediaAssets] = useState<{ id: string; url: string; publicId: string }[]>([]);
+  const [mediaLoading, setMediaLoading] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -135,6 +142,8 @@ export default function ArticleEditorPage() {
         setBreaking(art.breaking);
         setSeoTitle(art.seoTitle ?? "");
         setSeoDesc(art.seoDescription ?? "");
+        setFeaturedImageId(art.featuredImageId ?? null);
+        setFeaturedImageUrl(art.featuredImageUrl ?? null);
 
         if (catRes.ok) {
           const catJson = await catRes.json();
@@ -154,6 +163,21 @@ export default function ArticleEditorPage() {
     }
   }, [editor, article]);
 
+  const openMediaPicker = useCallback(async () => {
+    setShowMediaPicker(true);
+    if (mediaAssets.length > 0) return;
+    setMediaLoading(true);
+    try {
+      const res = await fetch("/api/admin/media");
+      if (res.ok) {
+        const json = await res.json();
+        setMediaAssets((json.data as { assets: { id: string; url: string; publicId: string }[] }).assets ?? []);
+      }
+    } finally {
+      setMediaLoading(false);
+    }
+  }, [mediaAssets.length]);
+
   const save = useCallback(async (overrideStatus?: WorkflowStatus) => {
     setSaving(true);
     setError(null);
@@ -169,6 +193,7 @@ export default function ArticleEditorPage() {
           breaking,
           seoTitle: seoTitle || undefined,
           seoDescription: seoDesc || undefined,
+          featuredImageId: featuredImageId ?? null,
         }),
       });
       const json = await res.json();
@@ -182,7 +207,7 @@ export default function ArticleEditorPage() {
     } finally {
       setSaving(false);
     }
-  }, [id, headline, excerpt, status, breaking, seoTitle, seoDesc, editor]);
+  }, [id, headline, excerpt, status, breaking, seoTitle, seoDesc, featuredImageId, editor]);
 
   const handleDelete = useCallback(async () => {
     if (!confirm("Delete this article? This cannot be undone.")) return;
@@ -465,6 +490,52 @@ export default function ArticleEditorPage() {
               Breaking news
             </label>
 
+            {/* cover image */}
+            <div
+              className="border-t pt-5"
+              style={{ borderColor: "var(--adm-border-dim)" }}
+            >
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--adm-text-3)" }}>
+                Cover image
+              </p>
+              {featuredImageUrl ? (
+                <div className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={featuredImageUrl}
+                    alt="Cover"
+                    className="w-full rounded-md object-cover"
+                    style={{ maxHeight: 120 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => { setFeaturedImageId(null); setFeaturedImageUrl(null); }}
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+                  >
+                    <XIcon className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void openMediaPicker()}
+                  className="flex w-full items-center justify-center gap-2 rounded-md border border-dashed border-white/20 py-4 text-xs text-zinc-500 transition hover:border-white/40 hover:text-zinc-300"
+                >
+                  <ImageIcon className="h-4 w-4" />
+                  Pick from library
+                </button>
+              )}
+              {featuredImageUrl && (
+                <button
+                  type="button"
+                  onClick={() => void openMediaPicker()}
+                  className="mt-2 w-full rounded-md border border-white/10 py-1.5 text-xs text-zinc-400 transition hover:text-white"
+                >
+                  Change image
+                </button>
+              )}
+            </div>
+
             <div
               className="border-t pt-5"
               style={{ borderColor: "var(--adm-border-dim)" }}
@@ -541,6 +612,62 @@ export default function ArticleEditorPage() {
           </div>
         </aside>
       </div>
+
+      {/* media picker modal */}
+      {showMediaPicker && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm">
+          <div className="my-8 w-full max-w-3xl rounded-lg border border-white/10 bg-zinc-950 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 p-4">
+              <h2 className="text-sm font-semibold text-white">Select cover image</h2>
+              <button
+                type="button"
+                onClick={() => setShowMediaPicker(false)}
+                className="text-zinc-400 hover:text-white"
+              >
+                <XIcon className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="p-4">
+              {mediaLoading ? (
+                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="aspect-square animate-pulse rounded-lg bg-white/5" />
+                  ))}
+                </div>
+              ) : mediaAssets.length === 0 ? (
+                <p className="py-12 text-center text-sm text-zinc-500">No images in library yet. Upload via Media tab.</p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  {mediaAssets.map((asset) => (
+                    <button
+                      key={asset.id}
+                      type="button"
+                      onClick={() => {
+                        setFeaturedImageId(asset.id);
+                        setFeaturedImageUrl(asset.url);
+                        setShowMediaPicker(false);
+                      }}
+                      className={[
+                        "group relative aspect-square overflow-hidden rounded-lg border-2 transition",
+                        featuredImageId === asset.id
+                          ? "border-white"
+                          : "border-transparent hover:border-white/40",
+                      ].join(" ")}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={asset.url}
+                        alt={asset.publicId}
+                        className="h-full w-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

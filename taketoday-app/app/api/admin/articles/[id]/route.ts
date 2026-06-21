@@ -19,6 +19,7 @@ const articleInclude = {
   author: true,
   category: true,
   tags: { include: { tag: true } },
+  featuredImage: { select: { id: true, url: true } },
 } satisfies Prisma.ArticleInclude;
 
 type ArticleWithRelations = Prisma.ArticleGetPayload<{ include: typeof articleInclude }>;
@@ -42,6 +43,8 @@ function mapArticle(article: ArticleWithRelations) {
     scheduledAt: article.scheduledAt?.toISOString(),
     publishedAt: article.publishedAt?.toISOString(),
     updatedAt: article.updatedAt.toISOString(),
+    featuredImageId: article.featuredImageId ?? null,
+    featuredImageUrl: article.featuredImage?.url ?? null,
   };
 }
 
@@ -84,6 +87,11 @@ export async function PUT(req: NextRequest, { params }: RouteContext) {
     if (parsed.data.seoTitle !== undefined) updateData.seoTitle = parsed.data.seoTitle;
     if (parsed.data.seoDescription !== undefined) updateData.seoDescription = parsed.data.seoDescription;
     if (parsed.data.scheduledAt !== undefined) updateData.scheduledAt = new Date(parsed.data.scheduledAt);
+    if (parsed.data.featuredImageId !== undefined) {
+      updateData.featuredImage = parsed.data.featuredImageId
+        ? { connect: { id: parsed.data.featuredImageId } }
+        : { disconnect: true };
+    }
 
     if (parsed.data.status !== undefined) {
       const newStatus = statusMap[parsed.data.status];
