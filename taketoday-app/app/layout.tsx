@@ -31,6 +31,9 @@ const jetbrains = JetBrains_Mono({
 export const metadata: Metadata = {
   title: `${SITE.name} — ${SITE.tagline}`,
   description: SITE.description,
+  verification: {
+    google: "epU6P2tImA1YEYB6xgFCL-vIqNFzPlQ133NiuKcgq8Y",
+  },
   openGraph: {
     title: `${SITE.name} — ${SITE.tagline}`,
     description: SITE.description,
