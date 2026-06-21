@@ -1,41 +1,61 @@
-import { getAllArticles, type ArticleDoc } from "@/lib/content/queries";
-import type { FeedItem } from "@/types/article";
+import "server-only";
+import { prisma } from "@/lib/db/prisma";
+import type { FeedItem, Category } from "@/types/article";
 
-/**
- * TakeToday — Article search
- * Shared scoring logic used by /api/search (API) and /search (page SSR).
- * Weighted field scoring — title > deck > quickTake > category > whyItMatters.
- */
+const VALID_CATEGORIES = new Set<string>([
+  "AI", "Finance", "Tech", "Startups", "Briefings", "India", "International",
+]);
 
-function score(article: ArticleDoc, q: string): number {
-  const lq = q.toLowerCase();
-  const { title, deck, category, quickTake, whyItMatters } = article;
-
-  let s = 0;
-  if (title.toLowerCase().includes(lq)) s += 10;
-  if (deck.toLowerCase().includes(lq)) s += 6;
-  if (quickTake.toLowerCase().includes(lq)) s += 4;
-  if (category.toLowerCase().includes(lq)) s += 3;
-  if (whyItMatters.toLowerCase().includes(lq)) s += 2;
-  return s;
+function toCategory(name: string | null): Category {
+  return (name && VALID_CATEGORIES.has(name) ? name : "AI") as Category;
 }
 
-export async function searchArticles(q: string, limit = 8): Promise<FeedItem[]> {
+function computeReadTime(body: string): string {
+  const words = body.replace(/<[^>]*>/g, " ").trim().split(/\s+/).filter(Boolean).length;
+  return `${Math.max(1, Math.ceil(words / 200))} min read`;
+}
+
+interface FtsRow {
+  slug: string;
+  headline: string;
+  excerpt: string | null;
+  body: string;
+  category_name: string | null;
+  published_at: Date | null;
+}
+
+export async function searchArticles(q: string, limit = 20): Promise<FeedItem[]> {
   const trimmed = q.trim();
   if (trimmed.length < 2) return [];
 
-  const articles = await getAllArticles();
-  return articles
-    .map((a) => ({ article: a, s: score(a, trimmed) }))
-    .filter(({ s }) => s > 0)
-    .sort((a, b) => b.s - a.s)
-    .slice(0, limit)
-    .map(({ article: a }) => ({
-      slug: a.slug,
-      title: a.title,
-      summary: a.quickTake,
-      category: a.category,
-      readTime: a.readTime,
-      publishedAt: a.publishedAt,
+  try {
+    const rows = await prisma.$queryRaw<FtsRow[]>`
+      WITH query AS (SELECT plainto_tsquery('english', ${trimmed}) AS tsq)
+      SELECT
+        a.slug,
+        a.headline,
+        a.excerpt,
+        a.body,
+        c.name          AS category_name,
+        a."publishedAt" AS published_at
+      FROM "Article" a
+      CROSS JOIN query
+      LEFT JOIN "Category" c ON c.id = a."categoryId"
+      WHERE a.status = 'PUBLISHED'::"ArticleStatus"
+        AND a."searchVector" @@ query.tsq
+      ORDER BY ts_rank(a."searchVector", query.tsq) DESC
+      LIMIT ${limit}
+    `;
+
+    return rows.map((r) => ({
+      slug: r.slug,
+      title: r.headline,
+      summary: r.excerpt ?? "",
+      category: toCategory(r.category_name),
+      readTime: computeReadTime(r.body),
+      publishedAt: r.published_at?.toISOString() ?? new Date().toISOString(),
     }));
+  } catch {
+    return [];
+  }
 }
