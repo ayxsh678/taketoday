@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ChevronDown, Plus, Search, X } from "lucide-react";
 import { ArticleTable } from "@/components/admin/ArticleTable";
 import { Button } from "@/components/ui/button";
@@ -98,6 +99,7 @@ function Select({
 }
 
 export default function ContentPage() {
+  const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeStatus, setActiveStatus] = useState<StatusTab>("all");
@@ -110,6 +112,16 @@ export default function ContentPage() {
   const [categories, setCategories] = useState<CategoryOption[]>([]);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Pre-fill from ?headline=&excerpt= (set by Story Leads "Use story" button)
+  useEffect(() => {
+    const headline = searchParams.get("headline");
+    if (!headline) return;
+    const excerpt = searchParams.get("excerpt") ?? "";
+    setForm({ ...DEFAULT_FORM, headline, slug: toSlug(headline), excerpt });
+    setSlugAutoGen(false);
+    setShowCreate(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
