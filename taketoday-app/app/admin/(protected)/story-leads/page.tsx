@@ -141,7 +141,7 @@ export default function StoryLeadsPage() {
               )}
               <CardContent className="flex items-center gap-2 pt-0">
                 <Button
-                  size="sm"
+                  className="h-8 px-3 text-sm"
                   onClick={() => void act(item.id, "use", item)}
                   disabled={acting === item.id}
                 >
@@ -150,7 +150,7 @@ export default function StoryLeadsPage() {
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
+                  className="h-8 px-3 text-sm"
                   className="text-zinc-500 hover:text-white"
                   onClick={() => window.open(item.link, "_blank", "noopener")}
                 >
@@ -159,7 +159,7 @@ export default function StoryLeadsPage() {
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
+                  className="h-8 px-3 text-sm"
                   className="ml-auto text-zinc-600 hover:text-red-400"
                   onClick={() => void act(item.id, "dismiss")}
                   disabled={acting === item.id}
